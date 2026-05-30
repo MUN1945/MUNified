@@ -34,8 +34,8 @@ const STUDENT_PLANS = [
   {
     id: 'STUDENT_PRO' as const,
     name: 'Delegate Pro',
-    monthlyPrice: 9,
-    yearlyPrice: 86,
+    monthlyPrice: 11,
+    yearlyPrice: 109,
     description: 'Full training and assessment access for individual delegates.',
     cta: 'Start Free Trial',
     icon: GraduationCap,
@@ -230,7 +230,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'Do you offer discounts for annual billing?',
-    answer: 'Yes, we offer a 20% discount when you choose annual billing. Delegate Pro drops to $86/year ($7.17/month) and Director Pro to $278/year ($23.17/month).',
+    answer: 'Yes, we offer a discount when you choose annual billing. Delegate Pro drops to $109/year ($9.08/month) and Director Pro to $278/year ($23.17/month).',
   },
   {
     question: 'Can I get a refund if I\'m not satisfied?',

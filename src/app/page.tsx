@@ -765,8 +765,8 @@ function PricingPreview({ onGetStarted }: { onGetStarted: (plan?: string) => voi
     {
       name: 'Delegate Pro',
       target: 'Individual delegates',
-      monthlyPrice: 9,
-      annualPrice: 7,
+      monthlyPrice: 11,
+      annualPrice: 9,
       features: ['7-tier assessment', 'Full academy access', 'XP & badge tracking', 'Conference registration', 'Research Lab'],
       icon: Users,
       gradient: 'from-[#0A7E8C]/20 to-teal-600/20',
@@ -815,7 +815,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: (plan?: string) => voi
             Invest in Diplomatic Excellence
           </h2>
           <p className="mt-4 text-white/65 text-lg max-w-xl mx-auto">
-            Starting from $9/month. Choose the plan that matches your mission.
+            Starting from $11/month. Choose the plan that matches your mission.
           </p>
 
           {/* Toggle */}

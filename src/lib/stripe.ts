@@ -31,10 +31,10 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_place
 export const PRICING_PLANS = {
   STUDENT_PRO: {
     name: 'Delegate Pro',
-    monthlyPriceId: 'price_1Tcu6pRW2clKYAKGSNuM78OY',
-    yearlyPriceId: 'price_1Tcu6pRW2clKYAKGIUpl2MqS',
-    monthlyPrice: 9,
-    yearlyPrice: 86,
+    monthlyPriceId: 'price_1TcuBwRW2clKYAKGNCPpupys',
+    yearlyPriceId: 'price_1TcuBwRW2clKYAKGcIOdGi2H',
+    monthlyPrice: 11,
+    yearlyPrice: 109,
     currency: 'USD',
   },
   TEACHER_PRO: {
