@@ -83,20 +83,20 @@ const studentSkills = [
 ]
 
 const trainingTimeline = [
-  { date: '2025-01-10', title: 'Started Parliamentary Procedure', xp: 0, progress: 0 },
-  { date: '2025-01-18', title: 'Completed Module 1: Rules of Order', xp: 25, progress: 25 },
-  { date: '2025-02-01', title: 'Completed Module 2: Motions & Voting', xp: 50, progress: 50 },
-  { date: '2025-02-15', title: 'Started Resolution Writing', xp: 75, progress: 45 },
-  { date: '2025-02-28', title: 'Achieved Ambassador Level', xp: 500, progress: 78 },
+  { date: '2026-01-10', title: 'Started Parliamentary Procedure', xp: 0, progress: 0 },
+  { date: '2026-01-18', title: 'Completed Module 1: Rules of Order', xp: 25, progress: 25 },
+  { date: '2026-02-01', title: 'Completed Module 2: Motions & Voting', xp: 50, progress: 50 },
+  { date: '2026-02-15', title: 'Started Resolution Writing', xp: 75, progress: 45 },
+  { date: '2026-02-28', title: 'Achieved Ambassador Level', xp: 500, progress: 78 },
 ]
 
 const achievementMilestones = [
   { date: 'Dec 2024', title: 'First Assessment', desc: 'Completed your first diagnostic assessment', icon: ClipboardIcon, earned: true },
-  { date: 'Jan 2025', title: 'Global Delegate', desc: 'Attended 5 conferences worldwide', icon: GlobeIcon, earned: true },
-  { date: 'Jan 2025', title: 'Diplomat Badge', desc: 'Achieved Ambassador rank on the platform', icon: ShieldIcon, earned: true },
-  { date: 'Feb 2025', title: 'Skilled Orator', desc: 'Delivered 20+ speeches in sessions', icon: MicIcon, earned: true },
-  { date: 'Mar 2025', title: 'Resolution Writer', desc: 'Write 10 resolutions', icon: FileTextIcon, earned: false },
-  { date: 'Apr 2025', title: 'Master Diplomat', desc: 'Achieve Diplomat rank', icon: GavelIcon, earned: false },
+  { date: 'Jan 2026', title: 'Global Delegate', desc: 'Attended 5 conferences worldwide', icon: GlobeIcon, earned: true },
+  { date: 'Jan 2026', title: 'Diplomat Badge', desc: 'Achieved Ambassador rank on the platform', icon: ShieldIcon, earned: true },
+  { date: 'Feb 2026', title: 'Skilled Orator', desc: 'Delivered 20+ speeches in sessions', icon: MicIcon, earned: true },
+  { date: 'Mar 2026', title: 'Resolution Writer', desc: 'Write 10 resolutions', icon: FileTextIcon, earned: false },
+  { date: 'Apr 2026', title: 'Master Diplomat', desc: 'Achieve Diplomat rank', icon: GavelIcon, earned: false },
 ]
 
 // Simple icon components for milestones

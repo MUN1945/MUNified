@@ -1,258 +1,1050 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ChevronLeft, ChevronRight, Play, Share2, Trophy, Target,
+  ChevronRight, Play, Share2, Trophy, Target,
   Brain, Mic, Handshake, BookOpen, Shield, Gavel, Users,
   Crown, Sparkles, CheckCircle2, Star, Zap, ArrowRight,
-  RotateCcw, Award, Eye
+  RotateCcw, Award, Eye, Clock, AlertTriangle, ChevronUp,
+  Flame, Scale, Landmark, Globe, FileText, Sword, Compass,
+  ShieldCheck, Gem, Medal, Rocket, Lightbulb, XCircle,
+  TrendingUp, ArrowUpRight, Lock, Unlock, Timer, ScrollText,
+  BadgeCheck, CircleDot, ListChecks, BarChart3, GraduationCap, Heart
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  ResponsiveContainer
+} from 'recharts'
 
 // ============================================================
-// TYPES & DATA
+// TYPES
 // ============================================================
 
-type QuizPhase = 'intro' | 'quiz' | 'analyzing' | 'results'
+type QuizPhase = 'intro' | 'quiz' | 'tier-gate' | 'analyzing' | 'results'
+type QuestionType = 'multiple-choice' | 'scenario' | 'speech-eval' | 'negotiation' | 'writing' | 'leadership' | 'research' | 'open-ended'
 
 interface Question {
-  id: number
-  category: string
+  id: string
+  tier: number
+  type: QuestionType
+  dimensions: string[]
   text: string
-  options: { text: string; score: number }[]
+  subtext?: string
+  options: { text: string; score: number; feedback?: string }[]
+  timeLimit: number // seconds
+  checkpoint: boolean // competency checkpoint question
 }
 
-interface CategoryScore {
+interface TierDef {
+  id: number
   name: string
-  score: number // 0-100
-  avg: number   // raw average 1-4
-  color: string
+  subtitle: string
   icon: React.ElementType
+  color: string
+  bgColor: string
+  borderColor: string
+  gradientFrom: string
+  gradientTo: string
+  description: string
+  passingScore: number // percentage needed to advance
+  questionsPerTier: number
 }
 
-interface RoleRecommendation {
-  role: string
+interface DimensionScore {
+  key: string
+  name: string
+  score: number
+  maxScore: number
   color: string
-  description: string
-  strengths: string[]
   icon: React.ElementType
+  category: 'knowledge' | 'skills' | 'behavior'
 }
+
+interface AssessmentState {
+  currentTier: number
+  currentQuestionIndex: number
+  answers: Record<string, number>
+  failedCheckpoints: number
+  tierScores: Record<number, number>
+  maxTierReached: number
+  assessmentComplete: boolean
+  timePerQuestion: Record<string, number>
+  startedAt: number
+  completedAt?: number
+}
+
+// ============================================================
+// TIER DEFINITIONS
+// ============================================================
+
+const TIERS: TierDef[] = [
+  {
+    id: 1, name: 'Basic Delegate', subtitle: 'Foundation',
+    icon: Users, color: '#94A3B8', bgColor: '#94A3B815', borderColor: '#94A3B830',
+    gradientFrom: '#1e293b', gradientTo: '#334155',
+    description: 'Demonstrates foundational knowledge of MUN procedures, UN systems, and basic diplomatic conduct.',
+    passingScore: 60, questionsPerTier: 10
+  },
+  {
+    id: 2, name: 'Advanced Delegate', subtitle: 'Competence',
+    icon: Star, color: '#0D7377', bgColor: '#0D737715', borderColor: '#0D737730',
+    gradientFrom: '#0D7377', gradientTo: '#0A5C5F',
+    description: 'Demonstrates competence in procedures, research methodology, and substantive debate preparation.',
+    passingScore: 65, questionsPerTier: 10
+  },
+  {
+    id: 3, name: 'Committee Leader', subtitle: 'Leadership',
+    icon: Shield, color: '#7C3AED', bgColor: '#7C3AED15', borderColor: '#7C3AED30',
+    gradientFrom: '#5B21B6', gradientTo: '#7C3AED',
+    description: 'Shows leadership in committee, negotiation skills, and ability to build consensus among delegates.',
+    passingScore: 70, questionsPerTier: 11
+  },
+  {
+    id: 4, name: 'Chair', subtitle: 'Mastery',
+    icon: Gavel, color: '#D4A843', bgColor: '#D4A84315', borderColor: '#D4A84330',
+    gradientFrom: '#B8941F', gradientTo: '#D4A843',
+    description: 'Masters procedural rules, can run committees effectively, and manages complex parliamentary situations.',
+    passingScore: 72, questionsPerTier: 10
+  },
+  {
+    id: 5, name: 'Under-Secretary-General', subtitle: 'Strategic',
+    icon: Landmark, color: '#DC2626', bgColor: '#DC262615', borderColor: '#DC262630',
+    gradientFrom: '#991B1B', gradientTo: '#DC2626',
+    description: 'Demonstrates strategic thinking, crisis management capabilities, and organizational leadership.',
+    passingScore: 75, questionsPerTier: 10
+  },
+  {
+    id: 6, name: 'Deputy Secretary-General', subtitle: 'Executive',
+    icon: Crown, color: '#F59E0B', bgColor: '#F59E0B15', borderColor: '#F59E0B30',
+    gradientFrom: '#B45309', gradientTo: '#F59E0B',
+    description: 'Exhibits executive leadership, organizational mastery, and the ability to guide multiple committees simultaneously.',
+    passingScore: 78, questionsPerTier: 10
+  },
+  {
+    id: 7, name: 'Secretary-General', subtitle: 'Pinnacle',
+    icon: Gem, color: '#EC4899', bgColor: '#EC489915', borderColor: '#EC489930',
+    gradientFrom: '#9D174D', gradientTo: '#EC4899',
+    description: 'Complete mastery — the pinnacle of diplomatic excellence. Embodies vision, statesmanship, and transformative leadership.',
+    passingScore: 80, questionsPerTier: 10
+  },
+]
+
+// ============================================================
+// DIMENSIONS
+// ============================================================
+
+const DIMENSIONS: { key: string; name: string; color: string; icon: React.ElementType; category: 'knowledge' | 'skills' | 'behavior' }[] = [
+  // Knowledge
+  { key: 'mun_procedures', name: 'MUN Procedures', color: '#0D7377', icon: Gavel, category: 'knowledge' },
+  { key: 'un_systems', name: 'UN Systems', color: '#1E40AF', icon: Globe, category: 'knowledge' },
+  { key: 'international_relations', name: 'International Relations', color: '#7C3AED', icon: Scale, category: 'knowledge' },
+  { key: 'geopolitics', name: 'Geopolitical Awareness', color: '#DC2626', icon: Compass, category: 'knowledge' },
+  // Skills
+  { key: 'research', name: 'Research Skills', color: '#059669', icon: BookOpen, category: 'skills' },
+  { key: 'public_speaking', name: 'Public Speaking', color: '#E11D48', icon: Mic, category: 'skills' },
+  { key: 'negotiation', name: 'Negotiation', color: '#D4A843', icon: Handshake, category: 'skills' },
+  { key: 'leadership', name: 'Leadership', color: '#F59E0B', icon: Shield, category: 'skills' },
+  { key: 'crisis_management', name: 'Crisis Management', color: '#EF4444', icon: AlertTriangle, category: 'skills' },
+  { key: 'resolution_drafting', name: 'Resolution Drafting', color: '#0D7377', icon: FileText, category: 'skills' },
+  // Behavior
+  { key: 'confidence', name: 'Confidence', color: '#D4A843', icon: Target, category: 'behavior' },
+  { key: 'diplomacy', name: 'Diplomacy', color: '#8B5CF6', icon: Handshake, category: 'behavior' },
+  { key: 'collaboration', name: 'Collaboration', color: '#10B981', icon: Users, category: 'behavior' },
+  { key: 'professionalism', name: 'Professionalism', color: '#6366F1', icon: BadgeCheck, category: 'behavior' },
+]
+
+// ============================================================
+// QUESTION BANK — 71 Questions Across 7 Tiers
+// ============================================================
 
 const QUESTIONS: Question[] = [
-  // Category 1 - MUN Knowledge (Q1-Q3)
+  // ──────────────────────────────────────────────
+  // TIER 1: BASIC DELEGATE (10 questions)
+  // ──────────────────────────────────────────────
   {
-    id: 1, category: 'MUN Knowledge',
-    text: 'What does MUN stand for?',
+    id: 't1q1', tier: 1, type: 'multiple-choice',
+    dimensions: ['mun_procedures', 'un_systems'],
+    text: 'What is the primary purpose of a Model United Nations conference?',
     options: [
-      { text: 'Model United Nations', score: 4 },
-      { text: 'Model Unified Nations', score: 1 },
-      { text: 'United Model Nations', score: 2 },
-      { text: 'Model Union of Nations', score: 1 },
-    ]
+      { text: 'To simulate diplomatic proceedings and develop skills in negotiation, public speaking, and resolution writing', score: 4 },
+      { text: 'To compete for awards and recognition', score: 1 },
+      { text: 'To learn about geography and world capitals', score: 2 },
+      { text: 'To socialize with students from other schools', score: 1 },
+    ],
+    timeLimit: 30, checkpoint: false
   },
   {
-    id: 2, category: 'MUN Knowledge',
-    text: 'What is a resolution in MUN?',
+    id: 't1q2', tier: 1, type: 'multiple-choice',
+    dimensions: ['un_systems'],
+    text: 'Which of the following is NOT a principal organ of the United Nations?',
     options: [
-      { text: 'A formal document outlining proposed solutions', score: 4 },
-      { text: 'A verbal agreement between delegates', score: 1 },
-      { text: 'A type of motion to end debate', score: 2 },
-      { text: "A country's opening statement", score: 2 },
-    ]
+      { text: 'The Human Rights Council', score: 4, feedback: 'The HRC is a subsidiary body of the GA, not a principal organ.' },
+      { text: 'The Security Council', score: 1 },
+      { text: 'The International Court of Justice', score: 1 },
+      { text: 'The Economic and Social Council', score: 1 },
+    ],
+    timeLimit: 30, checkpoint: false
   },
   {
-    id: 3, category: 'MUN Knowledge',
-    text: "What is a 'Point of Order'?",
+    id: 't1q3', tier: 1, type: 'multiple-choice',
+    dimensions: ['mun_procedures'],
+    text: 'During a moderated caucus, who has the right to yield the floor?',
     options: [
-      { text: 'A procedural objection when rules are violated', score: 4 },
+      { text: 'The delegate who currently holds the floor', score: 4 },
+      { text: 'The Chair only', score: 1 },
+      { text: 'Any delegate in the room', score: 2 },
+      { text: 'The sponsor of the resolution being debated', score: 1 },
+    ],
+    timeLimit: 30, checkpoint: false
+  },
+  {
+    id: 't1q4', tier: 1, type: 'multiple-choice',
+    dimensions: ['mun_procedures'],
+    text: 'What is the correct order for considering a draft resolution?',
+    options: [
+      { text: 'Debate → Amendments → Voting Procedure', score: 4 },
+      { text: 'Voting → Debate → Amendments', score: 1 },
+      { text: 'Amendments → Voting → Debate', score: 1 },
+      { text: 'Debate → Voting → Amendments', score: 2 },
+    ],
+    timeLimit: 30, checkpoint: false
+  },
+  {
+    id: 't1q5', tier: 1, type: 'scenario',
+    dimensions: ['diplomacy', 'professionalism'],
+    text: 'You are representing France in the General Assembly. Another delegate makes a factual error about your country\'s position on climate policy. What is the most diplomatic response?',
+    subtext: 'Scenario: A delegate from another country states that France opposes the Paris Agreement, which is incorrect.',
+    options: [
+      { text: 'Raise a Point of Information to politely correct the record and reaffirm France\'s commitment to the Paris Agreement', score: 4 },
+      { text: 'Interrupt the delegate immediately to correct them', score: 1 },
+      { text: 'Ignore the error — it\'s not your problem', score: 1 },
+      { text: 'File a formal complaint with the Chair', score: 2 },
+    ],
+    timeLimit: 45, checkpoint: true
+  },
+  {
+    id: 't1q6', tier: 1, type: 'multiple-choice',
+    dimensions: ['un_systems'],
+    text: 'How many member states does the United Nations currently have?',
+    options: [
+      { text: '193', score: 4 },
+      { text: '195', score: 2 },
+      { text: '189', score: 1 },
+      { text: '200', score: 1 },
+    ],
+    timeLimit: 25, checkpoint: false
+  },
+  {
+    id: 't1q7', tier: 1, type: 'multiple-choice',
+    dimensions: ['mun_procedures', 'confidence'],
+    text: 'What is a "Point of Order" and when should it be used?',
+    options: [
+      { text: 'A procedural objection raised when the rules of procedure are being violated', score: 4 },
       { text: 'A request to extend speaking time', score: 1 },
-      { text: 'A motion to change the topic', score: 2 },
-      { text: 'A way to yield time to another delegate', score: 1 },
-    ]
-  },
-  // Category 2 - Confidence (Q4-Q5)
-  {
-    id: 4, category: 'Confidence',
-    text: 'How would you feel speaking in front of 100+ delegates?',
-    options: [
-      { text: 'Excited and ready', score: 4 },
-      { text: 'Slightly nervous but prepared', score: 3 },
-      { text: 'Quite anxious but willing', score: 2 },
-      { text: 'Very uncomfortable', score: 1 },
-    ]
+      { text: 'A motion to change the topic of debate', score: 1 },
+      { text: 'A way to ask the Chair a question about the topic', score: 2 },
+    ],
+    timeLimit: 30, checkpoint: false
   },
   {
-    id: 5, category: 'Confidence',
-    text: 'When someone challenges your position in debate, you:',
+    id: 't1q8', tier: 1, type: 'scenario',
+    dimensions: ['collaboration', 'research'],
+    text: 'You arrive at your first MUN committee session and realize you haven\'t prepared enough on the topic. What is the best course of action?',
     options: [
-      { text: 'Welcome it as an opportunity to strengthen your argument', score: 4 },
-      { text: 'Stand firm but listen', score: 4 },
-      { text: 'Feel defensive but try to respond', score: 2 },
-      { text: 'Prefer to avoid confrontation', score: 1 },
-    ]
-  },
-  // Category 3 - Research Skills (Q6-Q7)
-  {
-    id: 6, category: 'Research Skills',
-    text: "When researching a country's position, your first step is:",
-    options: [
-      { text: "Review official UN records and the country's voting history", score: 4 },
-      { text: 'Search news articles about the country', score: 3 },
-      { text: 'Ask a teammate what they know', score: 1 },
-      { text: 'Look at Wikipedia', score: 1 },
-    ]
+      { text: 'Listen carefully to other delegates\' speeches, take notes on key arguments, and contribute where your general knowledge allows', score: 4 },
+      { text: 'Skip the first session to research in the library', score: 1 },
+      { text: 'Make up facts to seem knowledgeable', score: 0 },
+      { text: 'Stay silent for the entire conference', score: 2 },
+    ],
+    timeLimit: 35, checkpoint: false
   },
   {
-    id: 7, category: 'Research Skills',
-    text: 'How do you verify the credibility of a source?',
+    id: 't1q9', tier: 1, type: 'multiple-choice',
+    dimensions: ['mun_procedures'],
+    text: 'What does "abstaining" mean during a vote?',
     options: [
-      { text: 'Cross-reference with official UN documents and multiple sources', score: 4 },
-      { text: "Check if it's from a well-known website", score: 2 },
-      { text: 'See if other delegates used it', score: 2 },
-      { text: 'Trust it if it sounds professional', score: 1 },
-    ]
-  },
-  // Category 4 - Public Speaking (Q8-Q9)
-  {
-    id: 8, category: 'Public Speaking',
-    text: 'When preparing a speech, you focus most on:',
-    options: [
-      { text: 'Crafting a compelling narrative with evidence and emotional appeal', score: 4 },
-      { text: 'Making sure every fact is perfect', score: 2 },
-      { text: 'Keeping it short', score: 2 },
-      { text: 'Reading from a prepared script', score: 1 },
-    ]
+      { text: 'The delegate chooses not to vote for or against the resolution, which neither adds to nor subtracts from the majority', score: 4 },
+      { text: 'The delegate votes against the resolution', score: 1 },
+      { text: 'The delegate\'s absence counts as a "no" vote', score: 1 },
+      { text: 'The delegate wants to discuss the resolution more before voting', score: 2 },
+    ],
+    timeLimit: 30, checkpoint: false
   },
   {
-    id: 9, category: 'Public Speaking',
-    text: 'How do you handle impromptu speaking situations?',
+    id: 't1q10', tier: 1, type: 'scenario',
+    dimensions: ['confidence', 'professionalism'],
+    text: 'During an unmoderated caucus, a group of experienced delegates dominates the conversation and ignores your input. What should you do?',
     options: [
-      { text: 'Structure my thoughts quickly using a framework (Point-Reason-Example)', score: 4 },
-      { text: 'Speak from the heart and hope for the best', score: 3 },
-      { text: 'Try to avoid impromptu situations', score: 2 },
-      { text: 'Get very nervous and freeze', score: 1 },
-    ]
+      { text: 'Assertively but respectfully interject, referencing your country\'s position to add value to the discussion', score: 4 },
+      { text: 'Wait silently until they notice you', score: 1 },
+      { text: 'Complain to the Chair about being excluded', score: 2 },
+      { text: 'Leave the group and work alone', score: 1 },
+    ],
+    timeLimit: 40, checkpoint: true
   },
-  // Category 5 - Diplomatic Skills (Q10-Q11)
-  {
-    id: 10, category: 'Diplomatic Skills',
-    text: 'During a heated debate, two delegates disagree strongly. You:',
-    options: [
-      { text: 'Facilitate compromise by finding common ground between positions', score: 4 },
-      { text: 'Take a side and support it', score: 2 },
-      { text: 'Stay out of it', score: 2 },
-      { text: 'Report to the chair', score: 1 },
-    ]
-  },
-  {
-    id: 11, category: 'Diplomatic Skills',
-    text: "What does 'diplomatic immunity' mean in a MUN context?",
-    options: [
-      { text: 'Delegates are protected from personal criticism while representing their country', score: 4 },
-      { text: 'The Chair cannot be challenged', score: 1 },
-      { text: "Countries don't have to follow resolutions", score: 1 },
-      { text: 'Only the Secretary-General has special powers', score: 1 },
-    ]
-  },
-  // Category 6 - Parliamentary Procedure (Q12-Q15)
-  {
-    id: 12, category: 'Parliamentary Procedure',
-    text: "What is a 'motion' in MUN?",
-    options: [
-      { text: 'A formal proposal for committee action', score: 4 },
-      { text: 'A type of dance at the social', score: 1 },
-      { text: 'A way to end the conference', score: 2 },
-      { text: "A delegate's opening statement", score: 2 },
-    ]
-  },
-  {
-    id: 13, category: 'Parliamentary Procedure',
-    text: 'What is the correct order of a MUN committee session?',
-    options: [
-      { text: 'Roll Call → Setting Agenda → General Speakers List → Moderated Caucus → Unmoderated Caucus → Voting', score: 4 },
-      { text: 'Opening speeches → Debate → Vote → Close', score: 2 },
-      { text: 'Registration → Committees → Dinner → Awards', score: 1 },
-      { text: 'Roll Call → Debate → Vote', score: 1 },
-    ]
-  },
-  {
-    id: 14, category: 'Parliamentary Procedure',
-    text: "What is 'yielding time' in MUN?",
-    options: [
-      { text: 'Remaining speaking time is given to another delegate, the chair, or for questions', score: 4 },
-      { text: 'Giving up your position in the speakers list', score: 1 },
-      { text: 'Transferring your vote to another delegate', score: 2 },
-      { text: 'A motion to end the debate', score: 1 },
-    ]
-  },
-  {
-    id: 15, category: 'Parliamentary Procedure',
-    text: 'What is the purpose of the Security Council in MUN?',
-    options: [
-      { text: 'To address threats to international peace and security with binding resolutions', score: 4 },
-      { text: 'To organize social events', score: 1 },
-      { text: 'To manage conference registration', score: 1 },
-      { text: 'To write the conference report', score: 1 },
-    ]
-  },
-]
 
-const CATEGORIES = [
-  { name: 'MUN Knowledge', color: '#0D7377', icon: Brain, questions: [1, 2, 3] },
-  { name: 'Confidence', color: '#D4A843', icon: Target, questions: [4, 5] },
-  { name: 'Research Skills', color: '#059669', icon: BookOpen, questions: [6, 7] },
-  { name: 'Public Speaking', color: '#E11D48', icon: Mic, questions: [8, 9] },
-  { name: 'Diplomatic Skills', color: '#7C3AED', icon: Handshake, questions: [10, 11] },
-  { name: 'Parliamentary Procedure', color: '#1B3A4B', icon: Gavel, questions: [12, 13, 14, 15] },
-]
+  // ──────────────────────────────────────────────
+  // TIER 2: ADVANCED DELEGATE (10 questions)
+  // ──────────────────────────────────────────────
+  {
+    id: 't2q1', tier: 2, type: 'multiple-choice',
+    dimensions: ['mun_procedures', 'resolution_drafting'],
+    text: 'What is the key difference between a working paper and a draft resolution?',
+    options: [
+      { text: 'A working paper is an informal document for discussion; a draft resolution is formally introduced and follows strict formatting with preambular and operative clauses', score: 4 },
+      { text: 'A working paper is longer than a draft resolution', score: 1 },
+      { text: 'A draft resolution can only have one sponsor', score: 1 },
+      { text: 'There is no difference — they are interchangeable terms', score: 0 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't2q2', tier: 2, type: 'multiple-choice',
+    dimensions: ['international_relations', 'un_systems'],
+    text: 'What is the significance of the "Uniting for Peace" resolution (UNGA Resolution 377)?',
+    options: [
+      { text: 'It allows the General Assembly to recommend collective action when the Security Council is deadlocked by a veto', score: 4 },
+      { text: 'It established the Peacekeeping operations', score: 2 },
+      { text: 'It reformed the Security Council membership', score: 1 },
+      { text: 'It created the International Criminal Court', score: 1 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't2q3', tier: 2, type: 'scenario',
+    dimensions: ['negotiation', 'diplomacy'],
+    text: 'You are in a deadlock on an amendment to a resolution. Two blocs have irreconcilable positions on a key operative clause. How do you break the impasse?',
+    options: [
+      { text: 'Propose a compromise clause that incorporates key elements from both positions, framed in mutually acceptable language', score: 4 },
+      { text: 'Push for a vote immediately — majority rules', score: 1 },
+      { text: 'Withdraw your amendment entirely', score: 1 },
+      { text: 'Ask the Chair to decide the wording', score: 2 },
+    ],
+    timeLimit: 45, checkpoint: true
+  },
+  {
+    id: 't2q4', tier: 2, type: 'research',
+    dimensions: ['research'],
+    text: 'You need to write a position paper for your country on nuclear disarmament. Which source would carry the MOST credibility in an academic MUN context?',
+    options: [
+      { text: 'The Treaty on the Non-Proliferation of Nuclear Weapons (NPT) text and your country\'s official statements at the NPT Review Conference', score: 4 },
+      { text: 'A Wikipedia article on nuclear weapons', score: 1 },
+      { text: 'A blog post by a political commentator', score: 0 },
+      { text: 'A news article from last week summarizing the issue', score: 2 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't2q5', tier: 2, type: 'multiple-choice',
+    dimensions: ['resolution_drafting'],
+    text: 'In a draft resolution, which type of clause calls for action and is operative in nature?',
+    options: [
+      { text: 'Operative clauses (numbered, begin with action verbs)', score: 4 },
+      { text: 'Preambular clauses (italicized, begin with participles)', score: 1 },
+      { text: 'Preamble', score: 2 },
+      { text: 'Signatory section', score: 0 },
+    ],
+    timeLimit: 30, checkpoint: false
+  },
+  {
+    id: 't2q6', tier: 2, type: 'scenario',
+    dimensions: ['public_speaking', 'confidence'],
+    text: 'You are giving a formal speech and notice several delegates appear disengaged — some are on their phones. What is the most effective response?',
+    options: [
+      { text: 'Modulate your delivery: increase vocal emphasis, use a compelling anecdote or statistic, and make direct eye contact with disengaged delegates', score: 4 },
+      { text: 'Stop speaking until they pay attention', score: 1 },
+      { text: 'Call them out publicly', score: 0 },
+      { text: 'Ignore it and continue reading your prepared text', score: 2 },
+    ],
+    timeLimit: 40, checkpoint: false
+  },
+  {
+    id: 't2q7', tier: 2, type: 'multiple-choice',
+    dimensions: ['un_systems', 'international_relations'],
+    text: 'Which UN body has the authority to authorize military action under Chapter VII of the UN Charter?',
+    options: [
+      { text: 'The Security Council', score: 4 },
+      { text: 'The General Assembly', score: 1 },
+      { text: 'The Secretary-General', score: 1 },
+      { text: 'The International Court of Justice', score: 1 },
+    ],
+    timeLimit: 30, checkpoint: false
+  },
+  {
+    id: 't2q8', tier: 2, type: 'scenario',
+    dimensions: ['negotiation', 'collaboration'],
+    text: 'Your ally in committee wants to submit a resolution that you believe will fail because it\'s too aggressive. How do you handle this?',
+    options: [
+      { text: 'Privately share your concerns with specific suggestions for modifications that could broaden support while preserving core objectives', score: 4 },
+      { text: 'Publicly distance yourself from the resolution', score: 1 },
+      { text: 'Sign it anyway — loyalty matters more than winning', score: 2 },
+      { text: 'Submit your own competing resolution without telling them', score: 0 },
+    ],
+    timeLimit: 40, checkpoint: false
+  },
+  {
+    id: 't2q9', tier: 2, type: 'research',
+    dimensions: ['research', 'international_relations'],
+    text: 'When preparing a country profile for an MUN conference, which element is MOST critical for effective representation?',
+    options: [
+      { text: 'Understanding your country\'s foreign policy priorities, alliances, and voting patterns in relevant UN bodies', score: 4 },
+      { text: 'Memorizing your country\'s GDP and population statistics', score: 2 },
+      { text: 'Knowing the name of your country\'s current leader', score: 1 },
+      { text: 'Finding the most dramatic facts about your country\'s history', score: 1 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't2q10', tier: 2, type: 'scenario',
+    dimensions: ['resolution_drafting', 'mun_procedures'],
+    text: 'A fellow delegate submits an amendment to your resolution that changes the fundamental intent of your operative clause. What is the correct procedural response?',
+    options: [
+      { text: 'Request a speaker\'s list on the amendment and argue that it constitutes a substantive change that should be a separate resolution', score: 4 },
+      { text: 'Accept all amendments without question to show cooperation', score: 1 },
+      { text: 'Veto the amendment — as main sponsor, you have that right', score: 2 },
+      { text: 'Withdraw your resolution in protest', score: 0 },
+    ],
+    timeLimit: 45, checkpoint: true
+  },
 
-const ROLES: RoleRecommendation[] = [
+  // ──────────────────────────────────────────────
+  // TIER 3: COMMITTEE LEADER (11 questions)
+  // ──────────────────────────────────────────────
   {
-    role: 'Secretary-General',
-    color: '#D4A843',
-    description: 'You possess exceptional leadership, diplomacy, and confidence. You are ready to lead entire conferences and inspire delegates.',
-    strengths: ['Leadership', 'Diplomacy', 'Confidence', 'Vision'],
-    icon: Crown,
+    id: 't3q1', tier: 3, type: 'scenario',
+    dimensions: ['leadership', 'negotiation'],
+    text: 'Your committee has been debating for two hours with no progress toward a resolution. Several delegates are repeating the same arguments. What leadership action would be most effective?',
+    options: [
+      { text: 'Propose a structured framework: identify areas of agreement, isolate key disputes, and suggest a moderated caucus on the most divisive issue', score: 4 },
+      { text: 'Let the debate continue — eventually someone will break through', score: 1 },
+      { text: 'Push for an immediate vote to force a decision', score: 2 },
+      { text: 'Ask the Chair to intervene and set the agenda', score: 1 },
+    ],
+    timeLimit: 45, checkpoint: false
   },
   {
-    role: 'Director-General',
-    color: '#0D7377',
-    description: 'Your deep MUN knowledge and procedural expertise makes you ideal for managing conference operations and guiding committees.',
-    strengths: ['Procedural Expertise', 'Knowledge', 'Organization', 'Management'],
-    icon: Shield,
+    id: 't3q2', tier: 3, type: 'speech-eval',
+    dimensions: ['public_speaking', 'research'],
+    text: 'Read this speech excerpt: "My country has always stood for peace. We believe in doing the right thing. The international community must act now. Something must be done about this crisis. Thank you." What is the PRIMARY weakness?',
+    options: [
+      { text: 'Vague language with no specific policy proposals, evidence, or reference to the country\'s actual position', score: 4 },
+      { text: 'The speech is too short', score: 2 },
+      { text: 'It mentions peace, which is too cliché', score: 1 },
+      { text: 'The tone is not aggressive enough', score: 0 },
+    ],
+    timeLimit: 40, checkpoint: false
   },
   {
-    role: 'Chair',
-    color: '#7C3AED',
-    description: 'Your strong public speaking and confidence make you a natural choice to lead committee sessions and maintain order.',
-    strengths: ['Public Speaking', 'Confidence', 'Authority', 'Fairness'],
-    icon: Gavel,
+    id: 't3q3', tier: 3, type: 'scenario',
+    dimensions: ['diplomacy', 'leadership'],
+    text: 'Two powerful blocs in your committee are refusing to compromise. You represent a smaller nation whose interests align with both sides on different issues. What is your strategic move?',
+    options: [
+      { text: 'Position yourself as a bridge-builder: identify overlapping interests and propose a framework that allows both sides to claim victories on their priorities', score: 4 },
+      { text: 'Join the more powerful bloc for protection', score: 1 },
+      { text: 'Remain neutral and wait for others to resolve it', score: 2 },
+      { text: 'Threaten to block both resolutions unless your demands are met', score: 1 },
+    ],
+    timeLimit: 45, checkpoint: true
   },
   {
-    role: 'Delegate (Advanced)',
-    color: '#059669',
-    description: 'Your research skills and foundational knowledge position you as a strong delegate ready for advanced committees.',
-    strengths: ['Research', 'Preparation', 'Foundational Knowledge', 'Analytical Thinking'],
-    icon: Star,
+    id: 't3q4', tier: 3, type: 'negotiation',
+    dimensions: ['negotiation', 'diplomacy'],
+    text: 'During a bilateral negotiation, the other delegate demands a concession you cannot make due to your country\'s national interest. What is the most effective diplomatic response?',
+    options: [
+      { text: 'Acknowledge their concern, explain your constraint, and offer an alternative concession that addresses their underlying interest without violating your mandate', score: 4 },
+      { text: 'Simply refuse — your country\'s position is non-negotiable', score: 2 },
+      { text: 'Agree to their demand to maintain the relationship', score: 0 },
+      { text: 'Walk away from the negotiation', score: 1 },
+    ],
+    timeLimit: 45, checkpoint: false
   },
   {
-    role: 'Delegate',
-    color: '#1B3A4B',
-    description: 'You have the core skills to represent your country effectively in committee. Focus on building your expertise through practice.',
-    strengths: ['Foundational Skills', 'Potential', 'Growth Mindset', 'Dedication'],
-    icon: Users,
+    id: 't3q5', tier: 3, type: 'multiple-choice',
+    dimensions: ['mun_procedures', 'leadership'],
+    text: 'What is the purpose of a "moderated caucus" and how does a committee leader best utilize it?',
+    options: [
+      { text: 'It allows focused debate on a specific subtopic with shorter speaking times; leaders use it to drill into contentious issues and generate specific proposals', score: 4 },
+      { text: 'It is a break from formal debate for delegates to socialize', score: 1 },
+      { text: 'It is used only for voting on amendments', score: 1 },
+      { text: 'It allows the Chair to lecture the committee on procedure', score: 0 },
+    ],
+    timeLimit: 35, checkpoint: false
   },
   {
-    role: 'SDG Ambassador',
-    color: '#E11D48',
-    description: 'Your passion for global issues and desire to learn makes you a perfect advocate for the Sustainable Development Goals.',
-    strengths: ['Passion', 'Global Awareness', 'Advocacy', 'Learning Spirit'],
-    icon: Sparkles,
+    id: 't3q6', tier: 3, type: 'scenario',
+    dimensions: ['collaboration', 'leadership'],
+    text: 'A first-time delegate in your committee is visibly nervous and has not spoken once. You are leading a coalition. What do you do?',
+    options: [
+      { text: 'During an unmoderated caucus, approach them privately, express that their perspective is valuable, and help them prepare a brief talking point for the next moderated caucus', score: 4 },
+      { text: 'Call on them during formal debate to force participation', score: 1 },
+      { text: 'Ignore them — if they can\'t speak up, they\'re not ready', score: 0 },
+      { text: 'Ask the Chair to encourage them to speak', score: 2 },
+    ],
+    timeLimit: 40, checkpoint: false
+  },
+  {
+    id: 't3q7', tier: 3, type: 'multiple-choice',
+    dimensions: ['resolution_drafting'],
+    text: 'Which of the following is a correctly formatted operative clause?',
+    options: [
+      { text: '"Calls upon all Member States to increase their contributions to the Green Climate Fund by 20% annually;"', score: 4 },
+      { text: '"Believing that climate change is important;"', score: 1 },
+      { text: '"We think countries should pay more;"', score: 0 },
+      { text: '"Recalling the Paris Agreement;"', score: 2 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't3q8', tier: 3, type: 'scenario',
+    dimensions: ['international_relations', 'geopolitics'],
+    text: 'A delegate from a Permanent Five member threatens to veto your resolution. What is the most strategically sound approach?',
+    options: [
+      { text: 'Engage the P5 delegate privately to understand their specific objections and modify the resolution to address their concerns while preserving your core objectives', score: 4 },
+      { text: 'Call for a vote immediately before they can veto', score: 1 },
+      { text: 'Abandon the resolution entirely', score: 0 },
+      { text: 'Publicly shame them for using the veto threat', score: 1 },
+    ],
+    timeLimit: 45, checkpoint: false
+  },
+  {
+    id: 't3q9', tier: 3, type: 'multiple-choice',
+    dimensions: ['un_systems', 'international_relations'],
+    text: 'The concept of "Responsibility to Protect" (R2P) primarily addresses:',
+    options: [
+      { text: 'The obligation of states to protect their populations from genocide, war crimes, ethnic cleansing, and crimes against humanity', score: 4 },
+      { text: 'The duty of wealthy nations to provide foreign aid', score: 1 },
+      { text: 'The right of states to maintain military forces', score: 1 },
+      { text: 'Environmental protection obligations under international law', score: 2 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't3q10', tier: 3, type: 'writing',
+    dimensions: ['resolution_drafting', 'research'],
+    text: 'Which preambular clause correctly references a prior UN document?',
+    options: [
+      { text: '"Recalling the Universal Declaration of Human Rights (1948), which established the inherent dignity and equal rights of all members of the human family,"', score: 4 },
+      { text: '"Remembering that human rights exist,"', score: 1 },
+      { text: '"Noting that the UN did something about human rights once,"', score: 0 },
+      { text: '"Referring to some document about rights,"', score: 0 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't3q11', tier: 3, type: 'scenario',
+    dimensions: ['confidence', 'leadership'],
+    text: 'You\'ve been selected to present your bloc\'s resolution to the full committee, but you disagree with a key clause that was added through compromise. How do you handle the presentation?',
+    options: [
+      { text: 'Present the resolution professionally and completely, including the compromised clause, as you are representing the bloc\'s collective position — not your personal preference', score: 4 },
+      { text: 'Skip the clause you disagree with during your presentation', score: 0 },
+      { text: 'Publicly state your disagreement before presenting', score: 1 },
+      { text: 'Refuse to present and ask someone else to do it', score: 1 },
+    ],
+    timeLimit: 40, checkpoint: true
+  },
+
+  // ──────────────────────────────────────────────
+  // TIER 4: CHAIR (10 questions)
+  // ──────────────────────────────────────────────
+  {
+    id: 't4q1', tier: 4, type: 'leadership',
+    dimensions: ['mun_procedures', 'leadership'],
+    text: 'As Chair, a delegate raises a Point of Order claiming you incorrectly ruled on a motion. How do you handle this?',
+    options: [
+      { text: 'Calmly cite the specific rule from the Rules of Procedure, explain your ruling, and offer to review it during a recess if needed', score: 4 },
+      { text: 'Overrule them immediately — the Chair\'s decision is final', score: 1 },
+      { text: 'Apologize and reverse your ruling to maintain harmony', score: 2 },
+      { text: 'Ask the committee to vote on whether your ruling was correct', score: 1 },
+    ],
+    timeLimit: 40, checkpoint: true
+  },
+  {
+    id: 't4q2', tier: 4, type: 'scenario',
+    dimensions: ['leadership', 'crisis_management'],
+    text: 'Two delegates get into a heated personal argument during formal debate that violates decorum. As Chair, what is your immediate response?',
+    options: [
+      { text: 'Gavel the committee to order, remind delegates of Rule X regarding decorum, and redirect to substantive debate on the topic', score: 4 },
+      { text: 'Let them argue it out — passion is part of MUN', score: 0 },
+      { text: 'Expel both delegates from the committee', score: 2 },
+      { text: 'Suspend the session and call the Secretary-General', score: 1 },
+    ],
+    timeLimit: 40, checkpoint: false
+  },
+  {
+    id: 't4q3', tier: 4, type: 'multiple-choice',
+    dimensions: ['mun_procedures'],
+    text: 'What is the difference between a "friendly amendment" and an "unfriendly amendment"?',
+    options: [
+      { text: 'A friendly amendment is approved by all sponsors and passes without vote; an unfriendly amendment requires a vote because not all sponsors consent', score: 4 },
+      { text: 'A friendly amendment is shorter than an unfriendly one', score: 1 },
+      { text: 'A friendly amendment comes from allies; an unfriendly one comes from opponents', score: 2 },
+      { text: 'There is no difference in procedure', score: 0 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't4q4', tier: 4, type: 'leadership',
+    dimensions: ['leadership', 'crisis_management'],
+    text: 'Your committee is 30 minutes behind schedule and no resolution has been drafted. The conference Secretariat pressures you to move to voting. What do you do?',
+    options: [
+      { text: 'Announce a 15-minute unmoderated caucus specifically for resolution drafting, set clear expectations, and facilitate rapid progress toward a workable document', score: 4 },
+      { text: 'Move to voting immediately — the Secretariat\'s schedule takes priority', score: 1 },
+      { text: 'Extend the session by an hour without consultation', score: 2 },
+      { text: 'End the session with no resolution and blame the delegates', score: 0 },
+    ],
+    timeLimit: 45, checkpoint: false
+  },
+  {
+    id: 't4q5', tier: 4, type: 'scenario',
+    dimensions: ['mun_procedures', 'professionalism'],
+    text: 'A delegate motions for a roll call vote, but you believe a simple placard vote would suffice. How do you rule?',
+    options: [
+      { text: 'Accept the motion — any delegate has the right to request a roll call vote under most MUN rules of procedure', score: 4 },
+      { text: 'Deny the motion — the Chair decides the voting method', score: 1 },
+      { text: 'Put it to a vote whether to have a roll call vote', score: 2 },
+      { text: 'Ask the delegate why they want a roll call vote and decide based on their answer', score: 2 },
+    ],
+    timeLimit: 40, checkpoint: false
+  },
+  {
+    id: 't4q6', tier: 4, type: 'multiple-choice',
+    dimensions: ['mun_procedures'],
+    text: 'What is "table debate" and when is it appropriately used?',
+    options: [
+      { text: 'A motion to temporarily set aside the current topic; used when an urgent matter requires immediate attention or to make time for another pressing issue', score: 4 },
+      { text: 'A way to end debate permanently', score: 1 },
+      { text: 'A method to change the speaking time', score: 1 },
+      { text: 'A procedure to remove a delegate from the room', score: 0 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't4q7', tier: 4, type: 'scenario',
+    dimensions: ['leadership', 'diplomacy'],
+    text: 'A delegate consistently dominates speaking time and intimidates others from speaking. As Chair, what is the most balanced approach?',
+    options: [
+      { text: 'Implement equitable speaking opportunities: limit repeat speakers, actively recognize delegates who haven\'t spoken, and maintain a fair speakers\' list', score: 4 },
+      { text: 'Publicly scold the dominant delegate', score: 1 },
+      { text: 'Let the natural dynamics play out', score: 0 },
+      { text: 'Skip the dominant delegate every time they raise their placard', score: 2 },
+    ],
+    timeLimit: 40, checkpoint: true
+  },
+  {
+    id: 't4q8', tier: 4, type: 'multiple-choice',
+    dimensions: ['resolution_drafting', 'mun_procedures'],
+    text: 'When a resolution has multiple amendments, what is the proper order for voting?',
+    options: [
+      { text: 'Vote on amendments in reverse order of submission (last amendment first), then vote on the resolution as amended', score: 4 },
+      { text: 'Vote on all amendments simultaneously', score: 1 },
+      { text: 'Vote on amendments in order of submission', score: 2 },
+      { text: 'The Chair decides which amendments to vote on', score: 0 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't4q9', tier: 4, type: 'speech-eval',
+    dimensions: ['public_speaking', 'research'],
+    text: 'A delegate gives a speech that is well-researched and technically perfect but delivered in a monotone voice with no eye contact. The primary improvement needed is:',
+    options: [
+      { text: 'Enhancing delivery dynamics: vocal variety, strategic pauses, eye contact, and physical engagement to connect with the audience emotionally', score: 4 },
+      { text: 'Adding more statistics to the speech', score: 1 },
+      { text: 'Making the speech longer', score: 0 },
+      { text: 'Using more complicated vocabulary', score: 0 },
+    ],
+    timeLimit: 35, checkpoint: false
+  },
+  {
+    id: 't4q10', tier: 4, type: 'leadership',
+    dimensions: ['crisis_management', 'leadership'],
+    text: 'A fire alarm interrupts your committee session. After the all-clear, delegates are distracted and energy is low. How do you restore momentum?',
+    options: [
+      { text: 'Briefly acknowledge the disruption, transition to a high-engagement moderated caucus on the most debated issue, and set an ambitious but achievable goal for the remaining time', score: 4 },
+      { text: 'Cancel the remaining session', score: 0 },
+      { text: 'Resume exactly where you left off without acknowledging the disruption', score: 2 },
+      { text: 'Give delegates a 30-minute break to settle down', score: 1 },
+    ],
+    timeLimit: 40, checkpoint: true
+  },
+
+  // ──────────────────────────────────────────────
+  // TIER 5: UNDER-SECRETARY-GENERAL (10 questions)
+  // ──────────────────────────────────────────────
+  {
+    id: 't5q1', tier: 5, type: 'leadership',
+    dimensions: ['crisis_management', 'strategic_thinking'],
+    text: 'A crisis erupts: news breaks that a fictional nation has launched a military offensive. As USG, you must advise the Secretary-General on the immediate UN response. What framework do you apply?',
+    options: [
+      { text: 'Assess the threat level under Chapter VII, recommend emergency Security Council consultation, coordinate with relevant agencies (OCHA, UNHCR), and prepare a briefing for the GA if the SC is deadlocked', score: 4 },
+      { text: 'Issue a press condemning the attack and wait for instructions', score: 1 },
+      { text: 'Deploy peacekeepers immediately without Security Council authorization', score: 0 },
+      { text: 'Call an emergency General Assembly session only', score: 2 },
+    ],
+    timeLimit: 60, checkpoint: true
+  },
+  {
+    id: 't5q2', tier: 5, type: 'scenario',
+    dimensions: ['strategic_thinking', 'international_relations'],
+    text: 'Your conference has three committees, but the Crisis Committee is consuming disproportionate Secretariat attention. The GA and ECOSOC are falling behind schedule. What is your strategic response?',
+    options: [
+      { text: 'Redistribute Secretariat resources: assign a deputy to the Crisis Committee, personally check in on GA and ECOSOC, and create a shared timeline to ensure all committees reach resolution stage', score: 4 },
+      { text: 'Focus entirely on the Crisis Committee — it\'s the flagship', score: 1 },
+      { text: 'Cancel the GA and ECOSOC final sessions', score: 0 },
+      { text: 'Let each committee figure it out independently', score: 1 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't5q3', tier: 5, type: 'scenario',
+    dimensions: ['negotiation', 'diplomacy'],
+    text: 'A major donor nation threatens to withdraw conference funding unless their preferred agenda topic is prioritized. This topic is controversial and may alienate other participants. How do you navigate this?',
+    options: [
+      { text: 'Acknowledge the donor\'s interest, propose a balanced agenda that includes their topic alongside others, and emphasize the diplomatic value of diverse perspectives for all stakeholders', score: 4 },
+      { text: 'Accept their demand — funding is critical', score: 1 },
+      { text: 'Refuse categorically — the UN doesn\'t negotiate with donors', score: 2 },
+      { text: 'Publicly expose their pressure tactics', score: 0 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't5q4', tier: 5, type: 'scenario',
+    dimensions: ['geopolitics', 'international_relations'],
+    text: 'Your Security Council simulation faces a realistic scenario: one P5 member is expected to veto any resolution on the conflict. How do you, as USG, advise the other delegates to proceed?',
+    options: [
+      { text: 'Advise delegates to craft a resolution that addresses the P5 member\'s stated concerns where possible, while preparing a "Uniting for Peace" GA resolution as a backup if the veto is exercised', score: 4 },
+      { text: 'Tell them to give up — the veto can\'t be overcome', score: 0 },
+      { text: 'Recommend they draft the most aggressive resolution possible to make a statement', score: 1 },
+      { text: 'Suggest they avoid the topic entirely', score: 0 },
+    ],
+    timeLimit: 55, checkpoint: false
+  },
+  {
+    id: 't5q5', tier: 5, type: 'writing',
+    dimensions: ['resolution_drafting', 'international_relations'],
+    text: 'You are reviewing a draft resolution on cybersecurity. Which operative clause demonstrates the highest level of diplomatic sophistication?',
+    options: [
+      { text: '"Establishes a multilateral Cybersecurity norms Dialogue Forum under the auspices of the UN Secretary-General, with balanced regional representation, to develop binding international norms on state behavior in cyberspace, with progress reports to the GA annually;"', score: 4 },
+      { text: '"Says that cyber attacks are bad and countries should stop doing them;"', score: 0 },
+      { text: '"Bans all cyber weapons immediately;"', score: 1 },
+      { text: '"Requests that countries be nicer on the internet;"', score: 0 },
+    ],
+    timeLimit: 45, checkpoint: false
+  },
+  {
+    id: 't5q6', tier: 5, type: 'leadership',
+    dimensions: ['crisis_management', 'leadership'],
+    text: 'During a live crisis simulation, conflicting intelligence reports arrive simultaneously. One suggests a chemical attack, the other suggests a conventional explosion. As USG, your immediate action should be:',
+    options: [
+      { text: 'Acknowledge both reports, establish a verification protocol, brief the Security Council on the conflicting intelligence, and prepare contingency plans for both scenarios while awaiting confirmation', score: 4 },
+      { text: 'Assume the worst (chemical attack) and act accordingly', score: 2 },
+      { text: 'Wait for confirmed intelligence before taking any action', score: 1 },
+      { text: 'Choose the less severe scenario to avoid panic', score: 0 },
+    ],
+    timeLimit: 50, checkpoint: true
+  },
+  {
+    id: 't5q7', tier: 5, type: 'scenario',
+    dimensions: ['leadership', 'collaboration'],
+    text: 'A committee Chair is struggling and losing control of their session. Delegates are frustrated. As USG, what intervention do you make?',
+    options: [
+      { text: 'Observe briefly to identify specific issues, then privately coach the Chair on procedural tools and facilitation techniques, remaining available as backup without undermining their authority', score: 4 },
+      { text: 'Publicly take over the committee', score: 1 },
+      { text: 'Replace the Chair immediately with someone more experienced', score: 2 },
+      { text: 'Ignore it — struggling builds character', score: 0 },
+    ],
+    timeLimit: 45, checkpoint: false
+  },
+  {
+    id: 't5q8', tier: 5, type: 'scenario',
+    dimensions: ['strategic_thinking', 'geopolitics'],
+    text: 'A new global health emergency requires rapid UN coordination. Which mechanism allows the fastest multilateral response?',
+    options: [
+      { text: 'WHO emergency declaration + Security Council resolution authorizing international cooperation + coordinated GA resolution for funding', score: 4 },
+      { text: 'A press release from the Secretary-General', score: 1 },
+      { text: 'Waiting for the next scheduled General Assembly session', score: 0 },
+      { text: 'Bilateral agreements between affected nations only', score: 1 },
+    ],
+    timeLimit: 45, checkpoint: false
+  },
+  {
+    id: 't5q9', tier: 5, type: 'negotiation',
+    dimensions: ['negotiation', 'strategic_thinking'],
+    text: 'In a multilateral negotiation, you need to bring five opposing factions to consensus. Your optimal strategy is:',
+    options: [
+      { text: 'Map each faction\'s core interests and red lines, identify a "zone of possible agreement," build a coalition of the most flexible parties first, then gradually bring in harder-line factions with targeted concessions', score: 4 },
+      { text: 'Present your proposal first and demand acceptance', score: 0 },
+      { text: 'Negotiate with each faction separately and hope the agreements are compatible', score: 2 },
+      { text: 'Ask everyone to compromise equally regardless of their interests', score: 1 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't5q10', tier: 5, type: 'scenario',
+    dimensions: ['professionalism', 'diplomacy'],
+    text: 'A senior diplomat at the conference makes an inappropriate comment about a delegate\'s nationality. As USG, how do you address this?',
+    options: [
+      { text: 'Immediately and privately address the issue with the individual, issue a formal statement reaffirming the conference\'s commitment to respect and inclusivity, and offer support to the affected delegate', score: 4 },
+      { text: 'Ignore it — diplomacy requires thick skin', score: 0 },
+      { text: 'Publicly humiliate the offender in front of everyone', score: 1 },
+      { text: 'Wait until the conference is over to address it', score: 1 },
+    ],
+    timeLimit: 45, checkpoint: true
+  },
+
+  // ──────────────────────────────────────────────
+  // TIER 6: DEPUTY SECRETARY-GENERAL (10 questions)
+  // ──────────────────────────────────────────────
+  {
+    id: 't6q1', tier: 6, type: 'leadership',
+    dimensions: ['leadership', 'strategic_thinking'],
+    text: 'You must design the agenda for a 3-day MUN conference with 200 delegates across 6 committees. What is your strategic approach?',
+    options: [
+      { text: 'Create a thematic arc: Day 1 focuses on identification and debate of issues, Day 2 on negotiation and resolution drafting, Day 3 on crisis response and final voting, with cross-committee events that build conference-wide momentum', score: 4 },
+      { text: 'Let each committee set its own agenda independently', score: 1 },
+      { text: 'Pack all substantive debate into Day 1 and use Days 2-3 for social events', score: 0 },
+      { text: 'Follow the exact same agenda as last year\'s conference', score: 1 },
+    ],
+    timeLimit: 55, checkpoint: true
+  },
+  {
+    id: 't6q2', tier: 6, type: 'scenario',
+    dimensions: ['crisis_management', 'leadership'],
+    text: 'Halfway through the conference, a real-world geopolitical crisis breaks out that directly mirrors your Crisis Committee scenario. Delegates are emotionally affected. How do you, as DSG, manage this?',
+    options: [
+      { text: 'Acknowledge the sensitivity, offer delegates the option to pause or continue, adjust the crisis scenario to be less directly parallel, and ensure counseling resources are available for those affected', score: 4 },
+      { text: 'Cancel the crisis committee entirely', score: 2 },
+      { text: 'Continue unchanged — MUN is about dealing with real crises', score: 1 },
+      { text: 'Use the real crisis as a teaching moment without adjusting', score: 2 },
+    ],
+    timeLimit: 55, checkpoint: false
+  },
+  {
+    id: 't6q3', tier: 6, type: 'scenario',
+    dimensions: ['strategic_thinking', 'international_relations'],
+    text: 'Your conference is criticized for lacking diversity in represented nations — too many delegations default to Western positions. How do you address this systemic issue?',
+    options: [
+      { text: 'Restructure country assignments to ensure Global South representation in key committees, create training modules on non-Western diplomatic traditions, and invite diverse guest speakers', score: 4 },
+      { text: 'Dismiss the criticism — delegates can represent any country', score: 0 },
+      { text: 'Only assign countries that match delegates\' nationalities', score: 1 },
+      { text: 'Add more African and Asian topics to the agenda without changing representation', score: 2 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't6q4', tier: 6, type: 'negotiation',
+    dimensions: ['negotiation', 'diplomacy'],
+    text: 'A school threatens to withdraw their delegation over a dispute about committee assignments. They are your largest participating school. How do you negotiate?',
+    options: [
+      { text: 'Listen to their specific concerns, acknowledge their importance to the conference, propose a solution that addresses their core interest (not necessarily their stated position), and frame it within the broader commitment to fairness for all participants', score: 4 },
+      { text: 'Give them everything they want — losing them would be devastating', score: 1 },
+      { text: 'Call their bluff — they need us more than we need them', score: 0 },
+      { text: 'Offer them a discount instead of addressing the actual issue', score: 2 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't6q5', tier: 6, type: 'leadership',
+    dimensions: ['leadership', 'professionalism'],
+    text: 'You discover that a Chair has been showing favoritism toward delegates from their own school. What action do you take?',
+    options: [
+      { text: 'Document specific instances, privately address the Chair with clear expectations, implement an anonymous feedback mechanism, and establish a monitoring protocol for their sessions', score: 4 },
+      { text: 'Fire the Chair immediately and publicly', score: 1 },
+      { text: 'Ignore it — a little favoritism is natural', score: 0 },
+      { text: 'Wait for complaints from delegates before acting', score: 2 },
+    ],
+    timeLimit: 50, checkpoint: true
+  },
+  {
+    id: 't6q6', tier: 6, type: 'scenario',
+    dimensions: ['strategic_thinking', 'crisis_management'],
+    text: 'Your conference is running over budget with two months remaining. The venue contract is signed. How do you manage the financial crisis?',
+    options: [
+      { text: 'Conduct a line-item budget review, identify non-essential expenses for reduction, negotiate with vendors for discounts, explore sponsorship opportunities, and develop a transparent financial communication plan for stakeholders', score: 4 },
+      { text: 'Cancel the conference', score: 0 },
+      { text: 'Raise registration fees for all delegates', score: 2 },
+      { text: 'Cut quality on food and materials without telling anyone', score: 0 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't6q7', tier: 6, type: 'scenario',
+    dimensions: ['leadership', 'collaboration'],
+    text: 'Two of your committee Chairs have conflicting interpretations of the same rule. Their committees are producing inconsistent outcomes. How do you resolve this?',
+    options: [
+      { text: 'Call a Chairs\' meeting, present both interpretations, facilitate a consensus on the correct ruling based on the Rules of Procedure, and issue a conference-wide clarification to ensure consistency', score: 4 },
+      { text: 'Let each Chair interpret rules independently', score: 0 },
+      { text: 'Side with the more senior Chair', score: 1 },
+      { text: 'Overrule both and impose your own interpretation without discussion', score: 2 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't6q8', tier: 6, type: 'scenario',
+    dimensions: ['geopolitics', 'strategic_thinking'],
+    text: 'You are designing a historical crisis simulation set during the Cold War. What makes it educationally valuable rather than just entertaining?',
+    options: [
+      { text: 'Grounding it in actual historical constraints and diplomatic options available at the time, including primary sources, and designing learning outcomes that connect historical decisions to contemporary global governance challenges', score: 4 },
+      { text: 'Making it as dramatic and surprising as possible', score: 1 },
+      { text: 'Letting delegates use modern knowledge to solve historical problems', score: 1 },
+      { text: 'Ensuring the "right" side always wins', score: 0 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't6q9', tier: 6, type: 'scenario',
+    dimensions: ['confidence', 'leadership'],
+    text: 'The Secretary-General falls ill on the morning of the conference. You must step up and deliver the opening ceremony address with 30 minutes of preparation. What do you focus on?',
+    options: [
+      { text: 'Deliver a concise, inspiring address that sets the conference tone: welcome delegates, articulate the conference\'s mission and relevance, challenge delegates to think beyond their comfort zones, and establish your authority with confidence', score: 4 },
+      { text: 'Cancel the opening ceremony', score: 0 },
+      { text: 'Read the SG\'s prepared speech word for word', score: 2 },
+      { text: 'Wing it with no preparation — authenticity beats preparation', score: 1 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't6q10', tier: 6, type: 'scenario',
+    dimensions: ['strategic_thinking', 'diplomacy'],
+    text: 'A parent complains that their child didn\'t win an award and alleges the judging was biased. How do you, as DSG, respond?',
+    options: [
+      { text: 'Thank them for their feedback, explain the transparent rubric-based judging process, offer to share specific feedback on their child\'s performance, and use this as an opportunity to improve the feedback system for all delegates', score: 4 },
+      { text: 'Give their child an award to resolve the complaint', score: 0 },
+      { text: 'Dismiss the complaint — awards are final', score: 1 },
+      { text: 'Blame the Chairs for biased judging', score: 0 },
+    ],
+    timeLimit: 45, checkpoint: true
+  },
+
+  // ──────────────────────────────────────────────
+  // TIER 7: SECRETARY-GENERAL (10 questions)
+  // ──────────────────────────────────────────────
+  {
+    id: 't7q1', tier: 7, type: 'leadership',
+    dimensions: ['leadership', 'strategic_thinking'],
+    text: 'As Secretary-General, you must articulate a vision for the future of MUN education. Which approach creates lasting institutional impact?',
+    options: [
+      { text: 'Develop a comprehensive 5-year strategic plan with measurable outcomes: curriculum standards, certification pathways, global partnership networks, and a digital platform that enables year-round engagement beyond conferences', score: 4 },
+      { text: 'Focus entirely on making next year\'s conference the biggest ever', score: 1 },
+      { text: 'Delegate all planning to subordinates — a good SG doesn\'t micromanage', score: 0 },
+      { text: 'Replicate what successful conferences do without customization', score: 1 },
+    ],
+    timeLimit: 60, checkpoint: true
+  },
+  {
+    id: 't7q2', tier: 7, type: 'scenario',
+    dimensions: ['crisis_management', 'leadership'],
+    text: 'A major geopolitical event causes several embassies to issue travel warnings for your conference location. International delegations consider withdrawing. As SG, your response:',
+    options: [
+      { text: 'Immediately convene a crisis team, communicate transparently with all stakeholders about safety measures, offer virtual participation options, coordinate with local authorities for enhanced security, and develop contingency plans for a hybrid or relocated conference', score: 4 },
+      { text: 'Cancel the conference immediately', score: 1 },
+      { text: 'Ignore the warnings — the show must go on', score: 0 },
+      { text: 'Only communicate with local delegations and hope international ones don\'t notice', score: 0 },
+    ],
+    timeLimit: 60, checkpoint: false
+  },
+  {
+    id: 't7q3', tier: 7, type: 'scenario',
+    dimensions: ['strategic_thinking', 'international_relations'],
+    text: 'You want to establish DiplomatiQ as a globally recognized standard for MUN excellence. Your strategic roadmap includes:',
+    options: [
+      { text: 'Build partnerships with UN agencies and academic institutions, create an accredited certification framework, develop open-source training materials, establish regional chapters, and launch an annual global summit to share best practices', score: 4 },
+      { text: 'Just keep hosting conferences and hope the brand grows organically', score: 0 },
+      { text: 'Focus exclusively on social media marketing', score: 1 },
+      { text: 'Trademark the name and license it to anyone who pays', score: 1 },
+    ],
+    timeLimit: 55, checkpoint: false
+  },
+  {
+    id: 't7q4', tier: 7, type: 'negotiation',
+    dimensions: ['negotiation', 'diplomacy'],
+    text: 'You are mediating a dispute between two major participating organizations that both claim the right to host the regional championship. Both have valid claims. How do you resolve this?',
+    options: [
+      { text: 'Facilitate interest-based negotiation: identify what each party truly needs (prestige, revenue, student opportunities), propose a co-hosting model or rotation agreement, and frame the solution as a partnership that elevates both organizations', score: 4 },
+      { text: 'Flip a coin — fairness means equal chance', score: 0 },
+      { text: 'Give it to the organization that hosted last time', score: 1 },
+      { text: 'Host it yourself and exclude both', score: 0 },
+    ],
+    timeLimit: 55, checkpoint: false
+  },
+  {
+    id: 't7q5', tier: 7, type: 'scenario',
+    dimensions: ['leadership', 'crisis_management'],
+    text: 'During a keynote address at your conference, a distinguished guest speaker makes controversial political statements that offend several delegations. As SG, what is your immediate and follow-up response?',
+    options: [
+      { text: 'Immediately after the speech, deliver brief remarks reaffirming the conference\'s commitment to respectful dialogue and diverse perspectives. Privately reach out to offended delegations. Issue a conference statement clarifying that speaker views don\'t represent the conference. Review speaker vetting process.', score: 4 },
+      { text: 'Pretend nothing happened', score: 0 },
+      { text: 'Publicly condemn the speaker during their speech', score: 1 },
+      { text: 'Cancel the rest of the conference', score: 0 },
+    ],
+    timeLimit: 55, checkpoint: true
+  },
+  {
+    id: 't7q6', tier: 7, type: 'scenario',
+    dimensions: ['strategic_thinking', 'geopolitics'],
+    text: 'Your organization is expanding to a region with no MUN tradition. The educational culture emphasizes rote learning over debate. How do you introduce MUN effectively?',
+    options: [
+      { text: 'Design a culturally adaptive MUN curriculum that begins with structured research exercises, gradually introduces public speaking in low-pressure settings, frames negotiation as collaborative problem-solving, and trains local educators to sustain the program long-term', score: 4 },
+      { text: 'Import the Western MUN format unchanged — delegates will adapt', score: 0 },
+      { text: 'Give up on the expansion — it won\'t work in that cultural context', score: 0 },
+      { text: 'Only offer online MUN to avoid cultural friction', score: 1 },
+    ],
+    timeLimit: 55, checkpoint: false
+  },
+  {
+    id: 't7q7', tier: 7, type: 'writing',
+    dimensions: ['resolution_drafting', 'international_relations'],
+    text: 'You are drafting a conference declaration on "The Future of Multilateralism." Which preamble-structure demonstrates the highest strategic vision?',
+    options: [
+      { text: 'Begin with the founding principles of the UN, acknowledge current challenges to multilateralism, reference specific resolutions and frameworks (SDGs, Paris Agreement), identify the inflection point, and transition to bold operative commitments', score: 4 },
+      { text: 'Start with a joke to lighten the mood', score: 0 },
+      { text: 'List every UN document ever written', score: 0 },
+      { text: 'Skip the preamble — only operative clauses matter', score: 1 },
+    ],
+    timeLimit: 50, checkpoint: false
+  },
+  {
+    id: 't7q8', tier: 7, type: 'leadership',
+    dimensions: ['leadership', 'confidence'],
+    text: 'A journalist asks you a pointed question about a past conference failure. Your response exemplifies:',
+    options: [
+      { text: 'Transparent accountability: acknowledge what went wrong, explain the specific changes implemented as a result, and redirect to the organization\'s growth trajectory and commitment to continuous improvement', score: 4 },
+      { text: 'Deny that anything went wrong', score: 0 },
+      { text: 'Blame individual team members', score: 0 },
+      { text: 'Refuse to answer and walk away', score: 0 },
+    ],
+    timeLimit: 45, checkpoint: false
+  },
+  {
+    id: 't7q9', tier: 7, type: 'scenario',
+    dimensions: ['strategic_thinking', 'collaboration'],
+    text: 'You must build a leadership team for next year\'s conference. Your most important criterion for selecting your Deputy SG is:',
+    options: [
+      { text: 'Complementary strengths: someone who excels where you are weaker, shares your vision but challenges your assumptions, and commands respect across different stakeholder groups', score: 4 },
+      { text: 'Someone who always agrees with you', score: 0 },
+      { text: 'The most popular person in the organization', score: 1 },
+      { text: 'The person with the most MUN experience, regardless of working style', score: 2 },
+    ],
+    timeLimit: 45, checkpoint: false
+  },
+  {
+    id: 't7q10', tier: 7, type: 'scenario',
+    dimensions: ['leadership', 'diplomacy', 'professionalism'],
+    text: 'At the closing ceremony, you must deliver a speech that inspires 500 delegates. What structure has the greatest lasting impact?',
+    options: [
+      { text: 'Open with a shared experience from the conference, acknowledge specific moments of growth you witnessed, challenge delegates to apply what they\'ve learned to real-world problems, and close with a call to action that connects their MUN experience to their future as global citizens', score: 4 },
+      { text: 'Read a list of award winners for 30 minutes', score: 0 },
+      { text: 'Give a generic "you are the future" speech', score: 1 },
+      { text: 'Skip the speech — delegates just want the awards', score: 0 },
+    ],
+    timeLimit: 55, checkpoint: true
   },
 ]
 
@@ -260,64 +1052,106 @@ const ROLES: RoleRecommendation[] = [
 // SCORING LOGIC
 // ============================================================
 
-function calculateScores(answers: Record<number, number>): {
-  categoryScores: CategoryScore[]
-  totalScore: number
-  recommendedRole: RoleRecommendation
-} {
-  // Calculate category scores
-  const categoryScores = CATEGORIES.map(cat => {
-    const questionScores = cat.questions.map(qId => answers[qId] || 0)
-    const avg = questionScores.length > 0 ? questionScores.reduce((a, b) => a + b, 0) / questionScores.length : 0
-    const score = Math.round(avg * 25) // scale 0-100
-    return {
-      name: cat.name,
-      score,
-      avg,
-      color: cat.color,
-      icon: cat.icon,
-    }
-  })
+function calculateDimensionScores(answers: Record<string, number>): DimensionScore[] {
+  const dimensionTotals: Record<string, { total: number; max: number }> = {}
 
-  // Total raw score (max 60)
-  const totalScore = Object.values(answers).reduce((a, b) => a + b, 0)
-
-  // Get category averages for role recommendation
-  const getAvg = (name: string) => categoryScores.find(c => c.name === name)?.avg || 0
-  const knowledgeAvg = getAvg('MUN Knowledge')
-  const confidenceAvg = getAvg('Confidence')
-  const researchAvg = getAvg('Research Skills')
-  const speakingAvg = getAvg('Public Speaking')
-  const diplomacyAvg = getAvg('Diplomatic Skills')
-  const procedureAvg = getAvg('Parliamentary Procedure')
-
-  // Role recommendation rules (in order)
-  let recommendedRole: RoleRecommendation
-  if (totalScore >= 48 && diplomacyAvg >= 3.5 && confidenceAvg >= 3.5) {
-    recommendedRole = ROLES[0] // Secretary-General
-  } else if (totalScore >= 42 && knowledgeAvg >= 3.5 && procedureAvg >= 3.5) {
-    recommendedRole = ROLES[1] // Director-General
-  } else if (totalScore >= 36 && speakingAvg >= 3.5 && confidenceAvg >= 3.5) {
-    recommendedRole = ROLES[2] // Chair
-  } else if (totalScore >= 28 && researchAvg >= 3) {
-    recommendedRole = ROLES[3] // Delegate (Advanced)
-  } else if (totalScore >= 20) {
-    recommendedRole = ROLES[4] // Delegate
-  } else {
-    recommendedRole = ROLES[5] // SDG Ambassador
+  for (const dim of DIMENSIONS) {
+    dimensionTotals[dim.key] = { total: 0, max: 0 }
   }
 
-  return { categoryScores, totalScore, recommendedRole }
+  for (const q of QUESTIONS) {
+    const answerScore = answers[q.id] ?? 0
+    for (const dimKey of q.dimensions) {
+      if (dimensionTotals[dimKey]) {
+        dimensionTotals[dimKey].total += answerScore
+        dimensionTotals[dimKey].max += 4 // max score per question
+      }
+    }
+  }
+
+  return DIMENSIONS.map(dim => {
+    const data = dimensionTotals[dim.key]
+    const score = data.max > 0 ? Math.round((data.total / data.max) * 100) : 0
+    return {
+      key: dim.key,
+      name: dim.name,
+      score,
+      maxScore: 100,
+      color: dim.color,
+      icon: dim.icon,
+      category: dim.category,
+    }
+  })
+}
+
+function calculateTierScore(tier: number, answers: Record<string, number>): number {
+  const tierQuestions = QUESTIONS.filter(q => q.tier === tier)
+  if (tierQuestions.length === 0) return 0
+  const totalPossible = tierQuestions.length * 4
+  const totalEarned = tierQuestions.reduce((sum, q) => sum + (answers[q.id] ?? 0), 0)
+  return Math.round((totalEarned / totalPossible) * 100)
+}
+
+function determinePlacement(maxTierReached: number, tierScores: Record<number, number>, failedCheckpoints: number): {
+  tier: number
+  tierName: string
+  readiness: 'Ready' | 'Needs Development' | 'Not Ready'
+} {
+  const tierDef = TIERS.find(t => t.id === maxTierReached) || TIERS[0]
+  const lastTierScore = tierScores[maxTierReached] || 0
+  const passingScore = tierDef.passingScore
+
+  let readiness: 'Ready' | 'Needs Development' | 'Not Ready'
+  if (lastTierScore >= passingScore + 15) readiness = 'Ready'
+  else if (lastTierScore >= passingScore) readiness = 'Needs Development'
+  else readiness = 'Not Ready'
+
+  return { tier: maxTierReached, tierName: tierDef.name, readiness }
+}
+
+function generateStrengthsAndWeaknesses(dimScores: DimensionScore[]): {
+  strengths: string[]
+  weaknesses: string[]
+} {
+  const sorted = [...dimScores].sort((a, b) => b.score - a.score)
+  const strengths = sorted.slice(0, 5).filter(s => s.score >= 50).map(s => `${s.name} (${s.score}%)`)
+  const weaknesses = sorted.slice(-5).filter(s => s.score < 70).map(s => `${s.name} (${s.score}%)`)
+
+  return {
+    strengths: strengths.length > 0 ? strengths : ['Foundational understanding demonstrated'],
+    weaknesses: weaknesses.length > 0 ? weaknesses : ['Continue building on existing strengths'],
+  }
+}
+
+function getRecommendedTraining(dimScores: DimensionScore[]): string[] {
+  const weak = dimScores.filter(d => d.score < 60).sort((a, b) => a.score - b.score)
+  const trainingMap: Record<string, string> = {
+    'mun_procedures': 'Parliamentary Procedure Masterclass',
+    'un_systems': 'UN Systems & Architecture Deep Dive',
+    'international_relations': 'International Relations Foundations',
+    'geopolitics': 'Global Geopolitics & Current Affairs',
+    'research': 'Research Methodology for MUN',
+    'public_speaking': 'Public Speaking & Rhetoric Lab',
+    'negotiation': 'Diplomatic Negotiation Workshop',
+    'leadership': 'Committee Leadership Academy',
+    'crisis_management': 'Crisis Management Bootcamp',
+    'resolution_drafting': 'Resolution Writing Masterclass',
+    'confidence': 'Confidence & Presence Training',
+    'diplomacy': 'Advanced Diplomatic Skills',
+    'collaboration': 'Collaborative Problem Solving',
+    'professionalism': 'Professional Conduct & Protocol',
+  }
+  return weak.map(w => trainingMap[w.key] || `${w.name} Training`).slice(0, 5)
 }
 
 // ============================================================
 // ANIMATED SVG RADAR CHART
 // ============================================================
 
-function AnimatedRadarChart({ scores, animate }: { scores: CategoryScore[]; animate: boolean }) {
-  const centerX = 150
-  const centerY = 150
-  const radius = 110
+function AnimatedRadarChart({ scores, animate }: { scores: DimensionScore[]; animate: boolean }) {
+  const centerX = 200
+  const centerY = 200
+  const radius = 150
   const axes = scores.length
 
   const getPoint = (index: number, value: number) => {
@@ -329,14 +1163,11 @@ function AnimatedRadarChart({ scores, animate }: { scores: CategoryScore[]; anim
     }
   }
 
-  const axisPoints = scores.map((_, i) => getPoint(i, 100))
   const dataPoints = scores.map((s, i) => getPoint(i, animate ? s.score : 0))
-
   const polygonPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
 
   return (
-    <svg viewBox="0 0 300 300" className="w-full max-w-[360px] mx-auto">
-      {/* Grid rings */}
+    <svg viewBox="0 0 400 400" className="w-full max-w-[400px] mx-auto">
       {[20, 40, 60, 80, 100].map((ring) => (
         <polygon
           key={ring}
@@ -347,28 +1178,23 @@ function AnimatedRadarChart({ scores, animate }: { scores: CategoryScore[]; anim
           fill="none"
           stroke="#e5e7eb"
           strokeWidth="0.5"
-          opacity={0.5}
+          opacity={0.4}
         />
       ))}
-
-      {/* Axis lines */}
-      {axisPoints.map((p, i) => (
-        <line key={i} x1={centerX} y1={centerY} x2={p.x} y2={p.y} stroke="#d1d5db" strokeWidth="0.5" />
-      ))}
-
-      {/* Data polygon */}
+      {scores.map((_, i) => {
+        const p = getPoint(i, 100)
+        return <line key={i} x1={centerX} y1={centerY} x2={p.x} y2={p.y} stroke="#d1d5db" strokeWidth="0.5" />
+      })}
       <motion.path
         d={polygonPath}
-        fill={scores[0]?.color || '#0D7377'}
+        fill="#0D7377"
         fillOpacity={0.15}
-        stroke={scores[0]?.color || '#0D7377'}
+        stroke="#0D7377"
         strokeWidth={2}
         initial={{ pathLength: 0, opacity: 0 }}
         animate={animate ? { pathLength: 1, opacity: 1 } : { opacity: 0 }}
         transition={{ duration: 1.5, ease: 'easeOut' }}
       />
-
-      {/* Data points */}
       {dataPoints.map((p, i) => (
         <motion.circle
           key={i}
@@ -378,14 +1204,12 @@ function AnimatedRadarChart({ scores, animate }: { scores: CategoryScore[]; anim
           fill={scores[i]?.color || '#0D7377'}
           initial={{ scale: 0, opacity: 0 }}
           animate={animate ? { scale: 1, opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.3, delay: 0.8 + i * 0.1 }}
+          transition={{ duration: 0.3, delay: 0.8 + i * 0.05 }}
         />
       ))}
-
-      {/* Labels */}
       {scores.map((s, i) => {
         const angle = (Math.PI * 2 * i) / axes - Math.PI / 2
-        const labelR = radius + 28
+        const labelR = radius + 32
         const lx = centerX + labelR * Math.cos(angle)
         const ly = centerY + labelR * Math.sin(angle)
         return (
@@ -395,7 +1219,7 @@ function AnimatedRadarChart({ scores, animate }: { scores: CategoryScore[]; anim
             y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            className="text-[8px] fill-muted-foreground font-medium"
+            className="text-[7px] fill-muted-foreground font-medium"
           >
             {s.name}
           </text>
@@ -406,42 +1230,183 @@ function AnimatedRadarChart({ scores, animate }: { scores: CategoryScore[]; anim
 }
 
 // ============================================================
-// CIRCULAR PROGRESS
+// TIMER COMPONENT
 // ============================================================
 
-function CircularProgress({ value, size = 120, strokeWidth = 8, color = '#0D7377' }: {
-  value: number; size?: number; strokeWidth?: number; color?: string
+function QuestionTimer({ timeLimit, onExpire, isActive }: {
+  timeLimit: number
+  onExpire: () => void
+  isActive: boolean
 }) {
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference - (value / 100) * circumference
+  const [timeLeft, setTimeLeft] = useState(timeLimit)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    setTimeLeft(timeLimit)
+  }, [timeLimit])
+
+  useEffect(() => {
+    if (!isActive) return
+    intervalRef.current = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          if (intervalRef.current) clearInterval(intervalRef.current)
+          onExpire()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [isActive, onExpire, timeLimit])
+
+  const percent = (timeLeft / timeLimit) * 100
+  const isWarning = timeLeft <= 10
+  const isCritical = timeLeft <= 5
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
-        <motion.circle
-          cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={color} strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
+    <div className="flex items-center gap-2">
+      <Timer className={`w-4 h-4 ${isCritical ? 'text-red-500 animate-pulse' : isWarning ? 'text-amber-500' : 'text-muted-foreground'}`} />
+      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[120px]">
+        <motion.div
+          className={`h-full rounded-full transition-colors ${isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-[#0D7377]'}`}
+          animate={{ width: `${percent}%` }}
+          transition={{ duration: 0.5 }}
         />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span
-          className="text-3xl font-bold"
-          style={{ color }}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 1 }}
-        >
-          {value}
-        </motion.span>
-        <span className="text-[10px] text-muted-foreground font-medium">OUT OF 60</span>
       </div>
+      <span className={`text-xs font-mono font-semibold min-w-[28px] text-right ${isCritical ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-muted-foreground'}`}>
+        {timeLeft}s
+      </span>
     </div>
+  )
+}
+
+// ============================================================
+// TIER BADGE COMPONENT
+// ============================================================
+
+function TierBadge({ tier, size = 'md', showProgress, progress }: {
+  tier: TierDef
+  size?: 'sm' | 'md' | 'lg'
+  showProgress?: boolean
+  progress?: number
+}) {
+  const sizeClasses = {
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16',
+  }
+  const iconSizes = {
+    sm: 'w-4 h-4',
+    md: 'w-6 h-6',
+    lg: 'w-8 h-8',
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div
+        className={`${sizeClasses[size]} rounded-xl flex items-center justify-center border-2 transition-all`}
+        style={{
+          backgroundColor: tier.bgColor,
+          borderColor: tier.borderColor,
+          boxShadow: `0 0 20px ${tier.color}20`,
+        }}
+      >
+        <tier.icon className={iconSizes[size]} style={{ color: tier.color }} />
+      </div>
+      {showProgress && progress !== undefined && (
+        <span className="text-[10px] font-semibold" style={{ color: tier.color }}>{progress}%</span>
+      )}
+    </div>
+  )
+}
+
+// ============================================================
+// TIER GATE ANIMATION
+// ============================================================
+
+function TierGateAnimation({ tier, onContinue }: { tier: TierDef; onContinue: () => void }) {
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center min-h-[500px] text-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="relative mb-8"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
+      >
+        <div
+          className="w-28 h-28 rounded-2xl flex items-center justify-center border-4"
+          style={{
+            backgroundColor: tier.bgColor,
+            borderColor: tier.color,
+            boxShadow: `0 0 60px ${tier.color}40, 0 0 120px ${tier.color}20`,
+          }}
+        >
+          <tier.icon className="w-14 h-14" style={{ color: tier.color }} />
+        </div>
+        {/* Radiating rings */}
+        {[1, 2, 3].map((ring) => (
+          <motion.div
+            key={ring}
+            className="absolute inset-0 rounded-2xl border-2"
+            style={{ borderColor: `${tier.color}30` }}
+            initial={{ scale: 1, opacity: 0.6 }}
+            animate={{ scale: 1.5 + ring * 0.3, opacity: 0 }}
+            transition={{ duration: 1.5, delay: ring * 0.3, repeat: Infinity, ease: 'easeOut' }}
+          />
+        ))}
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+      >
+        <Badge className="mb-3 text-xs" style={{ backgroundColor: tier.bgColor, color: tier.color, borderColor: tier.borderColor }}>
+          TIER {tier.id} UNLOCKED
+        </Badge>
+        <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: tier.color }}>
+          {tier.name}
+        </h2>
+        <p className="text-muted-foreground text-sm max-w-md mb-6">{tier.description}</p>
+        <Button
+          className="font-semibold px-8 h-12"
+          style={{ backgroundColor: tier.color, color: tier.id <= 2 ? '#fff' : '#fff' }}
+          onClick={onContinue}
+        >
+          Begin Tier {tier.id} <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ============================================================
+// QUESTION TYPE INDICATOR
+// ============================================================
+
+function QuestionTypeBadge({ type }: { type: QuestionType }) {
+  const typeMap: Record<QuestionType, { label: string; icon: React.ElementType; color: string }> = {
+    'multiple-choice': { label: 'Knowledge', icon: Brain, color: '#0D7377' },
+    'scenario': { label: 'Scenario', icon: Compass, color: '#7C3AED' },
+    'speech-eval': { label: 'Speech Analysis', icon: Mic, color: '#E11D48' },
+    'negotiation': { label: 'Negotiation', icon: Handshake, color: '#D4A843' },
+    'writing': { label: 'Resolution Writing', icon: FileText, color: '#059669' },
+    'leadership': { label: 'Leadership', icon: Shield, color: '#F59E0B' },
+    'research': { label: 'Research', icon: BookOpen, color: '#0D7377' },
+    'open-ended': { label: 'Open Response', icon: Lightbulb, color: '#8B5CF6' },
+  }
+  const info = typeMap[type]
+  return (
+    <Badge className="text-[10px] gap-1" style={{ backgroundColor: `${info.color}15`, color: info.color, borderColor: `${info.color}30` }}>
+      <info.icon className="w-3 h-3" />
+      {info.label}
+    </Badge>
   )
 }
 
@@ -451,107 +1416,241 @@ function CircularProgress({ value, size = 120, strokeWidth = 8, color = '#0D7377
 
 export default function AssessmentQuiz({ onBeginTraining }: { onBeginTraining?: () => void }) {
   const [phase, setPhase] = useState<QuizPhase>('intro')
-  const [currentQuestion, setCurrentQuestion] = useState(0)
-  const [answers, setAnswers] = useState<Record<number, number>>({})
-  const [animatingOut, setAnimatingOut] = useState(false)
+  const [state, setState] = useState<AssessmentState>({
+    currentTier: 1,
+    currentQuestionIndex: 0,
+    answers: {},
+    failedCheckpoints: 0,
+    tierScores: {},
+    maxTierReached: 1,
+    assessmentComplete: false,
+    timePerQuestion: {},
+    startedAt: Date.now(),
+  })
   const [showResults, setShowResults] = useState(false)
+  const [animatingOut, setAnimatingOut] = useState(false)
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
 
-  const question = QUESTIONS[currentQuestion]
-  const progress = ((currentQuestion + 1) / QUESTIONS.length) * 100
-  const selectedOption = answers[question?.id] ?? null
+  const currentTierDef = TIERS.find(t => t.id === state.currentTier) || TIERS[0]
+  const tierQuestions = QUESTIONS.filter(q => q.tier === state.currentTier)
+  const currentQuestion = tierQuestions[state.currentQuestionIndex]
+  const tierProgress = tierQuestions.length > 0 ? ((state.currentQuestionIndex) / tierQuestions.length) * 100 : 0
 
-  const results = useMemo(() => calculateScores(answers), [answers])
-  const overallPercent = Math.round((results.totalScore / 60) * 100)
+  // Checkpoint questions are at specific indices
+  const isCheckpoint = currentQuestion?.checkpoint ?? false
 
-  const handleSelect = useCallback((score: number) => {
-    if (!question) return
-    setAnswers(prev => ({ ...prev, [question.id]: score }))
-  }, [question])
+  // Calculate total progress across all tiers
+  const totalQuestionsAnswered = Object.keys(state.answers).length
+  const totalProgress = Math.round((totalQuestionsAnswered / QUESTIONS.length) * 100)
+
+  // Results calculations
+  const dimensionScores = useMemo(() => calculateDimensionScores(state.answers), [state.answers])
+  const placement = useMemo(() =>
+    determinePlacement(state.maxTierReached, state.tierScores, state.failedCheckpoints),
+    [state.maxTierReached, state.tierScores, state.failedCheckpoints]
+  )
+  const strengthsWeaknesses = useMemo(() => generateStrengthsAndWeaknesses(dimensionScores), [dimensionScores])
+  const recommendedTraining = useMemo(() => getRecommendedTraining(dimensionScores), [dimensionScores])
+
+  const handleSelectOption = useCallback((score: number) => {
+    setSelectedOption(score)
+  }, [])
 
   const handleNext = useCallback(() => {
-    if (currentQuestion < QUESTIONS.length - 1) {
-      setAnimatingOut(true)
-      setTimeout(() => {
-        setCurrentQuestion(prev => prev + 1)
-        setAnimatingOut(false)
-      }, 200)
-    } else {
+    if (!currentQuestion || selectedOption === null) return
+
+    const newAnswers = { ...state.answers, [currentQuestion.id]: selectedOption }
+    const newFailedCheckpoints = state.failedCheckpoints + (isCheckpoint && selectedOption < 3 ? 1 : 0)
+
+    // Check if assessment should conclude (3 failed checkpoints)
+    if (newFailedCheckpoints >= 3) {
+      const tierScore = calculateTierScore(state.currentTier, newAnswers)
+      const newTierScores = { ...state.tierScores, [state.currentTier]: tierScore }
+      setState(prev => ({
+        ...prev,
+        answers: newAnswers,
+        failedCheckpoints: newFailedCheckpoints,
+        tierScores: newTierScores,
+        maxTierReached: state.currentTier,
+        assessmentComplete: true,
+        completedAt: Date.now(),
+      }))
       setPhase('analyzing')
       setTimeout(() => {
         setPhase('results')
         setTimeout(() => setShowResults(true), 100)
       }, 3000)
+      return
     }
-  }, [currentQuestion])
 
-  const handlePrevious = useCallback(() => {
-    if (currentQuestion > 0) {
-      setAnimatingOut(true)
-      setTimeout(() => {
-        setCurrentQuestion(prev => prev - 1)
-        setAnimatingOut(false)
-      }, 200)
+    // Check if tier is complete
+    if (state.currentQuestionIndex >= tierQuestions.length - 1) {
+      const tierScore = calculateTierScore(state.currentTier, newAnswers)
+      const newTierScores = { ...state.tierScores, [state.currentTier]: tierScore }
+
+      // Check if passed tier
+      const passingScore = currentTierDef.passingScore
+      if (tierScore >= passingScore && state.currentTier < 7) {
+        // Advance to next tier
+        setState(prev => ({
+          ...prev,
+          answers: newAnswers,
+          failedCheckpoints: newFailedCheckpoints,
+          tierScores: newTierScores,
+          currentTier: state.currentTier + 1,
+          currentQuestionIndex: 0,
+          maxTierReached: Math.max(state.maxTierReached, state.currentTier + 1),
+        }))
+        setSelectedOption(null)
+        setPhase('tier-gate')
+        return
+      } else if (state.currentTier >= 7) {
+        // Completed all tiers
+        setState(prev => ({
+          ...prev,
+          answers: newAnswers,
+          failedCheckpoints: newFailedCheckpoints,
+          tierScores: newTierScores,
+          maxTierReached: 7,
+          assessmentComplete: true,
+          completedAt: Date.now(),
+        }))
+        setPhase('analyzing')
+        setTimeout(() => {
+          setPhase('results')
+          setTimeout(() => setShowResults(true), 100)
+        }, 3000)
+        return
+      } else {
+        // Failed tier - assessment concludes
+        setState(prev => ({
+          ...prev,
+          answers: newAnswers,
+          failedCheckpoints: newFailedCheckpoints,
+          tierScores: newTierScores,
+          maxTierReached: Math.max(state.maxTierReached, state.currentTier > 1 ? state.currentTier - 1 : 1),
+          assessmentComplete: true,
+          completedAt: Date.now(),
+        }))
+        setPhase('analyzing')
+        setTimeout(() => {
+          setPhase('results')
+          setTimeout(() => setShowResults(true), 100)
+        }, 3000)
+        return
+      }
     }
-  }, [currentQuestion])
+
+    // Next question in same tier
+    setAnimatingOut(true)
+    setTimeout(() => {
+      setState(prev => ({
+        ...prev,
+        answers: newAnswers,
+        failedCheckpoints: newFailedCheckpoints,
+        currentQuestionIndex: prev.currentQuestionIndex + 1,
+      }))
+      setSelectedOption(null)
+      setAnimatingOut(false)
+    }, 200)
+  }, [currentQuestion, selectedOption, state, isCheckpoint, tierQuestions, currentTierDef])
+
+  const handleTimerExpire = useCallback(() => {
+    if (selectedOption === null) {
+      // Auto-submit with lowest score
+      setSelectedOption(0)
+    }
+  }, [selectedOption])
 
   const handleRestart = useCallback(() => {
-    setAnswers({})
-    setCurrentQuestion(0)
+    setState({
+      currentTier: 1,
+      currentQuestionIndex: 0,
+      answers: {},
+      failedCheckpoints: 0,
+      tierScores: {},
+      maxTierReached: 1,
+      assessmentComplete: false,
+      timePerQuestion: {},
+      startedAt: Date.now(),
+    })
     setPhase('intro')
     setShowResults(false)
+    setSelectedOption(null)
   }, [])
 
-  // INTRO PHASE
+  // ──────────── INTRO PHASE ────────────
   if (phase === 'intro') {
     return (
       <div className="space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <h2 className="text-2xl font-bold">Assessments</h2>
-          <p className="text-muted-foreground mt-1">AI-powered evaluations to identify your diplomatic strengths</p>
+          <h2 className="text-2xl font-bold text-[#1B3A4B]">Competency Assessment</h2>
+          <p className="text-muted-foreground mt-1">Progressive evaluation across 7 tiers of diplomatic mastery</p>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-          <Card className="bg-gradient-to-r from-[#1B3A4B] to-[#243656] border-[#D4A843]/20 overflow-hidden">
-            <CardContent className="p-6 md:p-8">
+          <Card className="bg-gradient-to-br from-[#0D1B2A] to-[#1B3A4B] border-[#D4A843]/20 overflow-hidden relative">
+            {/* Decorative background elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4A843] rounded-full opacity-[0.04] -translate-y-1/2 translate-x-1/4" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#0D7377] rounded-full opacity-[0.06] translate-y-1/2 -translate-x-1/4" />
+
+            <CardContent className="p-6 md:p-8 relative z-10">
               <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
                 <div className="flex-1">
                   <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/30 mb-3">
-                    <Brain className="w-3 h-3 mr-1" /> AI-Powered
+                    <Gem className="w-3 h-3 mr-1" /> 7-Tier Progressive Framework
                   </Badge>
                   <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
-                    Comprehensive Diagnostic Assessment
+                    Diplomatic Competency Assessment
                   </h3>
                   <p className="text-white/50 text-sm mb-4 leading-relaxed">
-                    Our diagnostic evaluates 6 core diplomatic competencies across 15 questions to create
-                    your personalized skill profile and recommend the ideal MUN role for you.
+                    A comprehensive progressive assessment that evaluates your knowledge, skills, and behavioral
+                    competencies across 7 tiers of diplomatic mastery. You earn advancement through demonstrated
+                    competence — not just completion.
                   </p>
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {CATEGORIES.map(cat => (
-                      <Badge key={cat.name} variant="secondary" className="text-[10px] bg-white/10 text-white/70 border-white/10">
-                        <cat.icon className="w-3 h-3 mr-1" />
-                        {cat.name}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {['Knowledge', 'Skills', 'Behavior'].map((cat) => (
+                      <Badge key={cat} variant="secondary" className="text-[10px] bg-white/10 text-white/70 border-white/10">
+                        {cat}
                       </Badge>
                     ))}
+                    <Badge variant="secondary" className="text-[10px] bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/20">
+                      <Timer className="w-3 h-3 mr-1" /> Timed Questions
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px] bg-red-500/15 text-red-400 border-red-500/20">
+                      <AlertTriangle className="w-3 h-3 mr-1" /> 3-Strike System
+                    </Badge>
                   </div>
                   <Button
                     className="bg-[#D4A843] text-[#1B3A4B] hover:bg-[#D4BA6E] font-semibold"
                     onClick={() => setPhase('quiz')}
                   >
-                    <Play className="w-4 h-4 mr-2" /> Take Assessment
+                    <Play className="w-4 h-4 mr-2" /> Begin Assessment
                   </Button>
                 </div>
-                <div className="w-full lg:w-[340px] shrink-0">
-                  <div className="grid grid-cols-3 gap-3">
-                    {CATEGORIES.map((cat, i) => (
+
+                {/* Tier ladder visualization */}
+                <div className="w-full lg:w-[280px] shrink-0">
+                  <div className="space-y-1.5">
+                    {[...TIERS].reverse().map((tier, i) => (
                       <motion.div
-                        key={cat.name}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.4, delay: 0.3 + i * 0.1 }}
-                        className="flex flex-col items-center p-3 rounded-lg bg-white/[0.06] border border-white/10"
+                        key={tier.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.3 + i * 0.06 }}
+                        className="flex items-center gap-2.5 p-2 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
                       >
-                        <cat.icon className="w-5 h-5 mb-1" style={{ color: cat.color }} />
-                        <span className="text-[10px] text-white/60 text-center leading-tight">{cat.name}</span>
+                        <div
+                          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${tier.color}20` }}
+                        >
+                          <tier.icon className="w-3.5 h-3.5" style={{ color: tier.color }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-semibold text-white/90 block leading-tight">{tier.name}</span>
+                          <span className="text-[10px] text-white/40">{tier.subtitle}</span>
+                        </div>
+                        <span className="text-[10px] text-white/30">T{tier.id}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -560,11 +1659,51 @@ export default function AssessmentQuiz({ onBeginTraining }: { onBeginTraining?: 
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* How it works */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">How It Works</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { icon: ListChecks, title: 'Progressive Tiers', desc: 'Start at Tier 1 and earn your way up through demonstrated competence at each level.' },
+                  { icon: AlertTriangle, title: '3-Strike System', desc: 'Fail 3 competency checkpoints and the assessment concludes with your placement.' },
+                  { icon: Trophy, title: 'Placement Report', desc: 'Receive a detailed competency breakdown with personalized training recommendations.' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                    <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
+                      <item.icon className="w-4 h-4 text-[#0D7377]" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold mb-0.5">{item.title}</div>
+                      <div className="text-xs text-muted-foreground leading-relaxed">{item.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     )
   }
 
-  // ANALYZING PHASE
+  // ──────────── TIER GATE PHASE ────────────
+  if (phase === 'tier-gate') {
+    return (
+      <div className="min-h-[500px]">
+        <TierGateAnimation
+          tier={currentTierDef}
+          onContinue={() => setPhase('quiz')}
+        />
+      </div>
+    )
+  }
+
+  // ──────────── ANALYZING PHASE ────────────
   if (phase === 'analyzing') {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
@@ -580,16 +1719,16 @@ export default function AssessmentQuiz({ onBeginTraining }: { onBeginTraining?: 
           >
             <Brain className="w-10 h-10 text-white" />
           </motion.div>
-          <h3 className="text-xl font-bold mb-2">Analyzing your diplomatic profile...</h3>
-          <p className="text-muted-foreground text-sm">Evaluating 6 competency areas across your responses</p>
+          <h3 className="text-xl font-bold mb-2">Generating Competency Report...</h3>
+          <p className="text-muted-foreground text-sm">Analyzing {dimensionScores.length} competency dimensions across {state.maxTierReached} tiers</p>
           <div className="mt-6 flex gap-2">
-            {CATEGORIES.map((cat, i) => (
+            {DIMENSIONS.slice(0, 10).map((dim, i) => (
               <motion.div
-                key={cat.name}
+                key={dim.key}
                 className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: cat.color }}
+                style={{ backgroundColor: dim.color }}
                 animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1.5, delay: i * 0.2, repeat: Infinity }}
+                transition={{ duration: 1.5, delay: i * 0.15, repeat: Infinity }}
               />
             ))}
           </div>
@@ -598,181 +1737,453 @@ export default function AssessmentQuiz({ onBeginTraining }: { onBeginTraining?: 
     )
   }
 
-  // RESULTS PHASE
+  // ──────────── RESULTS PHASE ────────────
   if (phase === 'results') {
-    return (
-      <div className="space-y-6">
-        {/* Celebration header */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={showResults ? { opacity: 1, scale: 1 } : {}}
-          transition={{ duration: 0.6, type: 'spring' }}
-        >
-          <div className="text-center mb-8">
-            <motion.div
-              className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-              style={{ backgroundColor: `${results.recommendedRole.color}20` }}
-              initial={{ scale: 0 }}
-              animate={showResults ? { scale: 1 } : {}}
-              transition={{ duration: 0.5, delay: 0.3, type: 'spring' }}
-            >
-              <results.recommendedRole.icon className="w-8 h-8" style={{ color: results.recommendedRole.color }} />
-            </motion.div>
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">Your Diplomatic Profile</h2>
-            <p className="text-muted-foreground">Assessment complete — here are your results</p>
-          </div>
-        </motion.div>
+    const placementTier = TIERS.find(t => t.id === placement.tier) || TIERS[0]
+    const overallScore = Math.round(dimensionScores.reduce((sum, d) => sum + d.score, 0) / dimensionScores.length)
+    const radarData = dimensionScores.map(d => ({ subject: d.name, value: d.score, fullMark: 100 }))
 
-        {/* Role card */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={showResults ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <Card className="overflow-hidden border-2" style={{ borderColor: `${results.recommendedRole.color}40` }}>
-            <div className="p-1" style={{ backgroundColor: results.recommendedRole.color }} />
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-start gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${results.recommendedRole.color}15` }}>
-                      <results.recommendedRole.icon className="w-6 h-6" style={{ color: results.recommendedRole.color }} />
+    // Development plan
+    const nextTier = TIERS.find(t => t.id === placement.tier + 1)
+    const devSteps = [
+      `Complete the recommended training modules to strengthen weak areas`,
+      `Practice ${placementTier.name}-level scenarios and committee simulations`,
+      nextTier ? `Focus on skills needed for ${nextTier.name} tier advancement` : 'Continue refining your mastery at the highest level',
+      `Seek feedback from experienced delegates and mentors`,
+      `Re-take this assessment after 30 days of focused training`,
+    ]
+
+    return (
+      <ScrollArea className="max-h-[calc(100vh-8rem)]">
+        <div className="space-y-6 pb-8">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={showResults ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.6, type: 'spring' }}
+          >
+            <div className="text-center mb-6">
+              <motion.div
+                className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center border-2"
+                style={{
+                  backgroundColor: placementTier.bgColor,
+                  borderColor: placementTier.color,
+                  boxShadow: `0 0 40px ${placementTier.color}30`,
+                }}
+                initial={{ scale: 0 }}
+                animate={showResults ? { scale: 1 } : {}}
+                transition={{ duration: 0.5, delay: 0.3, type: 'spring' }}
+              >
+                <placementTier.icon className="w-10 h-10" style={{ color: placementTier.color }} />
+              </motion.div>
+              <h2 className="text-2xl md:text-3xl font-bold text-[#1B3A4B]">Competency Assessment Report</h2>
+              <p className="text-muted-foreground mt-1">Your DiplomatiQ placement has been determined</p>
+            </div>
+          </motion.div>
+
+          {/* Placement Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={showResults ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="overflow-hidden border-2" style={{ borderColor: `${placementTier.color}40` }}>
+              <div className="h-2" style={{ backgroundColor: placementTier.color }} />
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row items-start gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${placementTier.color}15` }}>
+                        <placementTier.icon className="w-6 h-6" style={{ color: placementTier.color }} />
+                      </div>
+                      <div>
+                        <Badge className="text-[10px] mb-1" style={{ backgroundColor: `${placementTier.color}15`, color: placementTier.color, borderColor: `${placementTier.color}30` }}>
+                          RECOMMENDED PLACEMENT
+                        </Badge>
+                        <h3 className="text-xl font-bold" style={{ color: placementTier.color }}>
+                          Tier {placement.tier}: {placement.tierName}
+                        </h3>
+                      </div>
                     </div>
-                    <div>
-                      <Badge className="text-[10px] mb-1" style={{ backgroundColor: `${results.recommendedRole.color}15`, color: results.recommendedRole.color, borderColor: `${results.recommendedRole.color}30` }}>
-                        Recommended Role
+                    <div className="flex items-center gap-3 mb-3">
+                      <Badge variant="outline" className={placement.readiness === 'Ready' ? 'border-emerald-500/30 text-emerald-600' : placement.readiness === 'Needs Development' ? 'border-amber-500/30 text-amber-600' : 'border-red-500/30 text-red-600'}>
+                        {placement.readiness === 'Ready' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                        {placement.readiness === 'Needs Development' && <AlertTriangle className="w-3 h-3 mr-1" />}
+                        {placement.readiness === 'Not Ready' && <XCircle className="w-3 h-3 mr-1" />}
+                        {placement.readiness}
                       </Badge>
-                      <h3 className="text-xl font-bold" style={{ color: results.recommendedRole.color }}>
-                        {results.recommendedRole.role}
-                      </h3>
+                      <Badge variant="secondary" className="text-[10px]">
+                        Tier {placement.tier} of 7 Reached
+                      </Badge>
                     </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{placementTier.description}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{results.recommendedRole.description}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {results.recommendedRole.strengths.map(s => (
-                      <Badge key={s} variant="secondary" className="text-xs">
-                        <CheckCircle2 className="w-3 h-3 mr-1 text-[#059669]" />
-                        {s}
-                      </Badge>
-                    ))}
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-32 h-32">
+                      <svg width={128} height={128} className="-rotate-90">
+                        <circle cx={64} cy={64} r={52} fill="none" stroke="#e5e7eb" strokeWidth={8} />
+                        <motion.circle
+                          cx={64} cy={64} r={52} fill="none" stroke={placementTier.color} strokeWidth={8}
+                          strokeLinecap="round"
+                          strokeDasharray={2 * Math.PI * 52}
+                          initial={{ strokeDashoffset: 2 * Math.PI * 52 }}
+                          animate={showResults ? { strokeDashoffset: 2 * Math.PI * 52 * (1 - overallScore / 100) } : {}}
+                          transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <motion.span
+                          className="text-3xl font-bold"
+                          style={{ color: placementTier.color }}
+                          initial={{ opacity: 0 }}
+                          animate={showResults ? { opacity: 1 } : {}}
+                          transition={{ delay: 1 }}
+                        >
+                          {overallScore}
+                        </motion.span>
+                        <span className="text-[10px] text-muted-foreground font-medium">OVERALL</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <CircularProgress value={results.totalScore} color={results.recommendedRole.color} />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-        {/* Radar chart and skill bars */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Tier Progress Map */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={showResults ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={showResults ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.3 }}
           >
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Competency Radar</CardTitle>
-                <CardDescription>Your diplomatic skill profile across 6 areas</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Tier Progression Map</CardTitle>
+                <CardDescription>Your journey through the 7-tier framework</CardDescription>
               </CardHeader>
               <CardContent>
-                <AnimatedRadarChart scores={results.categoryScores} animate={showResults} />
+                <div className="grid grid-cols-7 gap-2">
+                  {TIERS.map((tier) => {
+                    const reached = tier.id <= state.maxTierReached
+                    const score = state.tierScores[tier.id]
+                    return (
+                      <div
+                        key={tier.id}
+                        className={`flex flex-col items-center p-2 rounded-lg border transition-all ${
+                          reached
+                            ? 'border-current'
+                            : 'border-muted opacity-40'
+                        }`}
+                        style={reached ? { borderColor: `${tier.color}40`, backgroundColor: `${tier.color}08` } : {}}
+                      >
+                        <tier.icon className="w-5 h-5 mb-1" style={{ color: reached ? tier.color : '#94A3B8' }} />
+                        <span className="text-[10px] font-semibold text-center" style={{ color: reached ? tier.color : undefined }}>
+                          {tier.name.split(' ')[0]}
+                        </span>
+                        {score !== undefined && (
+                          <span className="text-[9px] font-bold mt-0.5" style={{ color: tier.color }}>{score}%</span>
+                        )}
+                        {reached && (
+                          <CheckCircle2 className="w-3 h-3 mt-1" style={{ color: tier.color }} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={showResults ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Skill Breakdown</CardTitle>
-                <CardDescription>Detailed scores per competency area</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                {results.categoryScores.map((cat, i) => (
-                  <div key={cat.name}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <cat.icon className="w-4 h-4" style={{ color: cat.color }} />
-                        <span className="text-sm font-medium">{cat.name}</span>
-                      </div>
-                      <span className="text-sm font-bold" style={{ color: cat.color }}>{cat.score}%</span>
-                    </div>
-                    <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: cat.color }}
-                        initial={{ width: 0 }}
-                        animate={showResults ? { width: `${cat.score}%` } : { width: 0 }}
-                        transition={{ duration: 1, delay: 0.6 + i * 0.15, ease: 'easeOut' }}
-                      />
-                    </div>
+          {/* Radar Chart and Skill Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={showResults ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Competency Radar</CardTitle>
+                  <CardDescription>14-dimension diplomatic skill profile</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="w-full aspect-square max-w-[400px] mx-auto">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={radarData}>
+                        <PolarGrid stroke="#e5e7eb" strokeOpacity={0.5} />
+                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#64748b' }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                        <Radar
+                          name="Score"
+                          dataKey="value"
+                          stroke="#0D7377"
+                          fill="#0D7377"
+                          fillOpacity={0.15}
+                          strokeWidth={2}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
                   </div>
-                ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={showResults ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 0.6, delay: 0.5 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Competency Breakdown</CardTitle>
+                  <CardDescription>Scores across all 14 dimensions</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                  {['knowledge', 'skills', 'behavior'].map((category) => {
+                    const catScores = dimensionScores.filter(d => d.category === category)
+                    const catLabel = category === 'knowledge' ? 'Knowledge' : category === 'skills' ? 'Skills' : 'Behavior'
+                    const catIcon = category === 'knowledge' ? Brain : category === 'skills' ? Zap : Heart
+                    return (
+                      <div key={category}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {React.createElement(catIcon, { className: 'w-4 h-4 text-muted-foreground' })}
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{catLabel}</span>
+                          <Separator className="flex-1" />
+                        </div>
+                        {catScores.map((dim) => (
+                          <div key={dim.key} className="mb-2.5">
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1.5">
+                                <dim.icon className="w-3.5 h-3.5" style={{ color: dim.color }} />
+                                <span className="text-xs font-medium">{dim.name}</span>
+                              </div>
+                              <span className="text-xs font-bold" style={{ color: dim.score >= 70 ? '#059669' : dim.score >= 50 ? '#D4A843' : '#DC2626' }}>
+                                {dim.score}%
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ backgroundColor: dim.color }}
+                                initial={{ width: 0 }}
+                                animate={showResults ? { width: `${dim.score}%` } : { width: 0 }}
+                                transition={{ duration: 0.8, delay: 0.6 + dimensionScores.indexOf(dim) * 0.05, ease: 'easeOut' }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Strengths & Weaknesses */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={showResults ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
+              <Card className="border-emerald-500/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    Strengths
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {strengthsWeaknesses.strengths.map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={showResults ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, delay: 0.7 }}
+            >
+              <Card className="border-amber-500/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ArrowUpRight className="w-4 h-4 text-amber-500" />
+                    Areas for Development
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {strengthsWeaknesses.weaknesses.map((w, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                        <span>{w}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Recommended Training */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={showResults ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.8 }}
+          >
+            <Card className="border-[#0D7377]/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-[#0D7377]" />
+                  Recommended Training Modules
+                </CardTitle>
+                <CardDescription>Courses from the Academy that address your development areas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {recommendedTraining.map((course, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg border hover:border-[#0D7377]/30 hover:bg-[#0D7377]/5 transition-all cursor-pointer">
+                      <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
+                        <BookOpen className="w-4 h-4 text-[#0D7377]" />
+                      </div>
+                      <span className="text-sm font-medium">{course}</span>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
+          </motion.div>
+
+          {/* Development Plan */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={showResults ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 0.9 }}
+          >
+            <Card className="border-[#D4A843]/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-[#D4A843]" />
+                  Development Plan
+                </CardTitle>
+                <CardDescription>
+                  {nextTier
+                    ? `Your pathway from ${placementTier.name} to ${nextTier.name}`
+                    : 'Maintaining your mastery at the highest level'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {devSteps.map((step, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{ backgroundColor: `${placementTier.color}15`, color: placementTier.color }}>
+                        {i + 1}
+                      </div>
+                      <span className="text-sm leading-relaxed pt-0.5">{step}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={showResults ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5, delay: 1 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2"
+          >
+            <Button
+              className="bg-[#0D7377] hover:bg-[#0D7377]/90 text-white font-semibold px-8 h-12"
+              onClick={() => onBeginTraining?.()}
+            >
+              <Zap className="w-4 h-4 mr-2" /> Begin Your Training
+            </Button>
+            <Button variant="outline" className="px-6 h-12" onClick={handleRestart}>
+              <RotateCcw className="w-4 h-4 mr-2" /> Retake Assessment
+            </Button>
+            <Button variant="outline" className="px-6 h-12">
+              <Share2 className="w-4 h-4 mr-2" /> Share Report
+            </Button>
           </motion.div>
         </div>
-
-        {/* Action buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={showResults ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 1 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
-        >
-          <Button
-            className="bg-[#0D7377] hover:bg-[#0D7377]/90 text-white font-semibold px-8 h-12"
-            onClick={() => onBeginTraining?.()}
-          >
-            <Zap className="w-4 h-4 mr-2" /> Begin Your Training
-          </Button>
-          <Button variant="outline" className="px-6 h-12" onClick={handleRestart}>
-            <RotateCcw className="w-4 h-4 mr-2" /> Retake Assessment
-          </Button>
-          <Button variant="outline" className="px-6 h-12">
-            <Share2 className="w-4 h-4 mr-2" /> Share Results
-          </Button>
-        </motion.div>
-      </div>
+      </ScrollArea>
     )
   }
 
-  // QUIZ PHASE
+  // ──────────── QUIZ PHASE ────────────
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4">
+      {/* Top bar: Tier info + overall progress */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold">Diagnostic Assessment</h2>
-          <Badge variant="secondary" className="text-xs">
-            {currentQuestion + 1} / {QUESTIONS.length}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <TierBadge tier={currentTierDef} size="sm" showProgress progress={state.tierScores[state.currentTier] ? Math.round(state.tierScores[state.currentTier]) : undefined} />
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-[#1B3A4B]">Tier {state.currentTier}: {currentTierDef.name}</h2>
+                <Badge className="text-[10px]" style={{ backgroundColor: `${currentTierDef.color}15`, color: currentTierDef.color, borderColor: `${currentTierDef.color}30` }}>
+                  {currentTierDef.subtitle}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{currentTierDef.description.slice(0, 80)}...</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Failed checkpoints indicator */}
+            <div className="flex items-center gap-1">
+              {[1, 2, 3].map((strike) => (
+                <div
+                  key={strike}
+                  className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                    strike <= state.failedCheckpoints
+                      ? 'bg-red-500 border-red-500 text-white'
+                      : 'border-muted-foreground/30 text-muted-foreground/40'
+                  }`}
+                >
+                  <XCircle className="w-3 h-3" />
+                </div>
+              ))}
+            </div>
+            <Badge variant="secondary" className="text-xs">
+              {state.currentQuestionIndex + 1} / {tierQuestions.length}
+            </Badge>
+          </div>
         </div>
+
+        {/* Tier progress bar */}
         <div className="relative h-2 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="absolute inset-y-0 left-0 bg-[#0D7377] rounded-full"
-            animate={{ width: `${progress}%` }}
+            className="absolute inset-y-0 left-0 rounded-full"
+            style={{ backgroundColor: currentTierDef.color }}
+            animate={{ width: `${tierProgress}%` }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           />
         </div>
+
+        {/* Tier ladder mini-map */}
         <div className="flex items-center gap-1 mt-2">
-          {CATEGORIES.map(cat => {
-            const catQuestions = cat.questions
-            const answered = catQuestions.filter(qId => answers[qId] !== undefined).length
-            const isCurrent = catQuestions.includes(question.id)
+          {TIERS.map((tier) => {
+            const reached = tier.id <= state.maxTierReached
+            const isCurrent = tier.id === state.currentTier
             return (
               <div
-                key={cat.name}
-                className={`flex-1 h-1 rounded-full transition-all ${isCurrent ? 'ring-1 ring-offset-1' : ''}`}
+                key={tier.id}
+                className={`flex-1 h-1.5 rounded-full transition-all ${isCurrent ? 'ring-1 ring-offset-1' : ''}`}
                 style={{
-                  backgroundColor: answered === catQuestions.length ? cat.color : isCurrent ? `${cat.color}60` : '#e5e7eb',
-                  ringColor: isCurrent ? cat.color : 'transparent',
+                  backgroundColor: isCurrent ? `${tier.color}60` : reached ? tier.color : '#e5e7eb',
+                  ringColor: isCurrent ? tier.color : 'transparent',
                 }}
-                title={`${cat.name}: ${answered}/${catQuestions.length}`}
+                title={`Tier ${tier.id}: ${tier.name}${state.tierScores[tier.id] ? ` (${state.tierScores[tier.id]}%)` : ''}`}
               />
             )
           })}
@@ -780,93 +2191,105 @@ export default function AssessmentQuiz({ onBeginTraining }: { onBeginTraining?: 
       </motion.div>
 
       {/* Question card */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={question.id}
-          initial={{ opacity: 0, x: animatingOut ? -40 : 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: animatingOut ? 40 : -40 }}
-          transition={{ duration: 0.2 }}
-        >
-          <Card className="overflow-hidden">
-            <div className="h-1" style={{ backgroundColor: CATEGORIES.find(c => c.name === question.category)?.color }} />
-            <CardContent className="p-6 md:p-8">
-              {/* Category badge */}
-              <div className="flex items-center gap-2 mb-4">
-                {(() => {
-                  const cat = CATEGORIES.find(c => c.name === question.category)
-                  if (!cat) return null
-                  return (
-                    <Badge className="text-xs" style={{ backgroundColor: `${cat.color}15`, color: cat.color, borderColor: `${cat.color}30` }}>
-                      <cat.icon className="w-3 h-3 mr-1" />
-                      {cat.name}
-                    </Badge>
-                  )
-                })()}
-                <span className="text-xs text-muted-foreground">Question {question.id}</span>
-              </div>
+      {currentQuestion && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentQuestion.id}
+            initial={{ opacity: 0, x: animatingOut ? -40 : 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: animatingOut ? 40 : -40 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card className="overflow-hidden">
+              <div className="h-1.5" style={{ backgroundColor: currentTierDef.color }} />
+              <CardContent className="p-5 md:p-6">
+                {/* Question meta */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <QuestionTypeBadge type={currentQuestion.type} />
+                    {isCheckpoint && (
+                      <Badge className="text-[10px] bg-red-500/10 text-red-500 border-red-500/20 gap-1">
+                        <AlertTriangle className="w-3 h-3" /> Checkpoint
+                      </Badge>
+                    )}
+                    {currentQuestion.dimensions.slice(0, 2).map(dim => {
+                      const dimInfo = DIMENSIONS.find(d => d.key === dim)
+                      if (!dimInfo) return null
+                      return (
+                        <Badge key={dim} variant="outline" className="text-[10px]">
+                          {dimInfo.name}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                  <QuestionTimer
+                    timeLimit={currentQuestion.timeLimit}
+                    onExpire={handleTimerExpire}
+                    isActive={true}
+                  />
+                </div>
 
-              {/* Question text */}
-              <h3 className="text-lg md:text-xl font-semibold mb-6 leading-relaxed">{question.text}</h3>
+                {/* Question text */}
+                <h3 className="text-base md:text-lg font-semibold mb-2 leading-relaxed text-[#1B3A4B]">{currentQuestion.text}</h3>
+                {currentQuestion.subtext && (
+                  <p className="text-sm text-muted-foreground mb-4 italic leading-relaxed bg-muted/30 p-3 rounded-lg">
+                    {currentQuestion.subtext}
+                  </p>
+                )}
 
-              {/* Options */}
-              <div className="grid grid-cols-1 gap-3">
-                {question.options.map((option, i) => {
-                  const isSelected = selectedOption === option.score
-                  return (
-                    <motion.button
-                      key={i}
-                      onClick={() => handleSelect(option.score)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 group ${
-                        isSelected
-                          ? 'border-[#0D7377] bg-[#0D7377]/8 shadow-sm'
-                          : 'border-muted hover:border-[#0D7377]/40 hover:bg-[#0D7377]/4'
-                      }`}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold transition-all ${
+                {/* Options */}
+                <div className="grid grid-cols-1 gap-2.5 mt-4">
+                  {currentQuestion.options.map((option, i) => {
+                    const isSelected = selectedOption === option.score
+                    return (
+                      <motion.button
+                        key={i}
+                        onClick={() => handleSelectOption(option.score)}
+                        className={`w-full text-left p-3.5 rounded-xl border-2 transition-all duration-200 group ${
                           isSelected
-                            ? 'bg-[#0D7377] text-white'
-                            : 'bg-muted text-muted-foreground group-hover:bg-[#0D7377]/10 group-hover:text-[#0D7377]'
-                        }`}>
-                          {isSelected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + i)}
+                            ? 'border-[#0D7377] bg-[#0D7377]/8 shadow-sm'
+                            : 'border-muted hover:border-[#0D7377]/40 hover:bg-[#0D7377]/4'
+                        }`}
+                        whileHover={{ scale: 1.005 }}
+                        whileTap={{ scale: 0.995 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold transition-all ${
+                            isSelected
+                              ? 'bg-[#0D7377] text-white'
+                              : 'bg-muted text-muted-foreground group-hover:bg-[#0D7377]/10 group-hover:text-[#0D7377]'
+                          }`}>
+                            {isSelected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + i)}
+                          </div>
+                          <span className={`text-sm leading-relaxed ${isSelected ? 'font-medium' : ''}`}>
+                            {option.text}
+                          </span>
                         </div>
-                        <span className={`text-sm md:text-base leading-relaxed ${isSelected ? 'font-medium' : ''}`}>
-                          {option.text}
-                        </span>
-                      </div>
-                    </motion.button>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </AnimatePresence>
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </AnimatePresence>
+      )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between pt-2">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentQuestion === 0}
-          className="gap-2"
-        >
-          <ChevronLeft className="w-4 h-4" /> Previous
-        </Button>
-
+      <div className="flex items-center justify-between pt-1">
         <div className="text-xs text-muted-foreground">
-          {Object.keys(answers).length} of {QUESTIONS.length} answered
+          {Object.keys(state.answers).length} of {QUESTIONS.length} total questions answered
         </div>
-
         <Button
           onClick={handleNext}
           disabled={selectedOption === null}
-          className="bg-[#0D7377] hover:bg-[#0D7377]/90 text-white gap-2"
+          className="gap-2 font-semibold"
+          style={{ backgroundColor: currentTierDef.color, color: '#fff' }}
         >
-          {currentQuestion === QUESTIONS.length - 1 ? 'Submit' : 'Next'}
+          {state.currentQuestionIndex >= tierQuestions.length - 1
+            ? (state.currentTier >= 7 ? 'Complete Assessment' : 'Complete Tier')
+            : 'Next Question'
+          }
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

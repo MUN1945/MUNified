@@ -65,7 +65,7 @@ export default function Footer() {
                   <Globe className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold tracking-tight">
-                  MUN<span className="text-[#D4A843]">ified</span>
+                  Diplomat<span className="text-[#D4A843]">iQ</span>
                 </span>
               </a>
               <p className="text-white/40 text-sm leading-relaxed mb-6 max-w-xs">
@@ -129,7 +129,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-white/30">
-            © {new Date().getFullYear()} MUNified. All rights reserved.
+            © {new Date().getFullYear()} DiplomatiQ. All rights reserved.
           </p>
           <p className="text-xs text-white/30 flex items-center gap-1.5">
             Made with <span className="text-[#D4A843]">diplomatic precision</span>

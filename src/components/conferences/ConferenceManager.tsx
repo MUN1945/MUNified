@@ -131,10 +131,10 @@ const LAYOUT_CONFIG: Record<LayoutType, { label: string; icon: React.ElementType
 const MOCK_CONFERENCES: Conference[] = [
   {
     id: 'conf-1',
-    name: 'Harvard WorldMUN 2025',
+    name: 'Harvard WorldMUN 2026',
     description: 'The world\'s most diverse MUN conference, bringing together delegates from 110+ countries for five days of intense diplomacy and global collaboration.',
-    startDate: '2025-03-15',
-    endDate: '2025-03-19',
+    startDate: '2026-03-15',
+    endDate: '2026-03-19',
     location: 'Paris, France',
     status: 'REGISTRATION_OPEN',
     theme: 'Bridging Divides: Diplomacy in a Fragmented World',
@@ -157,10 +157,10 @@ const MOCK_CONFERENCES: Conference[] = [
   },
   {
     id: 'conf-2',
-    name: 'NMUN New York 2025',
+    name: 'NMUN New York 2026',
     description: 'National Model United Nations in the heart of New York City, featuring 20+ committees and delegates from around the world at the UN Headquarters.',
-    startDate: '2025-04-07',
-    endDate: '2025-04-11',
+    startDate: '2026-04-07',
+    endDate: '2026-04-11',
     location: 'New York, USA',
     status: 'REGISTRATION_CLOSED',
     theme: 'Global Cooperation for a Sustainable Future',
@@ -178,10 +178,10 @@ const MOCK_CONFERENCES: Conference[] = [
   },
   {
     id: 'conf-3',
-    name: 'RomeMUN 2025',
+    name: 'RomeMUN 2026',
     description: 'Diplomacy in the Eternal City — an immersive MUN experience in the heart of Rome with a focus on cultural heritage and international cooperation.',
-    startDate: '2025-05-20',
-    endDate: '2025-05-24',
+    startDate: '2026-05-20',
+    endDate: '2026-05-24',
     location: 'Rome, Italy',
     status: 'IN_PROGRESS',
     theme: 'Sustainable Futures: Heritage, Innovation, and Peace',
@@ -198,10 +198,10 @@ const MOCK_CONFERENCES: Conference[] = [
   },
   {
     id: 'conf-4',
-    name: 'THIMUN Singapore 2025',
+    name: 'THIMUN Singapore 2026',
     description: 'The Hague International Model United Nations — Singapore edition, fostering diplomatic excellence in Southeast Asia.',
-    startDate: '2025-06-10',
-    endDate: '2025-06-14',
+    startDate: '2026-06-10',
+    endDate: '2026-06-14',
     location: 'Singapore',
     status: 'DRAFT',
     theme: 'Innovation & Progress: Navigating the Global South',
@@ -557,7 +557,7 @@ function ConferenceForm({
                   <Label htmlFor="conf-name">Conference Name *</Label>
                   <Input
                     id="conf-name"
-                    placeholder="e.g., Harvard WorldMUN 2025"
+                    placeholder="e.g., Harvard WorldMUN 2026"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="border-[#E8DED0] focus-visible:ring-[#0D7377]/20"

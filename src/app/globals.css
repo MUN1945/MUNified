@@ -41,88 +41,88 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  /* MUNified Brand Colors */
-  --color-teal: #0D7377;
-  --color-teal-light: #0F8A8F;
-  --color-teal-dark: #0A5C5F;
+  /* DiplomatiQ Brand Colors */
+  --color-teal: #0A7E8C;
+  --color-teal-light: #0C96A6;
+  --color-teal-dark: #086670;
   --color-gold: #D4A843;
   --color-gold-light: #E0BC6A;
   --color-gold-dark: #B8912F;
   --color-emerald: #059669;
   --color-emerald-light: #10B981;
-  --color-navy: #1B3A4B;
-  --color-navy-light: #264B5E;
-  --color-navy-dark: #0F2533;
-  --color-cream: #FFF8F0;
-  --color-cream-dark: #F5EDE0;
+  --color-navy: #0D1B2A;
+  --color-navy-light: #1B2A4A;
+  --color-navy-dark: #070F18;
+  --color-platinum: #C0C8D0;
+  --color-platinum-dark: #A0AAB4;
 }
 
 :root {
   --radius: 0.625rem;
-  --background: #FFF8F0;
-  --foreground: #1B3A4B;
+  --background: #FAFBFC;
+  --foreground: #0D1B2A;
   --card: #FFFFFF;
-  --card-foreground: #1B3A4B;
+  --card-foreground: #0D1B2A;
   --popover: #FFFFFF;
-  --popover-foreground: #1B3A4B;
-  --primary: #0D7377;
+  --popover-foreground: #0D1B2A;
+  --primary: #0A7E8C;
   --primary-foreground: #FFFFFF;
-  --secondary: #F0F7F7;
-  --secondary-foreground: #1B3A4B;
-  --muted: #F5F0EB;
-  --muted-foreground: #6B7B8D;
+  --secondary: #F0F5F7;
+  --secondary-foreground: #0D1B2A;
+  --muted: #F3F5F7;
+  --muted-foreground: #5A6A7A;
   --accent: #D4A843;
-  --accent-foreground: #1B3A4B;
+  --accent-foreground: #0D1B2A;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #E8DED0;
-  --input: #E8DED0;
-  --ring: #0D7377;
-  --chart-1: #0D7377;
+  --border: #E0E5EA;
+  --input: #E0E5EA;
+  --ring: #0A7E8C;
+  --chart-1: #0A7E8C;
   --chart-2: #D4A843;
   --chart-3: #059669;
-  --chart-4: #1B3A4B;
+  --chart-4: #0D1B2A;
   --chart-5: #E0BC6A;
-  --sidebar: #1B3A4B;
-  --sidebar-foreground: #F0F7F7;
+  --sidebar: #0D1B2A;
+  --sidebar-foreground: #F0F5F7;
   --sidebar-primary: #D4A843;
-  --sidebar-primary-foreground: #1B3A4B;
-  --sidebar-accent: #264B5E;
-  --sidebar-accent-foreground: #F0F7F7;
-  --sidebar-border: #264B5E;
+  --sidebar-primary-foreground: #0D1B2A;
+  --sidebar-accent: #1B2A4A;
+  --sidebar-accent-foreground: #F0F5F7;
+  --sidebar-border: #1B2A4A;
   --sidebar-ring: #D4A843;
 }
 
 .dark {
-  --background: #0F2533;
-  --foreground: #F0F7F7;
-  --card: #1B3A4B;
-  --card-foreground: #F0F7F7;
-  --popover: #1B3A4B;
-  --popover-foreground: #F0F7F7;
-  --primary: #0F8A8F;
+  --background: #070F18;
+  --foreground: #F0F5F7;
+  --card: #0D1B2A;
+  --card-foreground: #F0F5F7;
+  --popover: #0D1B2A;
+  --popover-foreground: #F0F5F7;
+  --primary: #0C96A6;
   --primary-foreground: #FFFFFF;
-  --secondary: #264B5E;
-  --secondary-foreground: #F0F7F7;
-  --muted: #264B5E;
-  --muted-foreground: #8FA3B3;
+  --secondary: #1B2A4A;
+  --secondary-foreground: #F0F5F7;
+  --muted: #1B2A4A;
+  --muted-foreground: #8A9AAA;
   --accent: #D4A843;
-  --accent-foreground: #1B3A4B;
+  --accent-foreground: #0D1B2A;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: #264B5E;
-  --input: #264B5E;
-  --ring: #0F8A8F;
-  --chart-1: #0F8A8F;
+  --border: #1B2A4A;
+  --input: #1B2A4A;
+  --ring: #0C96A6;
+  --chart-1: #0C96A6;
   --chart-2: #E0BC6A;
   --chart-3: #10B981;
-  --chart-4: #F0F7F7;
+  --chart-4: #F0F5F7;
   --chart-5: #D4A843;
-  --sidebar: #0A1D2A;
-  --sidebar-foreground: #F0F7F7;
+  --sidebar: #060D14;
+  --sidebar-foreground: #F0F5F7;
   --sidebar-primary: #D4A843;
-  --sidebar-primary-foreground: #0A1D2A;
-  --sidebar-accent: #1B3A4B;
-  --sidebar-accent-foreground: #F0F7F7;
-  --sidebar-border: #1B3A4B;
+  --sidebar-primary-foreground: #060D14;
+  --sidebar-accent: #0D1B2A;
+  --sidebar-accent-foreground: #F0F5F7;
+  --sidebar-border: #0D1B2A;
   --sidebar-ring: #D4A843;
 }
 
@@ -147,11 +147,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #0D737740;
+  background: #0A7E8C40;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #0D737780;
+  background: #0A7E8C80;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -237,21 +237,22 @@
 /* Globe pattern for UN-inspired backgrounds */
 .globe-pattern {
   background-image:
-    radial-gradient(circle at 20% 50%, #0D737708 0%, transparent 50%),
+    radial-gradient(circle at 20% 50%, #0A7E8C08 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, #D4A84308 0%, transparent 50%),
     radial-gradient(circle at 50% 80%, #05966908 0%, transparent 50%);
 }
 
 /* Teal-to-Gold gradient text */
 .text-gradient-teal-gold {
-  background: linear-gradient(135deg, #0D7377 0%, #D4A843 100%);
+  background: linear-gradient(135deg, #0A7E8C 0%, #D4A843 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 /* Gold gradient text */
-.gold-gradient-text {
+.gold-gradient-text,
+.diplomatiq-gradient-text {
   background: linear-gradient(135deg, #D4A843 0%, #E0BC6A 50%, #D4A843 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -260,12 +261,12 @@
 
 /* Navy gradient background */
 .navy-gradient {
-  background: linear-gradient(135deg, #1B3A4B 0%, #264B5E 50%, #1B3A4B 100%);
+  background: linear-gradient(135deg, #0D1B2A 0%, #1B2A4A 50%, #0D1B2A 100%);
 }
 
 /* Teal gradient background */
 .teal-gradient {
-  background: linear-gradient(135deg, #0D7377 0%, #0F8A8F 50%, #0D7377 100%);
+  background: linear-gradient(135deg, #0A7E8C 0%, #0C96A6 50%, #0A7E8C 100%);
 }
 
 /* Glass morphism for cards */
@@ -278,17 +279,17 @@
 /* Diplomatic seal pattern */
 .seal-pattern {
   background-image:
-    radial-gradient(circle, #0D737710 1px, transparent 1px);
+    radial-gradient(circle, #0A7E8C10 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 /* UN-inspired subtle laurel pattern */
 .laurel-pattern {
   background-image:
-    linear-gradient(30deg, #0D737705 12%, transparent 12.5%, transparent 87%, #0D737705 87.5%, #0D737705),
-    linear-gradient(150deg, #0D737705 12%, transparent 12.5%, transparent 87%, #0D737705 87.5%, #0D737705),
-    linear-gradient(30deg, #0D737705 12%, transparent 12.5%, transparent 87%, #0D737705 87.5%, #0D737705),
-    linear-gradient(150deg, #0D737705 12%, transparent 12.5%, transparent 87%, #0D737705 87.5%, #0D737705),
+    linear-gradient(30deg, #0A7E8C05 12%, transparent 12.5%, transparent 87%, #0A7E8C05 87.5%, #0A7E8C05),
+    linear-gradient(150deg, #0A7E8C05 12%, transparent 12.5%, transparent 87%, #0A7E8C05 87.5%, #0A7E8C05),
+    linear-gradient(30deg, #0A7E8C05 12%, transparent 12.5%, transparent 87%, #0A7E8C05 87.5%, #0A7E8C05),
+    linear-gradient(150deg, #0A7E8C05 12%, transparent 12.5%, transparent 87%, #0A7E8C05 87.5%, #0A7E8C05),
     linear-gradient(60deg, #D4A84305 25%, transparent 25.5%, transparent 75%, #D4A84305 75%, #D4A84305),
     linear-gradient(60deg, #D4A84305 25%, transparent 25.5%, transparent 75%, #D4A84305 75%, #D4A84305);
   background-size: 80px 140px;

@@ -20,10 +20,12 @@ export type ViewName =
   | 'profile'
   | 'leaderboard'
   | 'notifications'
+  | 'founder'
+  | 'schools'
 
 export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SCHOOL_ADMIN' | 'SUPER_ADMIN'
 export type MUNRole = 'SECRETARY_GENERAL' | 'DIRECTOR_GENERAL' | 'CHAIR' | 'DELEGATE' | 'DELEGATE_ADVANCED' | 'SDG_AMBASSADOR' | 'RAPPORTEUR'
-export type SubscriptionTier = 'FREE' | 'STUDENT_PRO' | 'TEACHER_PRO' | 'SCHOOL_ENTERPRISE'
+export type SubscriptionTier = 'FREE' | 'STUDENT_PRO' | 'TEACHER_PRO' | 'SCHOOL_STARTER' | 'SCHOOL_PROFESSIONAL' | 'SCHOOL_ENTERPRISE' | 'CONFERENCE_PACKAGE'
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED'
 export type XPLevel = 'OBSERVER' | 'DELEGATE' | 'AMBASSADOR' | 'DIPLOMAT' | 'ENVOY' | 'SECRETARY_GENERAL'
 
@@ -188,7 +190,7 @@ export function getXPProgress(xp: number): number {
 const DEMO_STUDENT_USER: User = {
   id: 'demo-student-1',
   name: 'Amara Okafor',
-  email: 'amara@munified.io',
+  email: 'amara@diplomatiq.io',
   role: 'STUDENT',
   munRole: 'DELEGATE',
   avatar: undefined,
@@ -202,7 +204,7 @@ const DEMO_STUDENT_USER: User = {
 const DEMO_TEACHER_USER: User = {
   id: 'demo-teacher-1',
   name: 'Dr. Sarah Chen',
-  email: 'sarah@munified.io',
+  email: 'sarah@diplomatiq.io',
   role: 'TEACHER',
   munRole: 'CHAIR',
   avatar: undefined,
@@ -216,12 +218,12 @@ const DEMO_TEACHER_USER: User = {
 const DEMO_ADMIN_USER: User = {
   id: 'demo-admin-1',
   name: 'James Wright',
-  email: 'james@munified.io',
+  email: 'james@diplomatiq.io',
   role: 'ADMIN',
   munRole: 'SECRETARY_GENERAL',
   avatar: undefined,
   schoolId: undefined,
-  schoolName: 'MUNified HQ',
+  schoolName: 'DiplomatiQ HQ',
   country: 'United States',
   subscriptionTier: 'SCHOOL_ENTERPRISE',
   subscriptionStatus: 'ACTIVE',
@@ -240,18 +242,18 @@ const DEMO_DELEGATE_PROFILE: DelegateProfile = {
 }
 
 const DEMO_BADGES: BadgeData[] = [
-  { id: 'b1', name: 'Skilled Orator', description: 'Delivered 20+ speeches', icon: 'Mic', category: 'ORATORY', xpReward: 200, earnedAt: '2025-02-10' },
-  { id: 'b2', name: 'Resolution Writer', description: 'Wrote 5 resolutions', icon: 'FileText', category: 'SKILL_MASTERY', xpReward: 150, earnedAt: '2025-01-28' },
-  { id: 'b3', name: 'Diplomat', description: 'Achieved Ambassador rank', icon: 'Handshake', category: 'MILESTONE', xpReward: 500, earnedAt: '2025-01-15' },
+  { id: 'b1', name: 'Skilled Orator', description: 'Delivered 20+ speeches', icon: 'Mic', category: 'ORATORY', xpReward: 200, earnedAt: '2026-02-10' },
+  { id: 'b2', name: 'Resolution Writer', description: 'Wrote 5 resolutions', icon: 'FileText', category: 'SKILL_MASTERY', xpReward: 150, earnedAt: '2026-01-28' },
+  { id: 'b3', name: 'Diplomat', description: 'Achieved Ambassador rank', icon: 'Handshake', category: 'MILESTONE', xpReward: 500, earnedAt: '2026-01-15' },
   { id: 'b4', name: 'First Steps', description: 'Completed first assessment', icon: 'Footprints', category: 'PARTICIPATION', xpReward: 50, earnedAt: '2024-12-01' },
   { id: 'b5', name: 'Global Delegate', description: 'Attended 5 conferences', icon: 'Globe', category: 'PARTICIPATION', xpReward: 300, earnedAt: '2024-11-20' },
 ]
 
 const DEMO_CONFERENCES: ConferenceData[] = [
-  { id: 'c1', name: 'Harvard WorldMUN 2025', description: 'The world\'s most diverse MUN conference', startDate: '2025-03-15', endDate: '2025-03-19', location: 'Paris, France', status: 'REGISTRATION_OPEN', theme: 'Bridging Divides' },
-  { id: 'c2', name: 'NMUN New York 2025', description: 'National Model UN in New York', startDate: '2025-04-07', endDate: '2025-04-11', location: 'New York, USA', status: 'UPCOMING', theme: 'Global Cooperation' },
-  { id: 'c3', name: 'RomeMUN 2025', description: 'Diplomacy in the Eternal City', startDate: '2025-05-20', endDate: '2025-05-24', location: 'Rome, Italy', status: 'REGISTRATION_OPEN', theme: 'Sustainable Futures' },
-  { id: 'c4', name: 'THIMUN Singapore 2025', description: 'The Hague International MUN', startDate: '2025-06-10', endDate: '2025-06-14', location: 'Singapore', status: 'DRAFT', theme: 'Innovation & Progress' },
+  { id: 'c1', name: 'Harvard WorldMUN 2026', description: 'The world\'s most diverse MUN conference', startDate: '2026-03-15', endDate: '2026-03-19', location: 'Paris, France', status: 'REGISTRATION_OPEN', theme: 'Bridging Divides' },
+  { id: 'c2', name: 'NMUN New York 2026', description: 'National Model UN in New York', startDate: '2026-04-07', endDate: '2026-04-11', location: 'New York, USA', status: 'UPCOMING', theme: 'Global Cooperation' },
+  { id: 'c3', name: 'RomeMUN 2026', description: 'Diplomacy in the Eternal City', startDate: '2026-05-20', endDate: '2026-05-24', location: 'Rome, Italy', status: 'REGISTRATION_OPEN', theme: 'Sustainable Futures' },
+  { id: 'c4', name: 'THIMUN Singapore 2026', description: 'The Hague International MUN', startDate: '2026-06-10', endDate: '2026-06-14', location: 'Singapore', status: 'DRAFT', theme: 'Innovation & Progress' },
 ]
 
 const DEMO_COURSES: CourseData[] = [
@@ -262,17 +264,17 @@ const DEMO_COURSES: CourseData[] = [
 ]
 
 const DEMO_NOTIFICATIONS: NotificationData[] = [
-  { id: 'n1', title: 'New Conference Registration Open', message: 'Harvard WorldMUN 2025 registration is now open!', type: 'info', isRead: false, createdAt: '2025-02-28T10:00:00Z' },
-  { id: 'n2', title: 'Badge Earned!', message: 'You earned the "Skilled Orator" badge!', type: 'success', isRead: false, createdAt: '2025-02-27T14:00:00Z' },
-  { id: 'n3', title: 'Training Reminder', message: 'Continue your "Advanced Resolution Writing" course', type: 'reminder', isRead: true, createdAt: '2025-02-26T09:00:00Z' },
+  { id: 'n1', title: 'New Conference Registration Open', message: 'Harvard WorldMUN 2026 registration is now open!', type: 'info', isRead: false, createdAt: '2026-02-28T10:00:00Z' },
+  { id: 'n2', title: 'Badge Earned!', message: 'You earned the "Skilled Orator" badge!', type: 'success', isRead: false, createdAt: '2026-02-27T14:00:00Z' },
+  { id: 'n3', title: 'Training Reminder', message: 'Continue your "Advanced Resolution Writing" course', type: 'reminder', isRead: true, createdAt: '2026-02-26T09:00:00Z' },
 ]
 
 const DEMO_ACTIVITIES: ActivityData[] = [
-  { id: 'a1', type: 'course_complete', description: 'Completed "Resolution Writing Masterclass"', xpEarned: 100, createdAt: '2025-02-28T16:00:00Z' },
-  { id: 'a2', type: 'badge_earned', description: 'Earned "Skilled Orator" badge', xpEarned: 200, createdAt: '2025-02-28T13:00:00Z' },
-  { id: 'a3', type: 'conference_register', description: 'Registered for Harvard WorldMUN 2025', xpEarned: 50, createdAt: '2025-02-27T10:00:00Z' },
-  { id: 'a4', type: 'assessment_complete', description: 'Scored 92% on Diplomatic Assessment', xpEarned: 150, createdAt: '2025-02-26T15:00:00Z' },
-  { id: 'a5', type: 'committee_join', description: 'Joined Security Council committee', xpEarned: 75, createdAt: '2025-02-25T11:00:00Z' },
+  { id: 'a1', type: 'course_complete', description: 'Completed "Resolution Writing Masterclass"', xpEarned: 100, createdAt: '2026-02-28T16:00:00Z' },
+  { id: 'a2', type: 'badge_earned', description: 'Earned "Skilled Orator" badge', xpEarned: 200, createdAt: '2026-02-28T13:00:00Z' },
+  { id: 'a3', type: 'conference_register', description: 'Registered for Harvard WorldMUN 2026', xpEarned: 50, createdAt: '2026-02-27T10:00:00Z' },
+  { id: 'a4', type: 'assessment_complete', description: 'Scored 92% on Diplomatic Assessment', xpEarned: 150, createdAt: '2026-02-26T15:00:00Z' },
+  { id: 'a5', type: 'committee_join', description: 'Joined Security Council committee', xpEarned: 75, createdAt: '2026-02-25T11:00:00Z' },
 ]
 
 const DEMO_LEADERBOARD: LeaderboardEntry[] = [
@@ -611,9 +613,9 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
       ],
       courses: DEMO_COURSES,
       assessments: [
-        { id: 'as1', type: 'DIAGNOSTIC', totalScore: 84, completedAt: '2025-02-15', recommendedRole: 'Head Delegate' },
-        { id: 'as2', type: 'SKILL_EVALUATION', totalScore: 78, completedAt: '2025-01-28' },
-        { id: 'as3', type: 'ROLE_PLACEMENT', totalScore: 91, completedAt: '2025-01-10', recommendedRole: 'Crisis Committee Member' },
+        { id: 'as1', type: 'DIAGNOSTIC', totalScore: 84, completedAt: '2026-02-15', recommendedRole: 'Head Delegate' },
+        { id: 'as2', type: 'SKILL_EVALUATION', totalScore: 78, completedAt: '2026-01-28' },
+        { id: 'as3', type: 'ROLE_PLACEMENT', totalScore: 91, completedAt: '2026-01-10', recommendedRole: 'Crisis Committee Member' },
       ],
       notifications: DEMO_NOTIFICATIONS,
       activities: DEMO_ACTIVITIES,
@@ -623,9 +625,9 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
         { id: 'ch3', name: 'Training Help', type: 'support', description: 'Get help with courses' },
       ],
       messages: [
-        { id: 'm1', content: 'Has anyone started the resolution writing assignment?', channelId: 'ch1', userId: 'u1', userName: 'Elena Vasquez', createdAt: '2025-02-28T15:30:00Z' },
-        { id: 'm2', content: 'Yes! I found the crisis committee section really helpful.', channelId: 'ch1', userId: 'u2', userName: 'Kai Nakamura', createdAt: '2025-02-28T15:35:00Z' },
-        { id: 'm3', content: 'Can someone explain the difference between a working paper and a draft resolution?', channelId: 'ch1', userId: 'demo-student-1', userName: 'Amara Okafor', createdAt: '2025-02-28T15:40:00Z' },
+        { id: 'm1', content: 'Has anyone started the resolution writing assignment?', channelId: 'ch1', userId: 'u1', userName: 'Elena Vasquez', createdAt: '2026-02-28T15:30:00Z' },
+        { id: 'm2', content: 'Yes! I found the crisis committee section really helpful.', channelId: 'ch1', userId: 'u2', userName: 'Kai Nakamura', createdAt: '2026-02-28T15:35:00Z' },
+        { id: 'm3', content: 'Can someone explain the difference between a working paper and a draft resolution?', channelId: 'ch1', userId: 'demo-student-1', userName: 'Amara Okafor', createdAt: '2026-02-28T15:40:00Z' },
       ],
       activeChannel: 'ch1',
       leaderboard: DEMO_LEADERBOARD,

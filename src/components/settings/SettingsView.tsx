@@ -6,7 +6,9 @@ import {
   User, Mail, Globe, Building2, Camera, Shield, Bell,
   Lock, KeyRound, CreditCard, FileText, AlertTriangle,
   Trash2, Languages, ChevronRight, CheckCircle2, Clock,
-  Download, X, Eye, EyeOff, Smartphone
+  Download, X, Eye, EyeOff, Smartphone, ExternalLink,
+  Loader2, ArrowUpRight, Calendar, Receipt, Banknote,
+  BadgeCheck, Crown, GraduationCap
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,14 +30,25 @@ import {
 import { useAuthStore, useNavStore } from '@/lib/store'
 
 // ============================================================
-// MOCK BILLING HISTORY
+// BILLING HISTORY
 // ============================================================
 
 const BILLING_HISTORY = [
-  { id: 'inv-001', date: '2025-02-01', description: 'Delegate Pro - Monthly', amount: 'AED 29.00', status: 'Paid' },
-  { id: 'inv-002', date: '2025-01-01', description: 'Delegate Pro - Monthly', amount: 'AED 29.00', status: 'Paid' },
-  { id: 'inv-003', date: '2024-12-01', description: 'Delegate Pro - Monthly', amount: 'AED 29.00', status: 'Paid' },
-  { id: 'inv-004', date: '2024-11-15', description: 'Delegate Pro - First Month (Prorated)', amount: 'AED 14.50', status: 'Paid' },
+  { id: 'inv-001', date: '2026-02-01', description: 'Delegate Pro - Monthly', amount: '$9.00', status: 'Paid', invoiceUrl: '#' },
+  { id: 'inv-002', date: '2026-01-01', description: 'Delegate Pro - Monthly', amount: '$9.00', status: 'Paid', invoiceUrl: '#' },
+  { id: 'inv-003', date: '2025-12-01', description: 'Delegate Pro - Monthly', amount: '$9.00', status: 'Paid', invoiceUrl: '#' },
+  { id: 'inv-004', date: '2025-11-15', description: 'Delegate Pro - First Month (Prorated)', amount: '$4.50', status: 'Paid', invoiceUrl: '#' },
+]
+
+// ============================================================
+// PLAN UPGRADE OPTIONS
+// ============================================================
+
+const UPGRADE_OPTIONS = [
+  { id: 'STUDENT_PRO', name: 'Delegate Pro', price: '$9/mo', icon: GraduationCap, color: '#0D7377' },
+  { id: 'TEACHER_PRO', name: 'Director Pro', price: '$29/mo', icon: Crown, color: '#D4A843' },
+  { id: 'SCHOOL_STARTER', name: 'School Starter', price: '$99/mo', icon: Building2, color: '#0D7377' },
+  { id: 'SCHOOL_PROFESSIONAL', name: 'School Professional', price: '$249/mo', icon: Building2, color: '#D4A843' },
 ]
 
 // ============================================================
@@ -45,7 +58,7 @@ const BILLING_HISTORY = [
 function ProfileSection() {
   const { user } = useAuthStore()
   const [name, setName] = useState(user?.name || 'Amara Okafor')
-  const [email, setEmail] = useState(user?.email || 'amara@munified.io')
+  const [email, setEmail] = useState(user?.email || 'amara@diplomatiq.io')
   const [bio, setBio] = useState('Passionate MUN delegate representing Nigeria at international conferences. Focused on Security Council reform and climate action.')
   const [country, setCountry] = useState(user?.country || 'Switzerland')
   const [school, setSchool] = useState(user?.schoolName || 'International School of Geneva')
@@ -170,7 +183,7 @@ function NotificationSection() {
               { key: 'emailAssessments' as const, label: 'Assessment Results', desc: 'Get notified when your assessment is graded' },
               { key: 'emailConferences' as const, label: 'Conference Updates', desc: 'New conferences, registration deadlines, schedule changes' },
               { key: 'emailTraining' as const, label: 'Training Reminders', desc: 'Course deadlines, new modules, progress milestones' },
-              { key: 'emailNewsletter' as const, label: 'Newsletter', desc: 'Monthly MUNified updates and MUN tips' },
+              { key: 'emailNewsletter' as const, label: 'Newsletter', desc: 'Monthly DiplomatiQ updates and MUN tips' },
             ].map(item => (
               <div key={item.key} className="flex items-center justify-between py-2">
                 <div>
@@ -314,113 +327,312 @@ function SecuritySection() {
 }
 
 // ============================================================
-// SUBSCRIPTION SECTION
+// BILLING & SUBSCRIPTION SECTION (ENHANCED)
 // ============================================================
 
-function SubscriptionSection() {
+function BillingSubscriptionSection() {
   const { user } = useAuthStore()
   const { navigate } = useNavStore()
   const currentTier = user?.subscriptionTier || 'FREE'
   const currentStatus = user?.subscriptionStatus || 'ACTIVE'
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [upgrading, setUpgrading] = useState<string | null>(null)
 
   const planNames: Record<string, string> = {
     FREE: 'Observer (Free)',
     STUDENT_PRO: 'Delegate Pro',
     TEACHER_PRO: 'Director Pro',
+    SCHOOL_STARTER: 'School Starter',
+    SCHOOL_PROFESSIONAL: 'School Professional',
     SCHOOL_ENTERPRISE: 'School Enterprise',
+    CONFERENCE_PACKAGE: 'Conference Package',
   }
 
+  const planPrices: Record<string, string> = {
+    FREE: 'Free',
+    STUDENT_PRO: '$9/month',
+    TEACHER_PRO: '$29/month',
+    SCHOOL_STARTER: '$99/month',
+    SCHOOL_PROFESSIONAL: '$249/month',
+    SCHOOL_ENTERPRISE: 'Custom',
+    CONFERENCE_PACKAGE: '$49/event',
+  }
+
+  const handleManageSubscription = async () => {
+    // For demo, open Stripe portal
+    setPortalLoading(true)
+    try {
+      // In production, this would use the user's stripeCustomerId
+      // For now, show a demo message
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Simulate portal redirect
+      alert('In production, this would redirect to the Stripe Customer Portal where you can update payment methods, view invoices, and manage your subscription.')
+    } catch {
+      console.error('Portal error')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
+  const handleUpgrade = async (planId: string) => {
+    setUpgrading(planId)
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planType: planId,
+          billingPeriod: 'monthly',
+          userId: user?.id,
+          email: user?.email,
+        }),
+      })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else if (data.redirect) {
+        navigate('pricing')
+      }
+    } catch (error) {
+      console.error('Upgrade error:', error)
+    } finally {
+      setUpgrading(null)
+    }
+  }
+
+  const isFreePlan = currentTier === 'FREE'
+
   return (
-    <Card className="border-[#E8DED0]/60">
-      <CardHeader>
-        <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-[#0D7377]" /> Subscription
-        </CardTitle>
-        <CardDescription>Manage your plan and billing</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Current Plan */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-[#F5F0EB]">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-[#1B3A4B]">Current Plan:</span>
-              <Badge className="bg-[#0D7377]/10 text-[#0D7377] border-0">{planNames[currentTier] || 'Free'}</Badge>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-muted-foreground">Status:</span>
-              <Badge className={`text-[10px] border-0 ${currentStatus === 'ACTIVE' ? 'bg-[#059669]/15 text-[#059669]' : 'bg-amber-50 text-amber-600'}`}>
-                {currentStatus}
-              </Badge>
+    <div className="space-y-6">
+      {/* Current Plan Card */}
+      <Card className="border-[#E8DED0]/60">
+        <CardHeader>
+          <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-[#0D7377]" /> Current Plan
+          </CardTitle>
+          <CardDescription>Your subscription details and billing information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Plan Overview */}
+          <div className="p-4 rounded-lg bg-gradient-to-r from-[#0D7377]/5 to-[#D4A843]/5 border border-[#0D7377]/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#1B3A4B]">Plan:</span>
+                  <Badge className="bg-[#0D7377]/10 text-[#0D7377] border-0 text-sm px-2.5">
+                    {planNames[currentTier] || 'Free'}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Status:</span>
+                    <Badge className={`text-[10px] border-0 ${currentStatus === 'ACTIVE' ? 'bg-[#059669]/15 text-[#059669]' : currentStatus === 'TRIAL' ? 'bg-[#0D7377]/15 text-[#0D7377]' : 'bg-amber-50 text-amber-600'}`}>
+                      {currentStatus === 'TRIAL' && <Clock className="w-3 h-3 mr-1" />}
+                      {currentStatus === 'ACTIVE' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                      {currentStatus}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Price:</span>
+                    <span className="text-sm font-medium text-[#1B3A4B]">{planPrices[currentTier] || 'Free'}</span>
+                  </div>
+                </div>
+                {currentStatus === 'TRIAL' && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Clock className="w-3.5 h-3.5 text-[#0D7377]" />
+                    <span className="text-xs text-[#0D7377] font-medium">Trial ends in 12 days</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                {!isFreePlan && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-[#0D7377]/30 text-[#0D7377] hover:bg-[#0D7377]/5"
+                    onClick={handleManageSubscription}
+                    disabled={portalLoading}
+                  >
+                    {portalLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
+                    Manage Subscription
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white"
+                  onClick={() => navigate('pricing')}
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
+                  View All Plans
+                </Button>
+              </div>
             </div>
           </div>
-          <Button size="sm" className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white" onClick={() => navigate('pricing')}>
-            Manage Plan
-          </Button>
-        </div>
 
-        {/* Billing History */}
-        <div>
-          <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3">Billing History</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#E8DED0]">
-                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Date</th>
-                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Description</th>
-                  <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs">Amount</th>
-                  <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs">Status</th>
-                  <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {BILLING_HISTORY.map(invoice => (
-                  <tr key={invoice.id} className="border-b border-[#E8DED0]/30">
-                    <td className="py-2.5 px-2 text-muted-foreground">{invoice.date}</td>
-                    <td className="py-2.5 px-2 text-[#1B3A4B]">{invoice.description}</td>
-                    <td className="py-2.5 px-2 text-right text-[#1B3A4B] font-medium">{invoice.amount}</td>
-                    <td className="py-2.5 px-2 text-right">
-                      <Badge className="bg-[#059669]/15 text-[#059669] border-0 text-[10px]">{invoice.status}</Badge>
-                    </td>
-                    <td className="py-2.5 px-2 text-right">
-                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground">
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          {/* Upgrade Options (only for free plan) */}
+          {isFreePlan && (
+            <>
+              <Separator className="bg-[#E8DED0]" />
+              <div>
+                <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3 flex items-center gap-2">
+                  <ArrowUpRight className="w-4 h-4 text-[#D4A843]" /> Upgrade Your Plan
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {UPGRADE_OPTIONS.map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => handleUpgrade(option.id)}
+                        disabled={upgrading === option.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-[#E8DED0] hover:border-[#0D7377]/30 hover:bg-[#0D7377]/5 transition-colors text-left disabled:opacity-50"
+                      >
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${option.color}15` }}>
+                          <Icon className="w-4 h-4" style={{ color: option.color }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-[#1B3A4B]">{option.name}</div>
+                          <div className="text-xs text-muted-foreground">{option.price}</div>
+                        </div>
+                        {upgrading === option.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-[#0D7377]" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          )}
 
-        <Separator className="bg-[#E8DED0]" />
+          {/* Stripe Portal Features */}
+          {!isFreePlan && (
+            <>
+              <Separator className="bg-[#E8DED0]" />
+              <div>
+                <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3">Manage via Stripe Portal</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-[#F5F0EB]/50">
+                    <CreditCard className="w-4 h-4 text-[#0D7377]" />
+                    <div>
+                      <div className="text-xs font-medium text-[#1B3A4B]">Payment Methods</div>
+                      <div className="text-[10px] text-muted-foreground">Update card details</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-[#F5F0EB]/50">
+                    <Receipt className="w-4 h-4 text-[#0D7377]" />
+                    <div>
+                      <div className="text-xs font-medium text-[#1B3A4B]">View Invoices</div>
+                      <div className="text-[10px] text-muted-foreground">Download past invoices</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-[#F5F0EB]/50">
+                    <Banknote className="w-4 h-4 text-[#0D7377]" />
+                    <div>
+                      <div className="text-xs font-medium text-[#1B3A4B]">Billing History</div>
+                      <div className="text-[10px] text-muted-foreground">Full transaction log</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* Cancel Subscription */}
-        <div>
-          <h4 className="text-sm font-semibold text-[#1B3A4B] mb-2">Cancel Subscription</h4>
-          <p className="text-xs text-muted-foreground mb-3">Your access will continue until the end of the current billing period.</p>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="border-red-200 text-red-500 hover:bg-red-50">
-                Cancel Subscription
+      {/* Billing History */}
+      <Card className="border-[#E8DED0]/60">
+        <CardHeader>
+          <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-[#0D7377]" /> Billing History
+          </CardTitle>
+          <CardDescription>Your recent transactions and invoices</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isFreePlan ? (
+            <div className="text-center py-8">
+              <Receipt className="w-10 h-10 text-[#E8DED0] mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No billing history yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Upgrade to a paid plan to see your invoices here.</p>
+              <Button size="sm" className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white mt-3" onClick={() => navigate('pricing')}>
+                View Plans
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <DialogTitle className="text-[#1B3A4B]">Cancel Subscription?</DialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your current billing period. This action cannot be undone, but you can resubscribe at any time.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                <AlertDialogAction className="bg-red-500 hover:bg-red-600 text-white">Yes, Cancel</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </CardContent>
-    </Card>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E8DED0]">
+                    <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Date</th>
+                    <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs">Description</th>
+                    <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs">Amount</th>
+                    <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs">Status</th>
+                    <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {BILLING_HISTORY.map(invoice => (
+                    <tr key={invoice.id} className="border-b border-[#E8DED0]/30">
+                      <td className="py-2.5 px-2 text-muted-foreground">{invoice.date}</td>
+                      <td className="py-2.5 px-2 text-[#1B3A4B]">{invoice.description}</td>
+                      <td className="py-2.5 px-2 text-right text-[#1B3A4B] font-medium">{invoice.amount}</td>
+                      <td className="py-2.5 px-2 text-right">
+                        <Badge className="bg-[#059669]/15 text-[#059669] border-0 text-[10px]">{invoice.status}</Badge>
+                      </td>
+                      <td className="py-2.5 px-2 text-right">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-[#0D7377]">
+                          <Download className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Cancel Subscription */}
+      {!isFreePlan && (
+        <Card className="border-[#E8DED0]/60">
+          <CardHeader>
+            <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" /> Cancel Subscription
+            </CardTitle>
+            <CardDescription>Downgrade to the free Observer plan</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 rounded-lg bg-amber-50/50 border border-amber-100">
+              <p className="text-xs text-amber-700/80 mb-3">
+                Your access will continue until the end of the current billing period. You can resubscribe at any time.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="border-red-200 text-red-500 hover:bg-red-50">
+                    Cancel Subscription
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <DialogTitle className="text-[#1B3A4B]">Cancel Subscription?</DialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to cancel your {planNames[currentTier]} subscription? You will lose access to premium features at the end of your current billing period. This action cannot be undone, but you can resubscribe at any time.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                    <AlertDialogAction className="bg-red-500 hover:bg-red-600 text-white">Yes, Cancel</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
 
@@ -541,8 +753,8 @@ export default function SettingsView() {
           <TabsTrigger value="security" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
             <Shield className="w-4 h-4 mr-1.5" /> Security
           </TabsTrigger>
-          <TabsTrigger value="subscription" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
-            <CreditCard className="w-4 h-4 mr-1.5" /> Subscription
+          <TabsTrigger value="billing" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
+            <CreditCard className="w-4 h-4 mr-1.5" /> Billing
           </TabsTrigger>
           <TabsTrigger value="language" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
             <Languages className="w-4 h-4 mr-1.5" /> Language
@@ -567,9 +779,9 @@ export default function SettingsView() {
           </motion.div>
         </TabsContent>
 
-        <TabsContent value="subscription" className="space-y-6">
+        <TabsContent value="billing" className="space-y-6">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <SubscriptionSection />
+            <BillingSubscriptionSection />
           </motion.div>
         </TabsContent>
 

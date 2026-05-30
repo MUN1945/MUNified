@@ -23,10 +23,12 @@ import ConferenceManager from '@/components/conferences/ConferenceManager'
 import ChatView from '@/components/chat/ChatView'
 import AnalyticsView from '@/components/analytics/AnalyticsView'
 import LeaderboardView from '@/components/gamification/LeaderboardView'
-import ResearchTasks from '@/components/research/ResearchTasks'
+import ResearchPaperEvaluation from '@/components/research/ResearchPaperEvaluation'
 import CodeOfConduct from '@/components/conduct/CodeOfConduct'
 import PricingPage from '@/components/pricing/PricingPage'
 import SettingsView from '@/components/settings/SettingsView'
+import FounderDashboard from '@/components/founder/FounderDashboard'
+import SchoolDirectory from '@/components/schools/SchoolDirectory'
 import { useNavStore, useAuthStore, useAppStore, type ViewName } from '@/lib/store'
 
 // ============================================================
@@ -76,7 +78,7 @@ function ViewRouter({ view }: { view: ViewName }) {
     case 'chat':
       return <ChatView />
     case 'research':
-      return <ResearchTasks />
+      return <ResearchPaperEvaluation />
     case 'analytics':
       return <AnalyticsView />
     case 'settings':
@@ -91,6 +93,10 @@ function ViewRouter({ view }: { view: ViewName }) {
       return <LeaderboardView />
     case 'notifications':
       return <PlaceholderView title="Notifications" description="Stay updated on conferences, training, and achievements." />
+    case 'founder':
+      return <FounderDashboard />
+    case 'schools':
+      return <SchoolDirectory />
     default:
       return isStudent ? <StudentDashboard /> : <TeacherDashboard />
   }

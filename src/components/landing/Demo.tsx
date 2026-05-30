@@ -42,10 +42,10 @@ export default function Demo() {
             Live Preview
           </span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1B3A4B] tracking-tight">
-            Experience <span className="text-[#0D7377]">MUNified</span>
+            Experience <span className="text-[#0A7E8C]">DiplomatiQ</span>
           </h2>
           <p className="mt-4 text-lg text-[#1B3A4B]/60 leading-relaxed">
-            See how MUNified brings together assessment, training, and conference management in one powerful platform.
+            See how DiplomatiQ brings together assessment, training, and conference management in one powerful platform.
           </p>
         </motion.div>
 
@@ -65,7 +65,7 @@ export default function Demo() {
                   <div className="w-3 h-3 rounded-full bg-red-400/60" />
                   <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
                   <div className="w-3 h-3 rounded-full bg-green-400/60" />
-                  <span className="ml-3 text-xs text-white/30">app.munified.com/dashboard</span>
+                  <span className="ml-3 text-xs text-white/30">app.diplomatiq.io/dashboard</span>
                 </div>
 
                 {/* Dashboard content mock */}
@@ -174,7 +174,7 @@ export default function Demo() {
               Your diplomatic command center
             </h3>
             <p className="text-[#1B3A4B]/60 leading-relaxed mb-8">
-              MUNified brings everything together — assessments, training, conference management,
+              DiplomatiQ brings everything together — assessments, training, conference management,
               and analytics — into one seamless platform designed for the way MUN actually works.
             </p>
 

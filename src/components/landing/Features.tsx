@@ -111,7 +111,7 @@ export default function Features() {
             Everything Your MUN Program Needs
           </h2>
           <p className="mt-4 text-lg text-[#1B3A4B]/60 leading-relaxed">
-            From diagnostic assessments to global networking, MUNified provides the complete ecosystem
+            From diagnostic assessments to global networking, DiplomatiQ provides the complete ecosystem
             for diplomatic excellence.
           </p>
         </motion.div>

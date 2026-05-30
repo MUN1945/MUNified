@@ -14,17 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MUNified - The Operating System for Model United Nations",
+  title: "DiplomatiQ - The Operating System for Model United Nations",
   description: "The premier SaaS platform for MUN programs. AI-powered assessments, delegate training, conference management, and gamified achievements for the next generation of diplomats.",
   keywords: ["MUN", "Model United Nations", "diplomacy", "delegate training", "conferences", "education", "SaaS", "assessments", "gamification"],
-  authors: [{ name: "MUNified" }],
+  authors: [{ name: "DiplomatiQ" }],
   icons: {
     icon: "/logo.png",
   },
   openGraph: {
-    title: "MUNified - The Operating System for Model United Nations",
+    title: "DiplomatiQ - The Operating System for Model United Nations",
     description: "Train delegates, manage conferences, and build diplomatic excellence with AI-powered tools",
-    siteName: "MUNified",
+    siteName: "DiplomatiQ",
     type: "website",
   },
 };

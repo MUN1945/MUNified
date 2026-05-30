@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 
 const testimonials = [
   {
-    quote: 'MUNified has completely transformed how we prepare our delegates. The AI assessments pinpoint exactly where students need to improve, and the training modules have increased our conference performance by 40%.',
+    quote: 'DiplomatiQ has completely transformed how we prepare our delegates. The AI assessments pinpoint exactly where students need to improve, and the training modules have increased our conference performance by 40%.',
     name: 'Dr. Sarah Al-Mansouri',
     role: 'MUN Director',
     school: 'American School of Dubai',
@@ -25,7 +25,7 @@ const testimonials = [
     avatar: 'AH',
   },
   {
-    quote: 'Managing a 200-delegate conference used to take months of planning. With MUNified\'s Conference Command, we streamlined registration, committee assignments, and voting — all in one platform. It\'s a game-changer.',
+    quote: 'Managing a 200-delegate conference used to take months of planning. With DiplomatiQ\'s Conference Command, we streamlined registration, committee assignments, and voting — all in one platform. It\'s a game-changer.',
     name: 'Priya Sharma',
     role: 'Secretary-General',
     school: 'Delhi Public School',
@@ -37,7 +37,7 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className="relative py-24 md:py-32 bg-[#FFF8F0]">
+    <section className="relative py-24 md:py-32 bg-[#FAFBFC]">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/3 w-72 h-72 bg-[#0D7377] rounded-full opacity-[0.03] blur-[100px]" />
@@ -56,11 +56,11 @@ export default function Testimonials() {
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#059669]/10 text-[#059669] text-sm font-medium mb-4">
             Testimonials
           </span>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1B3A4B] tracking-tight">
-            Trusted by Educators & Delegates
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D1B2A] tracking-tight">
+            Demo Testimonials — Sample Content
           </h2>
-          <p className="mt-4 text-lg text-[#1B3A4B]/60 leading-relaxed">
-            Hear from the schools and delegates who have transformed their MUN experience.
+          <p className="mt-4 text-lg text-[#0D1B2A]/60 leading-relaxed">
+            The following testimonials are placeholder examples for demonstration purposes only.
           </p>
         </motion.div>
 

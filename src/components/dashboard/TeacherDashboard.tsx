@@ -140,7 +140,7 @@ export default function TeacherDashboard() {
                 Welcome back, <span className="text-[#D4A843]">{user.name.split(' ')[0]}</span>
               </h2>
               <p className="text-white/50 mt-1">
-                {user.schoolName || 'MUNified Academy'} · {currentLevel.name} Level · {xp.toLocaleString()} XP
+                {user.schoolName || 'DiplomatiQ Academy'} · {currentLevel.name} Level · {xp.toLocaleString()} XP
               </p>
             </div>
             <div className="flex items-center gap-3">

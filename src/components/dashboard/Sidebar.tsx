@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Globe, Home, ClipboardList, BookOpen, Building2, MessageSquare,
   Search, BarChart3, Settings, Users, Trophy, FileText,
-  LogOut, ChevronLeft, ChevronRight, Shield, Crown, Star, Flame
+  LogOut, ChevronLeft, ChevronRight, Shield, Crown, Star, Flame, FileSearch
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -30,8 +30,9 @@ const STUDENT_NAV: NavItem[] = [
   { id: 'assessment', label: 'Assessment', icon: ClipboardList },
   { id: 'training', label: 'Training', icon: BookOpen },
   { id: 'conferences', label: 'Conferences', icon: Building2 },
+  { id: 'schools', label: 'Schools', icon: Building2 },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'research', label: 'Research', icon: Search },
+  { id: 'research', label: 'Research Lab', icon: FileSearch },
   { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ]
@@ -41,9 +42,10 @@ const TEACHER_NAV: NavItem[] = [
   { id: 'assessment', label: 'Assessment', icon: ClipboardList },
   { id: 'training', label: 'Training', icon: BookOpen },
   { id: 'conferences', label: 'Conferences', icon: Building2 },
+  { id: 'schools', label: 'Schools', icon: Building2 },
   { id: 'committees', label: 'Committees', icon: Shield },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'research', label: 'Research', icon: FileText },
+  { id: 'research', label: 'Research Lab', icon: FileSearch },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
@@ -56,12 +58,20 @@ const ADMIN_NAV: NavItem[] = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
+const SUPER_ADMIN_NAV: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'founder', label: 'Command Center', icon: Shield },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'conferences', label: 'Conferences', icon: Building2 },
+  { id: 'settings', label: 'Settings', icon: Settings },
+]
+
 function getNavItems(role: string): NavItem[] {
   switch (role) {
     case 'TEACHER': return TEACHER_NAV
+    case 'SUPER_ADMIN': return SUPER_ADMIN_NAV
     case 'ADMIN':
-    case 'SCHOOL_ADMIN':
-    case 'SUPER_ADMIN': return ADMIN_NAV
+    case 'SCHOOL_ADMIN': return ADMIN_NAV
     default: return STUDENT_NAV
   }
 }
@@ -150,7 +160,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
               exit={{ opacity: 0, width: 0 }}
               transition={{ duration: 0.2 }}
             >
-              MUN<span className="text-[#D4A843]">ified</span>
+              Diplomat<span className="text-[#D4A843]">iQ</span>
             </motion.span>
           )}
         </AnimatePresence>

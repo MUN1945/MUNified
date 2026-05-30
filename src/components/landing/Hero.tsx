@@ -124,7 +124,7 @@ export default function Hero() {
         >
           Where Model UN
           <br />
-          <span className="munified-gradient-text">Meets Mastery</span>
+          <span className="diplomatiq-gradient-text">Meets Mastery</span>
         </motion.h1>
 
         {/* Subtitle */}

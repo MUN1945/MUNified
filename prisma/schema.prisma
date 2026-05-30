@@ -17,6 +17,7 @@ enum UserRole {
   ADMIN
   SCHOOL_ADMIN
   SUPER_ADMIN
+  FOUNDER
 }
 
 enum MUNRole {
@@ -33,7 +34,10 @@ enum SubscriptionTier {
   FREE
   STUDENT_PRO
   TEACHER_PRO
+  SCHOOL_STARTER
+  SCHOOL_PROFESSIONAL
   SCHOOL_ENTERPRISE
+  CONFERENCE_PACKAGE
 }
 
 enum SubscriptionStatus {
@@ -72,6 +76,17 @@ enum AssessmentType {
   ROLE_PLACEMENT
   PROGRESS_CHECK
   PRE_CONFERENCE
+  TIER_ADVANCEMENT
+}
+
+enum AssessmentTier {
+  TIER_1_BASIC_DELEGATE
+  TIER_2_ADVANCED_DELEGATE
+  TIER_3_COMMITTEE_LEADER
+  TIER_4_CHAIR
+  TIER_5_UNDER_SECRETARY_GENERAL
+  TIER_6_DEPUTY_SECRETARY_GENERAL
+  TIER_7_SECRETARY_GENERAL
 }
 
 enum BadgeCategory {
@@ -127,6 +142,75 @@ enum AuditAction {
   PERMISSION_CHANGE
 }
 
+enum SchoolType {
+  PUBLIC
+  PRIVATE
+  INTERNATIONAL
+  CHARTER
+}
+
+enum Curriculum {
+  AMERICAN
+  BRITISH
+  IB
+  NATIONAL
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  SCENARIO
+  SIMULATION
+  SPEECH_EVAL
+  WRITING
+  LEADERSHIP
+  RESEARCH_TASK
+  AI_INTERVIEW
+}
+
+enum QuestionCategory {
+  KNOWLEDGE
+  SKILLS
+  BEHAVIOR
+}
+
+enum PaperStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  EVALUATED
+  RETURNED
+}
+
+enum SecurityEventType {
+  LOGIN
+  LOGOUT
+  FAILED_LOGIN
+  PASSWORD_CHANGE
+  SUSPICIOUS_ACTIVITY
+  RATE_LIMIT_HIT
+  API_ABUSE
+  SESSION_EXPIRED
+}
+
+enum SecurityEventSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ConferencePackageType {
+  PAY_PER_EVENT
+  ANNUAL_LICENSE
+}
+
 // ============================
 // MODELS
 // ============================
@@ -151,7 +235,7 @@ model User {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
-  school                  School?                 @relation(fields: [schoolId], references: [id])
+  school                  School?                     @relation(fields: [schoolId], references: [id])
   subscription            Subscription?
   delegateProfile         DelegateProfile?
   conferenceRegistrations ConferenceRegistration[]
@@ -162,11 +246,15 @@ model User {
   activities              Activity[]
   auditLogs               AuditLog[]
   researchTasks           ResearchTask[]
-  researchAssignments     ResearchTask[]          @relation("AssignedTasks")
+  researchAssignments     ResearchTask[]              @relation("AssignedTasks")
   chairedCommittees       Committee[]
-  sentNotifications       Notification[]          @relation("SentTo")
+  sentNotifications       Notification[]              @relation("SentTo")
   paymentRecords          Payment[]
   invoices                Invoice[]
+  researchPapers          ResearchPaper[]
+  supervisedPapers        ResearchPaper[]             @relation("PaperTeacher")
+  securityEvents          SecurityEvent[]
+  sessions                Session[]
 
   @@index([schoolId])
   @@index([role])
@@ -175,27 +263,67 @@ model User {
 }
 
 model School {
-  id          String   @id @default(cuid())
-  name        String
-  location    String?
-  city        String?
-  country     String   @default("UAE")
-  website     String?
-  logo        String?
-  description String?
-  contactEmail String?
-  contactPhone String?
-  studentCount Int     @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String            @id @default(cuid())
+  name              String
+  officialName      String?
+  location          String?
+  city              String?
+  emirate           String?
+  country           String            @default("UAE")
+  region            String?           // GCC/International
+  website           String?
+  logo              String?
+  description       String?
+  contactEmail      String?
+  contactPhone      String?
+  contactPerson     String?
+  schoolType        SchoolType?
+  curriculum        Curriculum?
+  gradeRange        String?           // e.g., "K-12"
+  studentCount      Int               @default(0)
+  teacherCount      Int               @default(0)
+  isVerified        Boolean           @default(false)
+  verificationStatus VerificationStatus @default(PENDING)
+  isFeatured        Boolean           @default(false)
+  source            String?           // MANUAL, GOVERNMENT_API, SELF_REGISTERED, ADMIN_CREATED
+  latitude          Float?
+  longitude         Float?
+  munProgramActive  Boolean           @default(false)
+  munProgramSize    Int               @default(0)
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
-  users       User[]
-  conferences Conference[]
-  schoolSubscriptions SchoolSubscription[]
+  users                   User[]
+  conferences             Conference[]
+  schoolSubscriptions     SchoolSubscription[]
+  verificationRequests    SchoolVerificationRequest[]
 
   @@index([name])
   @@index([country])
+  @@index([city])
+  @@index([verificationStatus])
+  @@index([isFeatured])
+  @@index([schoolType])
+}
+
+model SchoolVerificationRequest {
+  id            String            @id @default(cuid())
+  schoolId      String
+  requestedBy   String
+  status        VerificationStatus @default(PENDING)
+  documents     String?           // JSON array of document URLs
+  adminNotes    String?
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([requestedBy])
 }
 
 model Subscription {
@@ -289,26 +417,83 @@ model Committee {
 }
 
 model Assessment {
-  id               String         @id @default(cuid())
-  userId           String
-  type             AssessmentType @default(DIAGNOSTIC)
-  knowledgeScore   Int            @default(0)
-  confidenceScore  Int            @default(0)
-  researchScore    Int            @default(0)
-  speakingScore    Int            @default(0)
-  diplomacyScore   Int            @default(0)
-  procedureScore   Int            @default(0)
-  totalScore       Int            @default(0)
-  recommendedRole  String?
-  answers          String?
-  completedAt      DateTime       @default(now())
-  createdAt        DateTime       @default(now())
+  id                 String         @id @default(cuid())
+  userId             String
+  type               AssessmentType @default(DIAGNOSTIC)
+  currentTier        AssessmentTier @default(TIER_1_BASIC_DELEGATE)
+  highestTierReached AssessmentTier @default(TIER_1_BASIC_DELEGATE)
+  knowledgeScore     Int            @default(0)
+  skillsScore        Int            @default(0)
+  behaviorScore      Int            @default(0)
+  confidenceScore    Int            @default(0)
+  diplomacyScore     Int            @default(0)
+  speakingScore      Int            @default(0)
+  researchScore      Int            @default(0)
+  leadershipScore    Int            @default(0)
+  crisisManagementScore Int         @default(0)
+  negotiationScore   Int            @default(0)
+  procedureScore     Int            @default(0)
+  writingScore       Int            @default(0)
+  criticalThinkingScore Int         @default(0)
+  collaborationScore Int            @default(0)
+  debateScore        Int            @default(0)
+  totalScore         Int            @default(0)
+  passed             Boolean        @default(false)
+  failedCheckpoints  Int            @default(0)
+  maxFailedCheckpoints Int          @default(3)
+  recommendedRole    String?
+  recommendedTier    AssessmentTier?
+  placementReport    String?        // JSON with detailed analysis
+  answers            String?        // JSON
+  completedAt        DateTime       @default(now())
+  createdAt          DateTime       @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user       User                  @relation(fields: [userId], references: [id])
+  responses  AssessmentResponse[]
 
   @@index([userId])
   @@index([type])
   @@index([completedAt])
+  @@index([currentTier])
+}
+
+model AssessmentQuestion {
+  id           String        @id @default(cuid())
+  tier         AssessmentTier
+  questionType QuestionType
+  category     QuestionCategory
+  text         String
+  options      String?       // JSON array
+  correctAnswer String?
+  explanation  String?
+  difficulty   Int           @default(5)
+  points       Int           @default(1)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+
+  responses AssessmentResponse[]
+
+  @@index([tier])
+  @@index([questionType])
+  @@index([category])
+  @@index([isActive])
+}
+
+model AssessmentResponse {
+  id           String   @id @default(cuid())
+  assessmentId String
+  questionId   String
+  response     String
+  isCorrect    Boolean?
+  pointsEarned Int      @default(0)
+  timeSpent    Int?     // in seconds
+  createdAt    DateTime @default(now())
+
+  assessment Assessment        @relation(fields: [assessmentId], references: [id])
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id])
+
+  @@index([assessmentId])
+  @@index([questionId])
 }
 
 model Course {
@@ -538,7 +723,7 @@ model Payment {
   id                String        @id @default(cuid())
   userId            String
   amount            Float
-  currency          String        @default("AED")
+  currency          String        @default("USD")
   status            PaymentStatus @default(PENDING)
   stripePaymentId   String?
   stripeInvoiceId   String?
@@ -557,7 +742,7 @@ model Invoice {
   id            String        @id @default(cuid())
   userId        String
   amount        Float
-  currency      String        @default("AED")
+  currency      String        @default("USD")
   status        InvoiceStatus @default(DRAFT)
   invoiceNumber String        @unique
   description   String?
@@ -612,20 +797,189 @@ model Coupon {
 }
 
 model PricingPlan {
-  id          String   @id @default(cuid())
-  name        String
-  tier        SubscriptionTier
+  id           String           @id @default(cuid())
+  name         String
+  tier         SubscriptionTier
   priceMonthly Float
   priceYearly  Float?
-  currency    String   @default("AED")
-  features    String
-  maxStudents Int?
-  maxTeachers Int?
-  isPopular   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
+  currency     String           @default("USD")
+  features     String
+  maxStudents  Int?
+  maxTeachers  Int?
+  isPopular    Boolean          @default(false)
+  isActive     Boolean          @default(true)
+  order        Int              @default(0)
+  createdAt    DateTime         @default(now())
 
   @@index([tier])
   @@index([isActive])
+}
+
+// ============================
+// CONFERENCE PACKAGE
+// ============================
+
+model ConferencePackage {
+  id           String              @id @default(cuid())
+  name         String
+  type         ConferencePackageType
+  priceMonthly Float?
+  priceYearly  Float?
+  currency     String              @default("USD")
+  maxDelegates Int                 @default(0)
+  maxCommittees Int                @default(0)
+  features     String              // JSON
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+
+  @@index([type])
+  @@index([isActive])
+}
+
+// ============================
+// RESEARCH PAPER EVALUATION SYSTEM
+// ============================
+
+model ResearchPaper {
+  id          String      @id @default(cuid())
+  studentId   String
+  teacherId   String?
+  title       String
+  abstract    String?
+  content     String?
+  fileUrl     String?
+  fileName    String?
+  fileSize    Int?
+  status      PaperStatus @default(DRAFT)
+  submittedAt DateTime?
+  evaluatedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  student    User           @relation(fields: [studentId], references: [id])
+  teacher    User?          @relation("PaperTeacher", fields: [teacherId], references: [id])
+  evaluation PaperEvaluation?
+  feedbacks  PaperFeedback[]
+
+  @@index([studentId])
+  @@index([teacherId])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+model PaperEvaluation {
+  id                     String   @id @default(cuid())
+  paperId                String   @unique
+  overallScore           Int      @default(0)
+  strengths              String?  // JSON array
+  weaknesses             String?  // JSON array
+  recommendations        String?  // JSON array
+  citationQualityScore   Int      @default(0)
+  researchDepthScore     Int      @default(0)
+  writingQualityScore    Int      @default(0)
+  diplomacyRelevanceScore Int     @default(0)
+  argumentQualityScore   Int      @default(0)
+  analyticalThinkingScore Int     @default(0)
+  aiContentPercentage    Float    @default(0)
+  aiContentThreshold     Float    @default(25)
+  aiDetectionDetails     String?  // JSON with detailed AI detection analysis
+  originalityScore       Int      @default(0)
+  authenticityScore      Int      @default(0)
+  improvementRoadmap     String?  // JSON
+  aiModel                String   @default("z-ai-v1")
+  evaluatedAt            DateTime @default(now())
+  createdAt              DateTime @default(now())
+
+  paper     ResearchPaper   @relation(fields: [paperId], references: [id])
+  feedbacks PaperFeedback[]
+
+  @@index([paperId])
+  @@index([overallScore])
+}
+
+model PaperFeedback {
+  id                 String   @id @default(cuid())
+  paperId            String
+  evaluationId       String
+  teacherId          String?
+  teacherComments    String?
+  teacherRating      Int      @default(0)
+  aiSummary          String?  // condensed AI evaluation summary for teachers
+  studentProgressTrend String? // JSON tracking progress over time
+  createdAt          DateTime @default(now())
+
+  paper      ResearchPaper   @relation(fields: [paperId], references: [id])
+  evaluation PaperEvaluation @relation(fields: [evaluationId], references: [id])
+
+  @@index([paperId])
+  @@index([evaluationId])
+  @@index([teacherId])
+}
+
+// ============================
+// SECURITY AUDIT MODELS
+// ============================
+
+model SecurityEvent {
+  id            String              @id @default(cuid())
+  userId        String?
+  eventType     SecurityEventType
+  ipAddress     String?
+  userAgent     String?
+  details       String?
+  severity      SecurityEventSeverity @default(LOW)
+  isResolved    Boolean             @default(false)
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime            @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([isResolved])
+  @@index([createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isActive])
+}
+
+// ============================
+// PLATFORM METRICS (FOUNDER DASHBOARD)
+// ============================
+
+model PlatformMetric {
+  id                   String   @id @default(cuid())
+  date                 DateTime @unique
+  totalSchools         Int      @default(0)
+  totalTeachers        Int      @default(0)
+  totalStudents        Int      @default(0)
+  activeUsers          Int      @default(0)
+  newRegistrations     Int      @default(0)
+  churnedUsers         Int      @default(0)
+  mrr                  Float    @default(0)
+  arr                  Float    @default(0)
+  activeSubscriptions  Int      @default(0)
+  failedPayments       Int      @default(0)
+  refunds              Int      @default(0)
+  customerLifetimeValue Float   @default(0)
+  createdAt            DateTime @default(now())
+
+  @@index([date])
 }

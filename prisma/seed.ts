@@ -329,7 +329,7 @@ async function main() {
     prisma.badge.create({
       data: {
         name: "Founding Member",
-        description: "Join MUNified during the launch period",
+        description: "Join DiplomatiQ during the launch period",
         icon: "sparkles",
         category: "SPECIAL",
         xpReward: 50,
@@ -360,7 +360,7 @@ async function main() {
         tier: "FREE",
         priceMonthly: 0,
         priceYearly: 0,
-        currency: "AED",
+        currency: "USD",
         features: JSON.stringify([
           "Basic MUN training courses (3 courses)",
           "Diagnostic assessment",
@@ -381,7 +381,7 @@ async function main() {
         tier: "STUDENT_PRO",
         priceMonthly: 29,
         priceYearly: 290,
-        currency: "AED",
+        currency: "USD",
         features: JSON.stringify([
           "All training courses (8+ courses)",
           "All assessment types",
@@ -404,7 +404,7 @@ async function main() {
         tier: "TEACHER_PRO",
         priceMonthly: 99,
         priceYearly: 990,
-        currency: "AED",
+        currency: "USD",
         features: JSON.stringify([
           "All Student Pro features",
           "Conference management tools",
@@ -429,7 +429,7 @@ async function main() {
         tier: "SCHOOL_ENTERPRISE",
         priceMonthly: 499,
         priceYearly: 4990,
-        currency: "AED",
+        currency: "USD",
         features: JSON.stringify([
           "All Teacher Pro features",
           "Unlimited student accounts",
@@ -2039,7 +2039,7 @@ Move beyond informative speaking to truly persuasive rhetoric—speeches that ch
 ### 1. Inform → Convince → Inspire → Activate
 
 - **Inform**: "Water scarcity affects 2 billion people worldwide"
-- **Convince**: "Without action, 3.5 billion will face water scarcity by 2025"
+- **Convince**: "Without action, 3.5 billion will face water scarcity by 2030"
 - **Inspire**: "We have the technology and resources to ensure clean water for all—what we lack is the collective will"
 - **Activate**: "This committee must commit today to doubling investment in water infrastructure by 2030"
 

@@ -29,7 +29,7 @@ const plans = [
   },
   {
     name: 'Delegate Pro',
-    price: 'AED 29',
+    price: '$9',
     priceNote: '/month',
     description: 'Full training and assessment access for individual delegates.',
     features: [
@@ -50,7 +50,7 @@ const plans = [
   },
   {
     name: 'Director Pro',
-    price: 'AED 99',
+    price: '$29',
     priceNote: '/month',
     description: 'Complete management suite for MUN directors and advisors.',
     features: [

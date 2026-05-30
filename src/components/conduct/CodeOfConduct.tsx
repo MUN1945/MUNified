@@ -1,182 +1,116 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Shield, Heart, BookOpen, MessageSquare, Gavel, Shirt,
-  Monitor, AlertTriangle, Flag, ChevronDown, CheckCircle2,
-  ScrollText, Scale, Globe
-} from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChevronDown, Search, Expand, Shrink, Scale, Check, Shield } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
+import {
+  SECTIONS, INTRODUCTION, CODE_OF_CONDUCT_VERSION,
+  CODE_OF_CONDUCT_EFFECTIVE, TOTAL_RULES, TOTAL_SECTIONS,
+  type ConductSection
+} from '@/lib/conduct/sections'
 
 // ============================================================
-// SECTION DATA
+// SECTION CARD COMPONENT
 // ============================================================
 
-interface ConductSection {
-  id: string
-  number: number
-  title: string
-  icon: React.ElementType
-  content: string[]
-}
-
-const SECTIONS: ConductSection[] = [
-  {
-    id: 'preamble',
-    number: 1,
-    title: 'Preamble',
-    icon: ScrollText,
-    content: [
-      'MUNified is dedicated to fostering respectful, constructive, and educational discourse among delegates from diverse backgrounds worldwide. Our platform exists to prepare the next generation of diplomats, leaders, and global citizens.',
-      'We believe that Model United Nations serves as a powerful tool for developing critical thinking, empathy, and cross-cultural understanding. This Code of Diplomatic Conduct establishes the principles and standards that all members of our community are expected to uphold.',
-      'By using MUNified, you join a global community committed to the ideals of the United Nations: peace, cooperation, human rights, and sustainable development. We expect every member to conduct themselves with the dignity and respect befitting these ideals.',
-    ],
-  },
-  {
-    id: 'respect',
-    number: 2,
-    title: 'Respect & Dignity',
-    icon: Heart,
-    content: [
-      'All delegates must treat fellow participants with respect and dignity, regardless of nationality, race, gender, religion, sexual orientation, or political views. Personal attacks, discrimination, or harassment of any kind will not be tolerated.',
-      'Constructive disagreement is the cornerstone of diplomacy. Challenge ideas, not individuals. Engage in debate with the understanding that diverse perspectives strengthen our collective understanding.',
-      'Respect the roles and authority of conference organizers, chairs, and faculty advisors. Their guidance ensures productive and fair proceedings for all delegates.',
-    ],
-  },
-  {
-    id: 'integrity',
-    number: 3,
-    title: 'Academic Integrity',
-    icon: BookOpen,
-    content: [
-      'All work submitted through MUNified — including position papers, resolutions, and research briefs — must be your own original work. Plagiarism, including unauthorized use of AI-generated content presented as your own, is strictly prohibited.',
-      'Properly cite all sources used in your research. Acknowledge the contributions of others and maintain transparency about the origins of your information and arguments.',
-      'When using AI tools for research assistance, clearly indicate which parts of your work were developed with AI support. MUNified encourages ethical use of technology while maintaining authentic intellectual engagement.',
-    ],
-  },
-  {
-    id: 'communication',
-    number: 4,
-    title: 'Professional Communication',
-    icon: MessageSquare,
-    content: [
-      'All communications on MUNified — including chat messages, forum posts, and committee discussions — must be professional, constructive, and relevant to the diplomatic exercise. Avoid informal language, slang, or tone that undermines the professional environment.',
-      'Do not share personal contact information in public channels. Keep all communications within the platform to ensure safety and accountability.',
-      'Report any inappropriate, offensive, or harmful content to the moderation team immediately. Do not engage with or amplify problematic messages.',
-    ],
-  },
-  {
-    id: 'etiquette',
-    number: 5,
-    title: 'Conference Etiquette',
-    icon: Gavel,
-    content: [
-      'During MUN sessions, follow parliamentary procedure and respect the authority of the chair. Raise your placard to speak, address other delegates formally, and adhere to speaking time limits.',
-      'Remain engaged and attentive during committee sessions. Refrain from side conversations, use of electronic devices for non-conference purposes, or any behavior that disrupts proceedings.',
-      'Voting must reflect your assigned country\'s position, not your personal opinions. Represent your country authentically and research its policies thoroughly before sessions.',
-    ],
-  },
-  {
-    id: 'dress-code',
-    number: 6,
-    title: 'Dress Code',
-    icon: Shirt,
-    content: [
-      'During MUN conferences and virtual sessions, delegates are expected to maintain professional attire consistent with diplomatic settings. This includes business formal wear: suits, dress shirts, ties, blazers, or equivalent professional attire.',
-      'Cultural and religious attire is always welcome and respected. MUNified celebrates diversity and does not require anyone to compromise their cultural or religious dress practices.',
-      'For virtual sessions, ensure your background is appropriate and professional. Maintain the same level of professionalism in your appearance as you would in an in-person conference.',
-    ],
-  },
-  {
-    id: 'digital',
-    number: 7,
-    title: 'Digital Conduct',
-    icon: Monitor,
-    content: [
-      'Use MUNified\'s digital tools responsibly. Do not attempt to hack, exploit, or gain unauthorized access to any part of the platform or other users\' accounts.',
-      'Respect the privacy of other delegates. Do not share screenshots, recordings, or content from private conversations without explicit consent from all parties involved.',
-      'Maintain appropriate digital boundaries. Do not send unsolicited messages, engage in cyberbullying, or use the platform for purposes unrelated to MUN activities.',
-    ],
-  },
-  {
-    id: 'consequences',
-    number: 8,
-    title: 'Consequences',
-    icon: AlertTriangle,
-    content: [
-      'Violations of this Code of Conduct will be reviewed by the MUNified moderation team. Depending on the severity of the violation, consequences may include: a formal warning, temporary suspension of platform privileges, or permanent account termination.',
-      'Serious violations — including harassment, hate speech, plagiarism, or unauthorized access — may result in immediate suspension pending review, and may be reported to the delegate\'s school or institution.',
-      'We aim to be fair and proportional in our responses. All reports are investigated thoroughly, and accused parties will have the opportunity to present their perspective before any action is taken.',
-    ],
-  },
-  {
-    id: 'reporting',
-    number: 9,
-    title: 'Reporting Violations',
-    icon: Flag,
-    content: [
-      'If you experience or witness a violation of this Code of Conduct, please report it immediately using the in-app reporting feature or by contacting conduct@munified.io. All reports are treated confidentially.',
-      'You may also report concerns to your faculty advisor, conference organizer, or any member of the MUNified team. We are committed to ensuring that no one faces retaliation for making a good-faith report.',
-      'MUNified takes all reports seriously and commits to investigating them promptly and fairly. We will keep you informed about the progress of your report and any actions taken.',
-    ],
-  },
-]
-
-// ============================================================
-// COLLAPSIBLE SECTION
-// ============================================================
-
-function ConductSectionCard({ section, isOpen, onToggle }: { section: ConductSection; isOpen: boolean; onToggle: () => void }) {
+function SectionCard({
+  section,
+  isOpen,
+  onToggle,
+  searchQuery,
+}: {
+  section: ConductSection
+  isOpen: boolean
+  onToggle: () => void
+  searchQuery: string
+}) {
   const Icon = section.icon
+  const filteredRules = useMemo(() => {
+    if (!searchQuery) return section.rules
+    const q = searchQuery.toLowerCase()
+    return section.rules.filter(r => r.text.toLowerCase().includes(q))
+  }, [section.rules, searchQuery])
+
+  const hasResults = !searchQuery || filteredRules.length > 0
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: section.number * 0.06 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: hasResults ? 1 : 0.3, y: 0 }}
+      transition={{ duration: 0.3, delay: section.number * 0.02 }}
+      style={{ display: hasResults ? undefined : 'none' }}
     >
-      <Card className={`border-[#E8DED0]/60 overflow-hidden transition-all ${isOpen ? 'shadow-md' : 'hover:shadow-sm'}`}>
+      <Card className="border border-[#E8DED0]/50 overflow-hidden transition-shadow hover:shadow-sm">
+        {/* Header */}
         <button
           onClick={onToggle}
-          className="w-full text-left p-4 md:p-5 flex items-start gap-4 cursor-pointer"
+          className="w-full text-left p-4 md:p-5 flex items-center gap-4 cursor-pointer group"
         >
-          <div className="w-11 h-11 rounded-xl bg-[#1B3A4B] flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5 text-[#D4A843]" />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105"
+            style={{ backgroundColor: `${section.color}12` }}
+          >
+            <Icon className="w-5 h-5" style={{ color: section.color }} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-[#D4A843]">Section {section.number}</span>
+              <span
+                className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded"
+                style={{ color: section.color, backgroundColor: `${section.color}10` }}
+              >
+                {section.number}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {section.rules.length} rules
+              </span>
             </div>
-            <h3 className="text-base font-bold text-[#1B3A4B] mt-0.5">{section.title}</h3>
+            <h3 className="text-sm md:text-base font-bold text-[#0D1B2A] mt-0.5 leading-tight">
+              {section.title}
+            </h3>
           </div>
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.25 }}
-            className="shrink-0 mt-2"
+            transition={{ duration: 0.2 }}
+            className="shrink-0"
           >
-            <ChevronDown className="w-5 h-5 text-[#1B3A4B]/40" />
+            <ChevronDown className="w-5 h-5 text-[#0D1B2A]/30" />
           </motion.div>
         </button>
 
+        {/* Content */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="overflow-hidden"
             >
-              <Separator className="bg-[#E8DED0]/60" />
-              <div className="p-4 md:p-5 pt-4 space-y-4">
-                {section.content.map((paragraph, i) => (
-                  <p key={i} className="text-sm text-[#1B3A4B]/80 leading-relaxed">
-                    {paragraph}
-                  </p>
+              <Separator className="bg-[#E8DED0]/40" />
+              <div className="p-4 md:p-5 space-y-3">
+                {filteredRules.map((rule) => (
+                  <div
+                    key={rule.number}
+                    className="flex gap-3 items-start pl-3"
+                    style={{ borderLeft: `2px solid ${section.color}25` }}
+                  >
+                    <span
+                      className="text-xs font-mono font-bold shrink-0 mt-0.5 w-7"
+                      style={{ color: section.color }}
+                    >
+                      {rule.number}
+                    </span>
+                    <p className="text-sm text-[#0D1B2A]/80 leading-relaxed">
+                      {rule.text}
+                    </p>
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -188,123 +122,235 @@ function ConductSectionCard({ section, isOpen, onToggle }: { section: ConductSec
 }
 
 // ============================================================
-// MAIN CODE OF CONDUCT
+// MAIN CODE OF CONDUCT COMPONENT
 // ============================================================
 
 export default function CodeOfConduct() {
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['preamble']))
-  const [accepted, setAccepted] = useState(false)
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [readSections, setReadSections] = useState<Set<string>>(new Set())
+  const [acknowledgments, setAcknowledgments] = useState({
+    read: false,
+    violations: false,
+    investigation: false,
+    minor: false,
+  })
 
-  const toggleSection = (id: string) => {
+  const toggleSection = useCallback((id: string) => {
     setOpenSections(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
-      else next.add(id)
+      else {
+        next.add(id)
+        setReadSections(r => new Set(r).add(id))
+      }
       return next
     })
-  }
+  }, [])
 
-  const expandAll = () => {
+  const expandAll = useCallback(() => {
     setOpenSections(new Set(SECTIONS.map(s => s.id)))
-  }
+    setReadSections(new Set(SECTIONS.map(s => s.id)))
+  }, [])
 
-  const collapseAll = () => {
+  const collapseAll = useCallback(() => {
     setOpenSections(new Set())
-  }
+  }, [])
+
+  const allAcknowledged = acknowledgments.read && acknowledgments.violations && acknowledgments.investigation
+
+  const progressPercent = Math.round((readSections.size / TOTAL_SECTIONS) * 100)
+
+  const filteredSections = useMemo(() => {
+    if (!searchQuery) return SECTIONS
+    const q = searchQuery.toLowerCase()
+    return SECTIONS.filter(s =>
+      s.title.toLowerCase().includes(q) ||
+      s.rules.some(r => r.text.toLowerCase().includes(q))
+    )
+  }, [searchQuery])
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
         <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-[#1B3A4B] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl bg-[#0D1B2A] flex items-center justify-center">
             <Scale className="w-6 h-6 text-[#D4A843]" />
           </div>
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-[#1B3A4B]">
-          MUNified Code of Diplomatic Conduct
+        <h1 className="text-2xl md:text-3xl font-bold text-[#0D1B2A]">
+          MUN Official Code of Conduct
         </h1>
-        <p className="text-muted-foreground mt-3 max-w-2xl mx-auto leading-relaxed">
-          Our community standards and principles ensure that MUNified remains a respectful, educational, and inclusive platform for delegates worldwide.
-        </p>
-        <div className="flex items-center justify-center gap-4 mt-4">
-          <Badge className="bg-[#0D7377]/10 text-[#0D7377] border-0">
-            <Globe className="w-3 h-3 mr-1" /> Global Standards
+        <div className="flex items-center justify-center gap-3 mt-3">
+          <Badge className="bg-[#0D1B2A]/10 text-[#0D1B2A] border-0 text-xs">
+            Version {CODE_OF_CONDUCT_VERSION}
           </Badge>
-          <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-0">
-            <Shield className="w-3 h-3 mr-1" /> Community Protected
+          <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-0 text-xs">
+            Effective {CODE_OF_CONDUCT_EFFECTIVE}
           </Badge>
         </div>
+        <p className="text-sm text-muted-foreground mt-4 max-w-2xl mx-auto leading-relaxed">
+          {INTRODUCTION}
+        </p>
       </motion.div>
 
-      {/* Quick Navigation */}
+      {/* Progress & Search */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Card className="border-[#E8DED0]/60 bg-gradient-to-r from-[#1B3A4B] to-[#264B5E]">
-          <CardContent className="p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-[#D4A843] mr-2">Sections:</span>
-              {SECTIONS.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => toggleSection(s.id)}
-                  className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
-                    openSections.has(s.id)
-                      ? 'bg-[#D4A843] text-[#1B3A4B] font-semibold'
-                      : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
-                  }`}
+        <Card className="border-[#E8DED0]/50">
+          <CardContent className="p-4 space-y-4">
+            {/* Progress */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {readSections.size} of {TOTAL_SECTIONS} sections reviewed
+                </span>
+                <span className="font-semibold text-[#0D1B2A]">{progressPercent}%</span>
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search all rules..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 border-[#E8DED0]/50 focus-visible:ring-[#0A7E8C]/20"
+              />
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {TOTAL_RULES} rules across {TOTAL_SECTIONS} sections
+                {searchQuery && ` · ${filteredSections.length} matching`}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground"
+                  onClick={expandAll}
                 >
-                  {s.number}. {s.title}
-                </button>
-              ))}
-              <div className="flex items-center gap-2 ml-auto">
-                <button onClick={expandAll} className="text-[10px] text-white/40 hover:text-white/70 transition-colors">
-                  Expand All
-                </button>
-                <span className="text-white/20">|</span>
-                <button onClick={collapseAll} className="text-[10px] text-white/40 hover:text-white/70 transition-colors">
-                  Collapse All
-                </button>
+                  <Expand className="w-3 h-3 mr-1" /> Expand All
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground"
+                  onClick={collapseAll}
+                >
+                  <Shrink className="w-3 h-3 mr-1" /> Collapse All
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
+      {/* Section Quick Nav */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+        <Card className="border-[#E8DED0]/50 bg-gradient-to-r from-[#0D1B2A] to-[#1B2A4A]">
+          <CardContent className="p-3">
+            <div className="flex flex-wrap gap-1.5">
+              {SECTIONS.map(s => {
+                const isRead = readSections.has(s.id)
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      toggleSection(s.id)
+                      const el = document.getElementById(`section-${s.id}`)
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                    className={`text-[10px] px-2 py-1 rounded-full transition-all ${
+                      isRead
+                        ? 'bg-[#D4A843]/20 text-[#D4A843] font-semibold'
+                        : 'bg-white/10 text-white/50 hover:bg-white/15 hover:text-white/80'
+                    }`}
+                  >
+                    {s.number}
+                  </button>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Sections */}
-      <div className="space-y-4">
-        {SECTIONS.map(section => (
-          <ConductSectionCard
-            key={section.id}
-            section={section}
-            isOpen={openSections.has(section.id)}
-            onToggle={() => toggleSection(section.id)}
-          />
+      <div className="space-y-3">
+        {filteredSections.map(section => (
+          <div key={section.id} id={`section-${section.id}`}>
+            <SectionCard
+              section={section}
+              isOpen={openSections.has(section.id)}
+              onToggle={() => toggleSection(section.id)}
+              searchQuery={searchQuery}
+            />
+          </div>
         ))}
       </div>
 
       {/* Acknowledgment */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-        <Card className={`border-2 transition-all ${accepted ? 'border-[#059669]/30 bg-[#059669]/5' : 'border-[#1B3A4B]/20'}`}>
-          <CardContent className="p-6 text-center">
-            {accepted ? (
-              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.4 }}>
-                <CheckCircle2 className="w-12 h-12 text-[#059669] mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-[#059669] mb-1">Acknowledged</h3>
-                <p className="text-sm text-muted-foreground">You have accepted the MUNified Code of Diplomatic Conduct</p>
-              </motion.div>
-            ) : (
-              <>
-                <p className="text-sm text-[#1B3A4B]/80 mb-4 max-w-lg mx-auto">
-                  By using MUNified, you acknowledge that you have read, understood, and agree to abide by this Code of Diplomatic Conduct. Violations may result in disciplinary action as described above.
-                </p>
-                <Button
-                  size="lg"
-                  className="bg-[#1B3A4B] hover:bg-[#264B5E] text-white font-semibold px-8"
-                  onClick={() => setAccepted(true)}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <Card className={`border-2 transition-all ${allAcknowledged ? 'border-[#059669]/30 bg-[#059669]/5' : 'border-[#0D1B2A]/15'}`}>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#0D1B2A] flex items-center justify-center">
+                <Shield className="w-5 h-5 text-[#D4A843]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-[#0D1B2A]">Acknowledgment & Acceptance</h3>
+                <p className="text-xs text-muted-foreground">Section 36 — Required for platform access</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { key: 'read' as const, label: 'I confirm that I have read, understood, and agree to abide by the MUN Official Code of Conduct.' },
+                { key: 'violations' as const, label: 'I understand that violations may result in disciplinary action, suspension, or removal from the platform, conferences, committees, leadership positions, or affiliated activities.' },
+                { key: 'investigation' as const, label: 'I understand that the platform reserves the right to investigate alleged violations and take appropriate action when necessary.' },
+                { key: 'minor' as const, label: 'Parent/Guardian acknowledgment required (for participants under 18).' },
+              ].map((item) => (
+                <label
+                  key={item.key}
+                  className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                    acknowledgments[item.key]
+                      ? 'bg-[#059669]/8'
+                      : 'bg-muted/30 hover:bg-muted/50'
+                  }`}
                 >
-                  <Shield className="w-4 h-4 mr-2" /> I Accept
-                </Button>
-              </>
+                  <div
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                      acknowledgments[item.key]
+                        ? 'bg-[#059669] border-[#059669]'
+                        : 'border-[#0D1B2A]/20'
+                    }`}
+                    onClick={() => setAcknowledgments(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                  >
+                    {acknowledgments[item.key] && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <span className="text-sm text-[#0D1B2A]/80 leading-relaxed">{item.label}</span>
+                </label>
+              ))}
+            </div>
+
+            {allAcknowledged && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-3 rounded-lg bg-[#059669]/10 text-center"
+              >
+                <p className="text-sm font-semibold text-[#059669]">
+                  ✓ Code of Conduct Acknowledged
+                </p>
+                <p className="text-xs text-[#059669]/70 mt-1">
+                  You have accepted the MUN Official Code of Conduct. You may now access all platform features.
+                </p>
+              </motion.div>
             )}
           </CardContent>
         </Card>
