@@ -40,10 +40,12 @@ export async function requireAuth() {
 
 /**
  * Require a specific role - throws if user doesn't have the required role
+ * FOUNDER and SUPER_ADMIN bypass all role checks
  */
 export async function requireRole(role: string) {
   const user = await requireAuth()
-  if (user.role !== role && user.role !== "SUPER_ADMIN") {
+  if (user.role === "FOUNDER" || user.role === "SUPER_ADMIN") return user
+  if (user.role !== role) {
     throw new Error(`Role '${role}' required. You have role '${user.role}'.`)
   }
   return user
@@ -51,10 +53,12 @@ export async function requireRole(role: string) {
 
 /**
  * Require one of several roles - throws if user doesn't have any of the required roles
+ * FOUNDER and SUPER_ADMIN bypass all role checks
  */
 export async function requireAnyRole(roles: string[]) {
   const user = await requireAuth()
-  if (!roles.includes(user.role) && user.role !== "SUPER_ADMIN") {
+  if (user.role === "FOUNDER" || user.role === "SUPER_ADMIN") return user
+  if (!roles.includes(user.role)) {
     throw new Error(
       `One of roles [${roles.join(", ")}] required. You have role '${user.role}'.`
     )
@@ -64,16 +68,31 @@ export async function requireAnyRole(roles: string[]) {
 
 /**
  * Check if a user has admin-level privileges
+ * FOUNDER > SUPER_ADMIN > ADMIN
  */
 export function isAdmin(role: string): boolean {
-  return ["ADMIN", "SUPER_ADMIN"].includes(role)
+  return ["FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)
+}
+
+/**
+ * Check if a user is the FOUNDER (highest authority)
+ */
+export function isFounder(role: string): boolean {
+  return role === "FOUNDER"
+}
+
+/**
+ * Check if a user is a SUPER_ADMIN or above
+ */
+export function isSuperAdminOrAbove(role: string): boolean {
+  return ["FOUNDER", "SUPER_ADMIN"].includes(role)
 }
 
 /**
  * Check if a user has teacher-level or above privileges
  */
 export function isTeacherOrAbove(role: string): boolean {
-  return ["TEACHER", "ADMIN", "SUPER_ADMIN", "SCHOOL_ADMIN"].includes(role)
+  return ["TEACHER", "ADMIN", "SUPER_ADMIN", "FOUNDER", "SCHOOL_ADMIN"].includes(role)
 }
 
 /**
@@ -98,7 +117,15 @@ export function canAccessAdmin(role: string): boolean {
 }
 
 /**
+ * Check if a user can access the Founder Command Center
+ */
+export function canAccessFounderDashboard(role: string): boolean {
+  return isSuperAdminOrAbove(role)
+}
+
+/**
  * Role hierarchy for comparison
+ * FOUNDER > SUPER_ADMIN > ADMIN > SCHOOL_ADMIN > TEACHER > STUDENT
  */
 const ROLE_HIERARCHY: Record<string, number> = {
   STUDENT: 1,
@@ -106,6 +133,7 @@ const ROLE_HIERARCHY: Record<string, number> = {
   SCHOOL_ADMIN: 3,
   ADMIN: 4,
   SUPER_ADMIN: 5,
+  FOUNDER: 6,
 }
 
 /**

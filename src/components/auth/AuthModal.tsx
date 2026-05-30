@@ -21,7 +21,7 @@ const ROLES: { value: UserRole; label: string; icon: React.ElementType; desc: st
 ]
 
 export default function AuthModal() {
-  const { login, register, isLoading, error, clearError, demoLogin } = useAuthStore()
+  const { login, register, isLoading, error, clearError } = useAuthStore()
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login')
   const [selectedRole, setSelectedRole] = useState<UserRole>('STUDENT')
   const [name, setName] = useState('')
@@ -52,10 +52,6 @@ export default function AuthModal() {
       return
     }
     await register({ name, email, password, role: selectedRole, school, country })
-  }
-
-  const handleDemoLogin = (role: UserRole) => {
-    demoLogin(role)
   }
 
   const displayError = localError || error
@@ -180,28 +176,7 @@ export default function AuthModal() {
                       )}
                     </Button>
 
-                    {/* Demo Login Shortcuts */}
-                    <div className="pt-3 border-t border-white/10">
-                      <p className="text-white/40 text-xs text-center mb-3">Quick Demo Access</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-white/10 text-white/60 hover:bg-white/[0.06] hover:text-white text-xs"
-                          onClick={() => handleDemoLogin('STUDENT')}
-                        >
-                          <Users className="w-3 h-3 mr-1" /> Student
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-white/10 text-white/60 hover:bg-white/[0.06] hover:text-white text-xs"
-                          onClick={() => handleDemoLogin('TEACHER')}
-                        >
-                          <GraduationCap className="w-3 h-3 mr-1" /> Teacher
-                        </Button>
-                      </div>
-                    </div>
+                    {/* No demo access — production auth only */}
                   </CardContent>
                 </TabsContent>
 

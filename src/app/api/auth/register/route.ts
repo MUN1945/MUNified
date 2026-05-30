@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!email || !password || !name) {
       return NextResponse.json(
-        { success: false, error: "Email, password, and name are required" },
+        { error: "Email, password, and name are required" },
         { status: 400 }
       )
     }
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { success: false, error: "Invalid email format" },
+        { error: "Invalid email format" },
         { status: 400 }
       )
     }
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Password strength validation
     if (password.length < 8) {
       return NextResponse.json(
-        { success: false, error: "Password must be at least 8 characters" },
+        { error: "Password must be at least 8 characters" },
         { status: 400 }
       )
     }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { success: false, error: "An account with this email already exists" },
+        { error: "An account with this email already exists" },
         { status: 409 }
       )
     }
@@ -47,11 +47,11 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password)
 
-    // Validate role
+    // Validate role — only allow non-privileged roles from registration
     const validRoles = ["STUDENT", "TEACHER", "SCHOOL_ADMIN"]
     const userRole = validRoles.includes(role) ? role : "STUDENT"
 
-    // Create user
+    // Create user with delegate profile and trial subscription in a transaction
     const user = await db.user.create({
       data: {
         email: email.toLowerCase(),
@@ -64,49 +64,52 @@ export async function POST(request: NextRequest) {
         schoolId: schoolId || null,
         isActive: true,
         emailVerified: false,
-      },
-    })
-
-    // Create delegate profile for students
-    if (userRole === "STUDENT") {
-      await db.delegateProfile.create({
-        data: {
-          userId: user.id,
-          xp: 0,
-          level: "OBSERVER",
-          streak: 0,
-          longestStreak: 0,
-          conferencesAttended: 0,
-          committeesServed: 0,
-          awardsReceived: 0,
-          resolutionsWritten: 0,
-          speechesDelivered: 0,
+        // Create delegate profile for all new users
+        delegateProfile: {
+          create: {
+            xp: 0,
+            level: "OBSERVER",
+            streak: 0,
+            longestStreak: 0,
+            conferencesAttended: 0,
+            committeesServed: 0,
+            awardsReceived: 0,
+            resolutionsWritten: 0,
+            speechesDelivered: 0,
+          },
         },
-      })
-    }
-
-    // Create subscription with trial period (14 days)
-    const trialStart = new Date()
-    const trialEnd = new Date()
-    trialEnd.setDate(trialEnd.getDate() + 14)
-
-    await db.subscription.create({
-      data: {
-        userId: user.id,
-        tier: "FREE",
-        status: "TRIAL",
-        trialStartsAt: trialStart,
-        trialEndsAt: trialEnd,
+        // Create trial subscription
+        subscription: {
+          create: {
+            tier: "FREE",
+            status: "TRIAL",
+            trialStartsAt: new Date(),
+            trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          },
+        },
+      },
+      include: {
+        subscription: true,
+        delegateProfile: true,
       },
     })
 
-    // Return user without password
+    // Return user data without password (using `user` key for store compatibility)
     const { password: _, ...userWithoutPassword } = user
 
     return NextResponse.json(
       {
-        success: true,
-        data: userWithoutPassword,
+        user: {
+          id: userWithoutPassword.id,
+          name: userWithoutPassword.name,
+          email: userWithoutPassword.email,
+          role: userWithoutPassword.role,
+          munRole: userWithoutPassword.munRole,
+          avatar: userWithoutPassword.avatar,
+          schoolId: userWithoutPassword.schoolId,
+          subscriptionTier: userWithoutPassword.subscription?.tier || "FREE",
+          subscriptionStatus: userWithoutPassword.subscription?.status || "TRIAL",
+        },
         message: "Account created successfully. Your 14-day trial has started.",
       },
       { status: 201 }
@@ -114,7 +117,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Registration error:", error)
     return NextResponse.json(
-      { success: false, error: "Failed to create account. Please try again." },
+      { error: "Failed to create account. Please try again." },
       { status: 500 }
     )
   }

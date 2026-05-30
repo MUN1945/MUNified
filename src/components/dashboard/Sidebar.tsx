@@ -68,8 +68,9 @@ const SUPER_ADMIN_NAV: NavItem[] = [
 
 function getNavItems(role: string): NavItem[] {
   switch (role) {
-    case 'TEACHER': return TEACHER_NAV
+    case 'FOUNDER':
     case 'SUPER_ADMIN': return SUPER_ADMIN_NAV
+    case 'TEACHER': return TEACHER_NAV
     case 'ADMIN':
     case 'SCHOOL_ADMIN': return ADMIN_NAV
     default: return STUDENT_NAV
@@ -148,9 +149,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
     >
       {/* Logo */}
       <div className="px-4 py-5 flex items-center gap-3 min-h-[64px]">
-        <div className="w-9 h-9 rounded-lg bg-[#D4A843] flex items-center justify-center shrink-0">
-          <Globe className="w-5 h-5 text-[#1B3A4B]" />
-        </div>
+        <img src="/logo.svg" alt="DiplomatiQ" className="w-9 h-9 rounded-lg shrink-0" />
         <AnimatePresence>
           {!sidebarCollapsed && (
             <motion.span

@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/research - Create research task
+// POST /api/research - Create research task or research paper
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -84,6 +84,57 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const body = await request.json()
+    const { type } = body
+
+    // Handle research paper creation (students can create papers)
+    if (type === "paper") {
+      const { title, abstract, content, fileUrl, fileName, fileSize, teacherId } = body
+
+      if (!title) {
+        return NextResponse.json(
+          { success: false, error: "Title is required" },
+          { status: 400 }
+        )
+      }
+
+      // Validate file URL if provided
+      if (fileUrl && !fileUrl.startsWith("/api/upload/")) {
+        return NextResponse.json(
+          { success: false, error: "Invalid file URL. File must be uploaded via /api/upload." },
+          { status: 400 }
+        )
+      }
+
+      const paper = await db.researchPaper.create({
+        data: {
+          studentId: session.user.id,
+          teacherId: teacherId || null,
+          title,
+          abstract: abstract || null,
+          content: content || null,
+          fileUrl: fileUrl || null,
+          fileName: fileName || null,
+          fileSize: fileSize || null,
+          status: "DRAFT",
+        },
+        include: {
+          student: {
+            select: { id: true, name: true, email: true },
+          },
+          teacher: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      })
+
+      return NextResponse.json(
+        { success: true, data: paper, message: "Research paper created successfully" },
+        { status: 201 }
+      )
+    }
+
+    // Handle research task creation (teachers only)
     if (!isTeacherOrAbove(session.user.role)) {
       return NextResponse.json(
         { success: false, error: "Insufficient permissions. Teacher or Admin role required." },
@@ -91,7 +142,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
     const { title, description, assignedTo, dueDate, priority, category } = body
 
     if (!title || !description) {
@@ -140,15 +190,15 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error("Create research task error:", error)
+    console.error("Create research error:", error)
     return NextResponse.json(
-      { success: false, error: "Failed to create research task" },
+      { success: false, error: "Failed to create research item" },
       { status: 500 }
     )
   }
 }
 
-// PATCH /api/research - Update task status
+// PATCH /api/research - Update task or paper status
 export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -160,8 +210,105 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, status, title, description, assignedTo, dueDate, priority, category } = body
+    const { type, id } = body
 
+    // Handle research paper update
+    if (type === "paper") {
+      if (!id) {
+        return NextResponse.json(
+          { success: false, error: "Paper ID is required" },
+          { status: 400 }
+        )
+      }
+
+      const existingPaper = await db.researchPaper.findUnique({
+        where: { id },
+      })
+
+      if (!existingPaper) {
+        return NextResponse.json(
+          { success: false, error: "Research paper not found" },
+          { status: 404 }
+        )
+      }
+
+      // Only the student who owns the paper or a teacher can update it
+      if (existingPaper.studentId !== session.user.id && !isTeacherOrAbove(session.user.role)) {
+        return NextResponse.json(
+          { success: false, error: "Insufficient permissions" },
+          { status: 403 }
+        )
+      }
+
+      const { title, abstract, content, fileUrl, fileName, fileSize, status: paperStatus, teacherId } = body
+
+      const updateData: Record<string, unknown> = {}
+      if (title) updateData.title = title
+      if (abstract !== undefined) updateData.abstract = abstract
+      if (content !== undefined) updateData.content = content
+      if (fileUrl !== undefined) {
+        if (fileUrl && !fileUrl.startsWith("/api/upload/")) {
+          return NextResponse.json(
+            { success: false, error: "Invalid file URL" },
+            { status: 400 }
+          )
+        }
+        updateData.fileUrl = fileUrl
+      }
+      if (fileName !== undefined) updateData.fileName = fileName
+      if (fileSize !== undefined) updateData.fileSize = fileSize
+      if (teacherId !== undefined) updateData.teacherId = teacherId
+
+      // Status transitions
+      if (paperStatus) {
+        const validStatuses = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "EVALUATED", "RETURNED"]
+        if (!validStatuses.includes(paperStatus)) {
+          return NextResponse.json(
+            { success: false, error: `Invalid paper status. Valid: ${validStatuses.join(", ")}` },
+            { status: 400 }
+          )
+        }
+
+        // Students can only submit (DRAFT → SUBMITTED)
+        // Teachers can transition: SUBMITTED → UNDER_REVIEW, UNDER_REVIEW → EVALUATED/RETURNED
+        if (!isTeacherOrAbove(session.user.role) && paperStatus !== "SUBMITTED") {
+          return NextResponse.json(
+            { success: false, error: "Students can only submit papers" },
+            { status: 403 }
+          )
+        }
+
+        updateData.status = paperStatus
+
+        if (paperStatus === "SUBMITTED") {
+          updateData.submittedAt = new Date()
+        }
+        if (paperStatus === "EVALUATED") {
+          updateData.evaluatedAt = new Date()
+        }
+      }
+
+      const updatedPaper = await db.researchPaper.update({
+        where: { id },
+        data: updateData,
+        include: {
+          student: {
+            select: { id: true, name: true, email: true },
+          },
+          teacher: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      })
+
+      return NextResponse.json({
+        success: true,
+        data: updatedPaper,
+        message: "Research paper updated successfully",
+      })
+    }
+
+    // Handle research task update
     if (!id) {
       return NextResponse.json(
         { success: false, error: "Task ID is required" },
@@ -191,6 +338,8 @@ export async function PATCH(request: NextRequest) {
         { status: 403 }
       )
     }
+
+    const { status, title, description, assignedTo, dueDate, priority, category } = body
 
     const updateData: Record<string, unknown> = {}
     if (status) {
@@ -222,15 +371,15 @@ export async function PATCH(request: NextRequest) {
       message: "Research task updated successfully",
     })
   } catch (error) {
-    console.error("Update research task error:", error)
+    console.error("Update research error:", error)
     return NextResponse.json(
-      { success: false, error: "Failed to update research task" },
+      { success: false, error: "Failed to update research item" },
       { status: 500 }
     )
   }
 }
 
-// DELETE /api/research - Delete task
+// DELETE /api/research - Delete task or paper
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -241,20 +390,50 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
+    const type = searchParams.get("type") || "task"
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "ID is required" },
+        { status: 400 }
+      )
+    }
+
+    if (type === "paper") {
+      const paper = await db.researchPaper.findUnique({ where: { id } })
+      if (!paper) {
+        return NextResponse.json(
+          { success: false, error: "Research paper not found" },
+          { status: 404 }
+        )
+      }
+
+      // Only the student owner or a teacher/admin can delete
+      if (paper.studentId !== session.user.id && !isTeacherOrAbove(session.user.role)) {
+        return NextResponse.json(
+          { success: false, error: "Insufficient permissions" },
+          { status: 403 }
+        )
+      }
+
+      // Delete related evaluations and feedbacks first
+      await db.paperFeedback.deleteMany({ where: { paperId: id } })
+      await db.paperEvaluation.deleteMany({ where: { paperId: id } })
+      await db.researchPaper.delete({ where: { id } })
+
+      return NextResponse.json({
+        success: true,
+        message: "Research paper deleted successfully",
+      })
+    }
+
+    // Default: delete task (teachers only)
     if (!isTeacherOrAbove(session.user.role)) {
       return NextResponse.json(
         { success: false, error: "Insufficient permissions" },
         { status: 403 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get("id")
-
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: "Task ID is required" },
-        { status: 400 }
       )
     }
 
@@ -265,9 +444,9 @@ export async function DELETE(request: NextRequest) {
       message: "Research task deleted successfully",
     })
   } catch (error) {
-    console.error("Delete research task error:", error)
+    console.error("Delete research error:", error)
     return NextResponse.json(
-      { success: false, error: "Failed to delete research task" },
+      { success: false, error: "Failed to delete research item" },
       { status: 500 }
     )
   }

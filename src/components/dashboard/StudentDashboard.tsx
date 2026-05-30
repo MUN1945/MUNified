@@ -3,20 +3,18 @@
 import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Globe, BookOpen, Award, Users, BarChart3, MessageSquare,
-  ChevronRight, Star, Trophy, Target, Zap, Clock, MapPin,
-  Shield, GraduationCap, Crown, Gavel, FileText,
+  Globe, BookOpen, Users, BarChart3, MessageSquare,
+  ChevronRight, Star, Trophy, Target, Clock, MapPin,
+  Shield, GraduationCap, Crown, Gavel,
   Mic, Handshake, Brain, ArrowRight, Flame, Eye,
-  ClipboardList, Play, Sparkles, CalendarDays
+  ClipboardList, Sparkles, CalendarDays, Loader2, AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useAuthStore, useAppStore, useNavStore, getCurrentLevel, getNextLevel, getXPProgress } from '@/lib/store'
+import { useAuthStore, useAppStore, useNavStore, getCurrentLevel, getNextLevel, getXPProgress, type DelegateProfile, type BadgeData, type CourseData, type ConferenceData } from '@/lib/store'
 
 // ============================================================
 // COUNT-UP ANIMATION HOOK
@@ -31,7 +29,7 @@ function useCountUp(target: number, duration: number = 1000) {
     const step = () => {
       const elapsed = Date.now() - startTime
       const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3) // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3)
       setCount(Math.round(start + (target - start) * eased))
       if (progress < 1) requestAnimationFrame(step)
     }
@@ -92,15 +90,204 @@ function getMUNRoleFull(munRole?: string): string {
 }
 
 // ============================================================
+// LOADING SKELETON
+// ============================================================
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="h-40 bg-[#F5F0EB] rounded-xl" />
+      <div className="h-28 bg-[#F5F0EB] rounded-xl" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-24 bg-[#F5F0EB] rounded-xl" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-64 bg-[#F5F0EB] rounded-xl" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// ERROR STATE
+// ============================================================
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20">
+      <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+      <p className="text-muted-foreground text-sm mb-4">{message}</p>
+      <Button variant="outline" size="sm" onClick={onRetry}>
+        Try Again
+      </Button>
+    </div>
+  )
+}
+
+// ============================================================
 // STUDENT DASHBOARD
 // ============================================================
 
 export default function StudentDashboard() {
   const { user } = useAuthStore()
-  const { delegateProfile, badges, courses, conferences, activities } = useAppStore()
   const { navigate } = useNavStore()
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!user || !delegateProfile) return null
+  // Local state loaded from API
+  const [delegateProfile, setDelegateProfile] = useState<DelegateProfile | null>(null)
+  const [badges, setBadges] = useState<BadgeData[]>([])
+  const [courses, setCourses] = useState<CourseData[]>([])
+  const [conferences, setConferences] = useState<ConferenceData[]>([])
+
+  const fetchData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const [analyticsRes, coursesRes, assessmentsRes] = await Promise.allSettled([
+        fetch('/api/analytics'),
+        fetch('/api/courses'),
+        fetch('/api/assessments'),
+      ])
+
+      // Process analytics (student stats)
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value.ok) {
+        const analyticsData = await analyticsRes.value.json()
+        const d = analyticsData.data || analyticsData
+        if (d.delegateProfile) {
+          setDelegateProfile(d.delegateProfile)
+        } else if (d.overview) {
+          // Build profile from overview data
+          setDelegateProfile({
+            xp: d.overview.totalXP || 0,
+            level: d.overview.level || 'OBSERVER',
+            streak: d.overview.streak || 0,
+            longestStreak: d.overview.longestStreak || 0,
+            conferencesAttended: d.overview.conferencesAttended || 0,
+            committeesServed: d.overview.committeesServed || 0,
+            awardsReceived: d.overview.awardsReceived || 0,
+            resolutionsWritten: d.overview.resolutionsWritten || 0,
+            speechesDelivered: d.overview.speechesDelivered || 0,
+          })
+        }
+        if (d.recentBadges) {
+          setBadges(d.recentBadges)
+        }
+      }
+
+      // Process courses (enrolled courses with progress)
+      if (coursesRes.status === 'fulfilled' && coursesRes.value.ok) {
+        const coursesData = await coursesRes.value.json()
+        const courseList = coursesData.data || (Array.isArray(coursesData) ? coursesData : coursesData.courses || [])
+        setCourses(courseList)
+      }
+
+      // Process assessments (recent assessments)
+      if (assessmentsRes.status === 'fulfilled' && assessmentsRes.value.ok) {
+        // assessments endpoint used for context but not displayed directly here
+      }
+
+      // Fetch gamification (XP, badges, leaderboard position)
+      try {
+        const gamRes = await fetch('/api/gamification')
+        if (gamRes.ok) {
+          const gamData = await gamRes.json()
+          const g = gamData.data || gamData
+          if (g.xp !== undefined && !delegateProfile) {
+            setDelegateProfile(prev => prev ? prev : {
+              xp: g.xp || 0,
+              level: g.level || 'OBSERVER',
+              streak: g.streak || 0,
+              longestStreak: g.longestStreak || 0,
+              conferencesAttended: g.conferencesAttended || 0,
+              committeesServed: g.committeesServed || 0,
+              awardsReceived: g.awardsReceived || 0,
+              resolutionsWritten: g.resolutionsWritten || 0,
+              speechesDelivered: g.speechesDelivered || 0,
+            })
+          } else if (g.xp !== undefined && delegateProfile) {
+            setDelegateProfile(prev => prev ? { ...prev, xp: g.xp, level: g.level || prev.level, streak: g.streak || prev.streak, longestStreak: g.longestStreak || prev.longestStreak } : prev)
+          }
+          if (g.user?.badges && g.user.badges.length > 0) {
+            setBadges(g.user.badges.map((b: { badge?: Record<string, unknown>; earnedAt?: string }) => ({
+              id: b.badge?.id || String(Math.random()),
+              name: b.badge?.name || 'Badge',
+              description: b.badge?.description || '',
+              xpReward: b.badge?.xpReward || 0,
+              icon: b.badge?.icon || 'star',
+            })))
+          }
+        }
+      } catch {
+        // gamification fetch is non-critical
+      }
+
+      // Fetch notifications (recent notifications)
+      try {
+        const notifRes = await fetch('/api/notifications?limit=3')
+        // notifications available for future display
+        if (!notifRes.ok) { /* non-critical */ }
+      } catch {
+        // notifications fetch is non-critical
+      }
+
+      // Fetch conferences
+      try {
+        const confRes = await fetch('/api/conferences')
+        if (confRes.ok) {
+          const confData = await confRes.json()
+          setConferences(Array.isArray(confData) ? confData : confData.conferences || [])
+        }
+      } catch {
+        // conferences fetch is non-critical
+      }
+
+      // If no profile from API, create a default
+      if (!delegateProfile) {
+        setDelegateProfile({
+          xp: 0,
+          level: 'OBSERVER',
+          streak: 0,
+          longestStreak: 0,
+          conferencesAttended: 0,
+          committeesServed: 0,
+          awardsReceived: 0,
+          resolutionsWritten: 0,
+          speechesDelivered: 0,
+        })
+      }
+    } catch {
+      setError('Failed to load dashboard data. Please try again.')
+      // Set defaults
+      setDelegateProfile({
+        xp: 0,
+        level: 'OBSERVER',
+        streak: 0,
+        longestStreak: 0,
+        conferencesAttended: 0,
+        committeesServed: 0,
+        awardsReceived: 0,
+        resolutionsWritten: 0,
+        speechesDelivered: 0,
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  if (!user) return null
+  if (loading) return <DashboardSkeleton />
+  if (error && !delegateProfile) return <ErrorState message={error} onRetry={fetchData} />
+
+  if (!delegateProfile) return null
 
   const currentLevel = getCurrentLevel(delegateProfile.xp)
   const nextLevel = getNextLevel(delegateProfile.xp)
@@ -122,6 +309,15 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Error banner */}
+      {error && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-sm text-amber-700">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
+          <Button variant="ghost" size="sm" className="ml-auto text-amber-700" onClick={fetchData}>Retry</Button>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -255,28 +451,36 @@ export default function StudentDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentBadges.map((badge, i) => (
-                  <motion.div
-                    key={badge.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-[#F5F0EB] hover:bg-[#F0EBE3] transition-colors cursor-pointer"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.4 + i * 0.1 }}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[#D4A843]/15 flex items-center justify-center shrink-0">
-                      <Star className="w-5 h-5 text-[#D4A843]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-[#1B3A4B]">{badge.name}</div>
-                      <div className="text-xs text-muted-foreground">{badge.description}</div>
-                    </div>
-                    <Badge className="bg-[#0D7377]/10 text-[#0D7377] border-0 text-[10px]">
-                      +{badge.xpReward} XP
-                    </Badge>
-                  </motion.div>
-                ))}
-              </div>
+              {recentBadges.length > 0 ? (
+                <div className="space-y-3">
+                  {recentBadges.map((badge, i) => (
+                    <motion.div
+                      key={badge.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-[#F5F0EB] hover:bg-[#F0EBE3] transition-colors cursor-pointer"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.4 + i * 0.1 }}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#D4A843]/15 flex items-center justify-center shrink-0">
+                        <Star className="w-5 h-5 text-[#D4A843]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-[#1B3A4B]">{badge.name}</div>
+                        <div className="text-xs text-muted-foreground">{badge.description}</div>
+                      </div>
+                      <Badge className="bg-[#0D7377]/10 text-[#0D7377] border-0 text-[10px]">
+                        +{badge.xpReward} XP
+                      </Badge>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  <Star className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>No badges earned yet</p>
+                  <p className="text-xs mt-1">Complete activities to earn badges!</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -326,7 +530,10 @@ export default function StudentDashboard() {
                 )) : (
                   <div className="text-center py-6 text-muted-foreground text-sm">
                     <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    No active courses yet
+                    <p>No active courses yet</p>
+                    <Button variant="link" size="sm" className="text-[#0D7377] mt-1" onClick={() => navigate('training')}>
+                      Browse Training
+                    </Button>
                   </div>
                 )}
               </div>
@@ -348,36 +555,46 @@ export default function StudentDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {upcomingConferences.slice(0, 3).map((conf) => (
-                  <div
-                    key={conf.id}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-[#F5F0EB] hover:bg-[#F0EBE3] transition-colors cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-[#1B3A4B] flex items-center justify-center shrink-0">
-                      <Globe className="w-5 h-5 text-[#D4A843]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-[#1B3A4B] truncate">{conf.name}</div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <CalendarDays className="w-3 h-3" />
-                        {conf.startDate}
-                        {conf.location && (
-                          <>
-                            <MapPin className="w-3 h-3 ml-1" />
-                            {conf.location}
-                          </>
-                        )}
+              {upcomingConferences.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingConferences.slice(0, 3).map((conf) => (
+                    <div
+                      key={conf.id}
+                      className="flex items-start gap-3 p-3 rounded-lg bg-[#F5F0EB] hover:bg-[#F0EBE3] transition-colors cursor-pointer"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-[#1B3A4B] flex items-center justify-center shrink-0">
+                        <Globe className="w-5 h-5 text-[#D4A843]" />
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-[#1B3A4B] truncate">{conf.name}</div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                          <CalendarDays className="w-3 h-3" />
+                          {conf.startDate}
+                          {conf.location && (
+                            <>
+                              <MapPin className="w-3 h-3 ml-1" />
+                              {conf.location}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <Badge className={`text-[10px] shrink-0 border-0 ${
+                        conf.status === 'REGISTRATION_OPEN' ? 'bg-[#059669]/15 text-[#059669]' : 'bg-[#0D7377]/15 text-[#0D7377]'
+                      }`}>
+                        {conf.status === 'REGISTRATION_OPEN' ? 'Open' : 'Upcoming'}
+                      </Badge>
                     </div>
-                    <Badge className={`text-[10px] shrink-0 border-0 ${
-                      conf.status === 'REGISTRATION_OPEN' ? 'bg-[#059669]/15 text-[#059669]' : 'bg-[#0D7377]/15 text-[#0D7377]'
-                    }`}>
-                      {conf.status === 'REGISTRATION_OPEN' ? 'Open' : 'Upcoming'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  <Globe className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                  <p>No upcoming conferences</p>
+                  <Button variant="link" size="sm" className="text-[#0D7377] mt-1" onClick={() => navigate('conferences')}>
+                    Browse Conferences
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -427,5 +644,3 @@ export default function StudentDashboard() {
     </div>
   )
 }
-
-

@@ -3,50 +3,23 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import {
-  Globe, BookOpen, Award, Users, BarChart3, Settings, MessageSquare,
-  ChevronRight, Star, Trophy, Target, Zap, Clock, MapPin, TrendingUp,
-  Shield, GraduationCap, Crown, Sword, Landmark, Gavel, FileText,
-  Mic, Handshake, Brain, Eye, Heart, ArrowRight, LogOut, Bell,
-  Search, Plus, CheckCircle2, Circle, Play, Lock, Sparkles,
-  Home as HomeIcon, ClipboardList, BookMarked, Building2, TrophyIcon,
-  Radio, Send, Menu, X, User, Mail, KeyRound, BadgeCheck,
-  Flame, Medal, Rocket, World, Siren, Scale, Briefcase,
-  PieChart, Activity, CalendarDays, UsersRound, Signal,
-  ChevronDown, ExternalLink, Filter, ArrowLeft,
-  Monitor, FileSearch, Layers, Cpu, LucideIcon, ArrowUpRight
+  Globe, Award, Users, BarChart3, MessageSquare,
+  Star, Trophy, Target, Shield, GraduationCap, Crown,
+  Landmark, Gavel, FileSearch, Brain, Building2,
+  Heart, ArrowRight, CheckCircle2, Menu, X,
+  CalendarDays, Monitor, Layers, Cpu, LucideIcon, ArrowUpRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import AppShell from '@/components/dashboard/AppShell'
-import { useAuthStore, useNavStore, type UserRole } from '@/lib/store'
+import { useAuthStore } from '@/lib/store'
 
 // ============================================================
 // TYPES & CONSTANTS
 // ============================================================
 
-type Page = 'landing' | 'auth' | 'dashboard'
-
-interface UserData {
-  name: string
-  email: string
-  role: string
-  xp: number
-  level: string
-  levelIndex: number
-  conferencesAttended: number
-  committeesServed: number
-  trainingProgress: number
-}
+// Page type removed — now using proper Next.js routes
 
 const ASSESSMENT_TIERS = [
   { name: 'Basic Delegate', tier: 1, color: '#94A3B8', icon: Users, desc: 'Foundation of MUN knowledge — procedures, etiquette, and committee basics.' },
@@ -58,29 +31,6 @@ const ASSESSMENT_TIERS = [
   { name: 'Secretary-General', tier: 7, color: '#EF4444', icon: Star, desc: 'The pinnacle — visionary leadership, institutional judgment, and diplomatic authority.' },
 ]
 
-const SCHOOLS_LIST = [
-  'American School of Dubai',
-  'American School of Abu Dhabi',
-  'GEMS Wellington International School',
-  'GEMS Modern Academy',
-  'Dubai International Academy',
-  'Jumeirah College',
-  'Repton School Dubai',
-  'Khalifa A School',
-  'Al Mawakeb School',
-  'International School of Choueifat',
-  'British School of Dubai',
-  'Deira International School',
-  'Dubai College',
-  'English College Dubai',
-  'Uptown School',
-  'Raha International School',
-  'Brighton College Abu Dhabi',
-  'Cranleigh Abu Dhabi',
-  'Sunmarke School',
-  'Swiss International Scientific School',
-]
-
 // ============================================================
 // ANIMATED BACKGROUND COMPONENTS
 // ============================================================
@@ -88,13 +38,19 @@ const SCHOOLS_LIST = [
 function HeroBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* UN background image — fixed, subtle */}
+      {/* UN background image — proper fixed attachment */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-fixed"
-        style={{ backgroundImage: 'url(/un-bg.png)' }}
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'url(/un-bg.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          opacity: 0.08,
+        }}
       />
-      {/* Dark navy overlay for readability */}
-      <div className="absolute inset-0 bg-[#0D1B2A]/[0.88]" />
+      {/* Dark navy overlay for readability — ensures 4.5:1+ contrast ratio */}
+      <div className="absolute inset-0 bg-[#0D1B2A]/[0.92]" />
       {/* Deep navy base with subtle gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0D1B2A] via-[#0F2030] to-[#0D1B2A]" />
 
@@ -201,9 +157,10 @@ function Navbar({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn
 
   const navLinks = [
     { label: 'Features', href: '#features' },
-    { label: 'Academy', href: '#academy' },
-    { label: 'Conferences', href: '#conferences' },
+    { label: 'Assessment', href: '#academy' },
     { label: 'Pricing', href: '#pricing' },
+    { label: 'Schools', href: '#schools' },
+    { label: 'Training', href: '#training' },
   ]
 
   return (
@@ -220,9 +177,7 @@ function Navbar({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 md:h-20">
         {/* Logo */}
         <a href="#" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-lg bg-[#D4A843] flex items-center justify-center group-hover:bg-[#E0BC6A] transition-colors shadow-md shadow-[#D4A843]/20">
-            <Globe className="w-5 h-5 text-[#0D1B2A]" />
-          </div>
+          <img src="/logo.svg" alt="DiplomatiQ" className="w-9 h-9 rounded-lg group-hover:opacity-90 transition-opacity shadow-md shadow-[#D4A843]/20" />
           <span className="text-xl font-bold tracking-tight text-white">
             Diplomati<span className="text-[#D4A843]">Q</span>
           </span>
@@ -376,16 +331,18 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             Begin Your Journey
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-[#D4A843]/40 text-[#D4A843] hover:bg-[#D4A843]/10 hover:border-[#D4A843]/60 text-base px-8 h-13 transition-all duration-300 bg-[#D4A843]/[0.06]"
-          >
-            For Schools
-          </Button>
+          <a href="/auth/register?role=SCHOOL_ADMIN">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-[#D4A843]/40 text-[#D4A843] hover:bg-[#D4A843]/10 hover:border-[#D4A843]/60 text-base px-8 h-13 transition-all duration-300 bg-[#D4A843]/[0.06]"
+            >
+              For Schools
+            </Button>
+          </a>
         </motion.div>
 
-        {/* Trust Indicators */}
+        {/* Community Banner */}
         <motion.div
           className="mt-20 md:mt-24 pt-8 border-t border-white/[0.06]"
           variants={{
@@ -393,17 +350,13 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             visible: { opacity: 1, transition: { duration: 0.8, delay: 0.6 } },
           }}
         >
-          <p className="text-white/30 text-sm mb-4">Trusted by MUN Programs Worldwide</p>
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-            {['Growing Network', 'Active Delegates', 'Global Conferences', 'Diplomatic Excellence'].map((label) => (
-              <div key={label} className="flex flex-col items-center">
-                <span className="text-lg md:text-xl font-semibold text-[#D4A843]/70">&#10022;</span>
-                <span className="text-xs text-white/35 mt-1">{label}</span>
-              </div>
-            ))}
+          <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#D4A843]/[0.08] border border-[#D4A843]/15">
+            <Globe className="w-5 h-5 text-[#D4A843]/70" />
+            <span className="text-sm text-white/60">Join schools across the <span className="text-[#D4A843] font-semibold">UAE and GCC</span></span>
           </div>
-          <a href="#features" className="inline-block mt-4 text-xs text-[#0A7E8C] hover:text-[#0A9EAC] transition-colors font-medium">
-            Join the Network <ArrowRight className="w-3 h-3 inline ml-0.5" />
+          <p className="text-white/40 text-sm mt-4">Growing community of MUN delegates and educators.</p>
+          <a href="#features" className="inline-block mt-3 text-xs text-[#0A7E8C] hover:text-[#0FBACA] transition-colors font-medium">
+            Explore the Platform <ArrowRight className="w-3 h-3 inline ml-0.5" />
           </a>
         </motion.div>
       </motion.div>
@@ -479,7 +432,7 @@ function FeaturesSection() {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">
             Everything Your MUN Program Needs
           </h2>
-          <p className="mt-4 text-white/45 text-lg max-w-2xl mx-auto">
+          <p className="mt-4 text-white/50 text-lg max-w-2xl mx-auto">
             Six integrated modules designed for the complete diplomatic education lifecycle.
           </p>
         </motion.div>
@@ -500,7 +453,7 @@ function FeaturesSection() {
                   <CardTitle className="text-white text-lg font-bold">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-white/45 text-sm leading-relaxed">{feature.desc}</p>
+                  <p className="text-white/55 text-sm leading-relaxed">{feature.desc}</p>
                 </CardContent>
               </Card>
             </motion.div>
@@ -520,7 +473,9 @@ function AssessmentShowcase({ onGetStarted }: { onGetStarted: () => void }) {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="academy" className="relative py-24 md:py-32 bg-[#0A1525]" ref={ref}>
+    <>
+      <div id="training" className="relative" />
+      <section id="academy" className="relative py-24 md:py-32 bg-[#0A1525]" ref={ref}>
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4A843]/10 to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -536,71 +491,74 @@ function AssessmentShowcase({ onGetStarted }: { onGetStarted: () => void }) {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">
             Progressive Assessment System
           </h2>
-          <p className="mt-4 text-white/50 text-lg max-w-2xl mx-auto">
+          <p className="mt-4 text-white/55 text-lg max-w-2xl mx-auto">
             From foundation to pinnacle — each tier unlocks new competencies and challenges. Discover where you stand and where you can grow.
           </p>
         </motion.div>
 
         {/* Tier Pyramid */}
         <div className="max-w-3xl mx-auto">
-          <div className="space-y-2 md:space-y-3">
+          <div className="space-y-1.5 md:space-y-2.5">
             {ASSESSMENT_TIERS.slice().reverse().map((tier, i) => {
-              // Width progression: top tier is narrowest, bottom is widest
-              const widthPercent = tier.tier === 7 ? 35 : tier.tier === 6 ? 45 : tier.tier === 5 ? 55 : tier.tier === 4 ? 65 : tier.tier === 3 ? 75 : tier.tier === 2 ? 85 : 100
+              // Width progression: top tier is narrowest, bottom is widest — pyramid shape
+              const widthPercent = tier.tier === 7 ? 40 : tier.tier === 6 ? 50 : tier.tier === 5 ? 60 : tier.tier === 4 ? 70 : tier.tier === 3 ? 80 : tier.tier === 2 ? 90 : 100
               const TierIcon = tier.icon
               const isTopTier = tier.tier === 7
-              // Scale icon sizes: Secretary-General gets biggest icon
-              const iconSize = tier.tier >= 6 ? 'w-10 h-10' : 'w-9 h-9'
-              const innerIconSize = tier.tier >= 6 ? 'w-5 h-5' : 'w-4.5 h-4.5'
+              const isHighTier = tier.tier >= 5
+              // Scale icon sizes progressively
+              const iconSize = isTopTier ? 'w-11 h-11' : isHighTier ? 'w-10 h-10' : 'w-9 h-9'
+              const innerIconSize = isTopTier ? 'w-5.5 h-5.5' : isHighTier ? 'w-5 h-5' : 'w-4 h-4'
               // Color saturation increases going up
-              const bgOpacity = tier.tier >= 5 ? '12' : tier.tier >= 3 ? '08' : '06'
-              const borderOpacity = tier.tier >= 5 ? '35' : '25'
-              const iconBgOpacity = tier.tier >= 5 ? '25' : '20'
+              const bgOpacity = isTopTier ? '15' : isHighTier ? '10' : '06'
+              const borderOpacity = isTopTier ? '40' : isHighTier ? '30' : '20'
+              const iconBgOpacity = isTopTier ? '30' : isHighTier ? '22' : '15'
               return (
                 <motion.div
                   key={tier.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                  animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                  transition={{ duration: 0.5, delay: 0.2 + i * 0.08, ease: 'easeOut' }}
                   className="flex items-center justify-center"
                 >
-                  <div
-                    className="relative group cursor-pointer w-full md:w-auto"
-                    style={{ width: undefined }}
-                  >
+                  <div className="relative group cursor-pointer" style={{ width: `${widthPercent}%` }}>
                     <div
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-all duration-300 group-hover:scale-[1.01] ${isTopTier ? 'ring-1 ring-[#D4A843]/20' : ''}`}
+                      className={`flex items-center gap-3 px-4 py-2.5 md:py-3 rounded-xl border transition-all duration-300 group-hover:scale-[1.015] group-hover:shadow-lg ${isTopTier ? 'ring-2 ring-[#D4A843]/25' : ''}`}
                       style={{
                         backgroundColor: `${tier.color}${bgOpacity}`,
                         borderColor: `${tier.color}${borderOpacity}`,
-                        width: `${widthPercent}%`,
-                        margin: '0 auto',
                       }}
                     >
-                      {/* Glow pulse on appear */}
+                      {/* Glow pulse for top tier */}
                       {isInView && isTopTier && (
                         <motion.div
-                          className="absolute inset-0 rounded-lg"
-                          style={{ boxShadow: `0 0 20px ${tier.color}30, 0 0 40px ${tier.color}15` }}
-                          animate={{ opacity: [0.5, 1, 0.5] }}
+                          className="absolute -inset-px rounded-xl pointer-events-none"
+                          style={{ boxShadow: `0 0 25px ${tier.color}25, 0 0 50px ${tier.color}10` }}
+                          animate={{ opacity: [0.4, 0.8, 0.4] }}
                           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                         />
                       )}
                       <div
-                        className={`${iconSize} rounded-lg flex items-center justify-center shrink-0`}
+                        className={`${iconSize} rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110`}
                         style={{ backgroundColor: `${tier.color}${iconBgOpacity}` }}
                       >
                         <TierIcon className={innerIconSize} style={{ color: tier.color }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold" style={{ color: tier.color }}>
-                            TIER {tier.tier}
+                          <span className="text-[10px] md:text-xs font-mono font-bold tracking-wider" style={{ color: tier.color }}>
+                            T{tier.tier}
                           </span>
-                          <span className="text-sm font-semibold text-white/90">{tier.name}</span>
-                          {isTopTier && <Star className="w-3.5 h-3.5 text-[#D4A843] fill-[#D4A843]/40" />}
+                          <span className={`text-sm font-semibold ${isTopTier ? 'text-white' : 'text-white/90'}`}>{tier.name}</span>
+                          {isTopTier && (
+                            <motion.span
+                              animate={{ rotate: [0, 15, -15, 0] }}
+                              transition={{ duration: 2, repeat: Infinity, repeatDelay: 4 }}
+                            >
+                              <Star className="w-4 h-4 text-[#D4A843] fill-[#D4A843]/50" />
+                            </motion.span>
+                          )}
                         </div>
-                        <p className="text-xs text-white/45 mt-0.5 hidden sm:truncate sm:block">{tier.desc}</p>
+                        <p className={`text-xs mt-0.5 hidden sm:block ${isTopTier ? 'text-white/60' : 'text-white/50'} sm:truncate`}>{tier.desc}</p>
                       </div>
                     </div>
                   </div>
@@ -611,10 +569,10 @@ function AssessmentShowcase({ onGetStarted }: { onGetStarted: () => void }) {
 
           {/* CTA */}
           <motion.div
-            className="mt-12 text-center"
-            initial={{ opacity: 0, y: 20 }}
+            className="mt-10 text-center"
+            initial={{ opacity: 0, y: 15 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.9 }}
+            transition={{ duration: 0.6, delay: 1.0 }}
           >
             <Button
               size="lg"
@@ -628,6 +586,7 @@ function AssessmentShowcase({ onGetStarted }: { onGetStarted: () => void }) {
         </div>
       </div>
     </section>
+    </>
   )
 }
 
@@ -635,7 +594,7 @@ function AssessmentShowcase({ onGetStarted }: { onGetStarted: () => void }) {
 // PRICING PREVIEW
 // ============================================================
 
-function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
+function PricingPreview({ onGetStarted }: { onGetStarted: (plan?: string) => void }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   const [annual, setAnnual] = useState(false)
@@ -650,6 +609,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
       icon: Users,
       gradient: 'from-[#0A7E8C]/20 to-teal-600/20',
       popular: false,
+      planKey: 'DELEGATE_PRO',
     },
     {
       name: 'Director Pro',
@@ -660,6 +620,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
       icon: GraduationCap,
       gradient: 'from-[#D4A843]/20 to-amber-600/20',
       popular: true,
+      planKey: 'DIRECTOR_PRO',
     },
     {
       name: 'School Enterprise',
@@ -670,6 +631,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
       icon: Building2,
       gradient: 'from-violet-500/20 to-purple-600/20',
       popular: false,
+      planKey: 'SCHOOL_ENTERPRISE',
     },
   ]
 
@@ -690,7 +652,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-tight">
             Invest in Diplomatic Excellence
           </h2>
-          <p className="mt-4 text-white/45 text-lg max-w-xl mx-auto">
+          <p className="mt-4 text-white/50 text-lg max-w-xl mx-auto">
             Starting from $9/month. Choose the plan that matches your mission.
           </p>
 
@@ -748,7 +710,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
                       {plan.features.map((feature) => (
                         <div key={feature} className="flex items-start gap-2.5">
                           <CheckCircle2 className="w-4 h-4 text-[#0A7E8C] shrink-0 mt-0.5" />
-                          <span className="text-sm text-white/55">{feature}</span>
+                          <span className="text-sm text-white/60">{feature}</span>
                         </div>
                       ))}
                     </div>
@@ -760,7 +722,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
                           ? 'bg-[#D4A843] text-[#0D1B2A] hover:bg-[#E0BC6A] shadow-md shadow-[#D4A843]/20'
                           : 'bg-white/[0.08] text-white/90 hover:bg-white/[0.14] border border-white/15'
                       }`}
-                      onClick={onGetStarted}
+                      onClick={() => onGetStarted(plan.planKey)}
                     >
                       Get Started
                     </Button>
@@ -777,7 +739,7 @@ function PricingPreview({ onGetStarted }: { onGetStarted: () => void }) {
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <a href="#pricing" className="text-sm text-[#0A7E8C] hover:text-[#0A9EAC] transition-colors">
+          <a href="#pricing" className="text-sm text-[#0A7E8C] hover:text-[#0FBACA] transition-colors">
             View All Plans <ArrowRight className="w-3 h-3 inline ml-1" />
           </a>
         </motion.div>
@@ -795,7 +757,9 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section id="conferences" className="relative py-24 md:py-32 bg-[#0A1525]" ref={ref}>
+    <>
+      <div id="schools" className="relative" />
+      <section id="conferences" className="relative py-24 md:py-32 bg-[#0A1525]" ref={ref}>
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4A843]/10 to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -812,7 +776,7 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
                 <div className="w-3 h-3 rounded-full bg-red-500/60" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
                 <div className="w-3 h-3 rounded-full bg-green-500/60" />
-                <span className="ml-3 text-xs text-white/30 font-mono">diplomatiq.io/dashboard</span>
+                <span className="ml-3 text-xs text-white/40 font-mono">diplomatiq.io/dashboard</span>
               </div>
               {/* Mock dashboard content */}
               <div className="p-5 space-y-4">
@@ -832,7 +796,7 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
                 {/* Welcome card */}
                 <div className="rounded-lg bg-gradient-to-r from-[#1B3A4B] to-[#243656] p-4 border border-[#D4A843]/15">
                   <div className="text-sm font-bold text-white mb-1">Welcome back, Amara</div>
-                  <div className="text-xs text-white/40">Delegate · 2,450 XP · Ambassador Level</div>
+                  <div className="text-xs text-white/50">Delegate · 2,450 XP · Ambassador Level</div>
                   <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div className="h-full w-[45%] bg-[#D4A843] rounded-full" />
                   </div>
@@ -846,13 +810,13 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
                   ].map((s) => (
                     <div key={s.label} className="rounded-lg bg-white/[0.03] p-3 border border-white/[0.05]">
                       <div className={`text-lg font-bold ${s.color.split(' ')[1]}`}>{s.val}</div>
-                      <div className="text-[10px] text-white/30">{s.label}</div>
+                          <div className="text-[10px] text-white/40">{s.label}</div>
                     </div>
                   ))}
                 </div>
                 {/* Mini chart area */}
                 <div className="rounded-lg bg-white/[0.03] p-3 border border-white/[0.05]">
-                  <div className="text-xs text-white/40 mb-2">Assessment Progress</div>
+                  <div className="text-xs text-white/50 mb-2">Assessment Progress</div>
                   <div className="flex items-end gap-1.5 h-12">
                     {[40, 60, 35, 80, 55, 90, 70].map((h, idx) => (
                       <div
@@ -881,7 +845,7 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
             <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-4">
               See DiplomatiQ in Action
             </h2>
-            <p className="text-white/45 text-lg leading-relaxed mb-8">
+            <p className="text-white/50 text-lg leading-relaxed mb-8">
               Experience the platform that is transforming how delegates train, teachers assess, and schools compete. No credit card required.
             </p>
 
@@ -898,14 +862,14 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
                 size="lg"
                 variant="outline"
                 className="w-full sm:w-auto border-white/20 text-white/90 hover:bg-white/[0.06] hover:border-[#D4A843]/40 font-medium px-8 h-12"
-                onClick={() => alert('Demo booking coming soon! We\'ll notify you when this feature is available.')}
+                onClick={() => { window.location.href = '/auth/register' }}
               >
                 Book a Demo
                 <CalendarDays className="w-4 h-4 ml-2" />
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-white/35">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-white/45">
               <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-[#0A7E8C]" /> No credit card required</span>
               <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-[#0A7E8C]" /> 14-day free trial</span>
               <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-[#0A7E8C]" /> Cancel anytime</span>
@@ -914,6 +878,7 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
         </div>
       </div>
     </section>
+    </>
   )
 }
 
@@ -921,29 +886,26 @@ function DemoSection({ onGetStarted }: { onGetStarted: () => void }) {
 // FOOTER
 // ============================================================
 
-function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
+function Footer({ onNavigate }: { onNavigate: () => void }) {
   const platformLinks = [
     { label: 'Features', href: '#features' },
-    { label: 'Academy', href: '#academy' },
-    { label: 'Conferences', href: '#conferences' },
+    { label: 'Assessment', href: '#academy' },
+    { label: 'Training', href: '#training' },
+    { label: 'Schools', href: '#schools' },
     { label: 'Pricing', href: '#pricing' },
   ]
   const companyLinks = [
-    { label: 'About', action: () => onNavigate('auth') },
-    { label: 'Contact', href: 'mailto:hello@diplomatiq.io' },
+    { label: 'About', href: '#top' },
+    { label: 'Contact', href: 'mailto:modelunitednations45@gmail.com' },
   ]
   const legalLinks = [
-    { label: 'Code of Conduct', action: () => onNavigate('auth') },
-    { label: 'Privacy', action: () => alert('Privacy Policy coming soon.') },
-    { label: 'Terms', action: () => alert('Terms of Service coming soon.') },
+    { label: 'Code of Conduct', href: '#top' },
+    { label: 'Privacy', href: '#top' },
+    { label: 'Terms', href: '#top' },
   ]
 
   const handleLinkClick = (e: React.MouseEvent, item: { label: string; href?: string; action?: () => void }) => {
-    if (item.action) {
-      e.preventDefault()
-      item.action()
-    }
-    // If href is set, browser handles the anchor scrolling natively
+    // If href is set, browser handles the link natively
   }
 
   return (
@@ -955,25 +917,23 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-[#D4A843] flex items-center justify-center">
-                <Globe className="w-5 h-5 text-[#0D1B2A]" />
-              </div>
+              <img src="/logo.svg" alt="DiplomatiQ" className="w-9 h-9 rounded-lg" />
               <span className="text-xl font-bold text-white">
                 Diplomati<span className="text-[#D4A843]">Q</span>
               </span>
             </div>
-            <p className="text-white/40 text-sm leading-relaxed">
-              Building the next generation of diplomats.
+            <p className="text-white/45 text-sm leading-relaxed">
+              Growing community of MUN delegates and educators.
             </p>
           </div>
 
           {/* Platform Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white/70 mb-4 uppercase tracking-wider">Platform</h4>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Platform</h4>
             <ul className="space-y-2.5">
               {platformLinks.map((item) => (
                 <li key={item.label}>
-                  <a href={item.href} className="text-sm text-white/40 hover:text-[#D4A843] transition-colors">
+                  <a href={item.href} className="text-sm text-white/50 hover:text-[#D4A843] transition-colors">
                     {item.label}
                   </a>
                 </li>
@@ -983,14 +943,14 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
 
           {/* Company Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white/70 mb-4 uppercase tracking-wider">Company</h4>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Company</h4>
             <ul className="space-y-2.5">
               {companyLinks.map((item) => (
                 <li key={item.label}>
                   <a
-                    href={item.href || '#'}
+                    href={item.href || '#top'}
                     onClick={(e) => handleLinkClick(e, item)}
-                    className="text-sm text-white/40 hover:text-[#D4A843] transition-colors"
+                    className="text-sm text-white/50 hover:text-[#D4A843] transition-colors"
                   >
                     {item.label}
                   </a>
@@ -1001,14 +961,14 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
 
           {/* Legal Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white/70 mb-4 uppercase tracking-wider">Legal</h4>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Legal</h4>
             <ul className="space-y-2.5">
               {legalLinks.map((item) => (
                 <li key={item.label}>
                   <a
-                    href="#"
+                    href={item.href || '#top'}
                     onClick={(e) => handleLinkClick(e, item)}
-                    className="text-sm text-white/40 hover:text-[#D4A843] transition-colors"
+                    className="text-sm text-white/50 hover:text-[#D4A843] transition-colors"
                   >
                     {item.label}
                   </a>
@@ -1020,7 +980,7 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
 
         <Separator className="bg-white/[0.06] mb-6" />
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/30">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/40">
           <span>&copy; 2026 DiplomatiQ. All rights reserved.</span>
           <span className="flex items-center gap-1">
             Made with <Heart className="w-3 h-3 text-[#D4A843]/50" /> for diplomatic education
@@ -1035,276 +995,63 @@ function Footer({ onNavigate }: { onNavigate: (page: Page) => void }) {
 // LANDING PAGE
 // ============================================================
 
-function LandingSection({ onNavigate }: { onNavigate: (page: Page) => void }) {
+function LandingSection() {
+  const navigateToAuth = (path: string = '/auth/register') => {
+    window.location.href = path
+  }
+
   return (
     <div className="min-h-screen bg-[#0D1B2A] text-white overflow-x-hidden relative">
       {/* Fixed UN background across entire landing page */}
       <div
-        className="fixed inset-0 bg-cover bg-center z-0"
-        style={{ backgroundImage: 'url(/un-bg.png)', opacity: 0.06 }}
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: 'url(/un-bg.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
       />
+      {/* Dark overlay for text readability */}
+      <div className="fixed inset-0 z-[1] bg-[#0D1B2A]/[0.96]" />
       {/* Content above background */}
-      <div className="relative z-10">
+      <div className="relative z-[2]">
         <Navbar
-          onGetStarted={() => onNavigate('auth')}
-          onSignIn={() => onNavigate('auth')}
+          onGetStarted={() => navigateToAuth('/auth/register')}
+          onSignIn={() => navigateToAuth('/auth/signin')}
         />
-        <HeroSection onGetStarted={() => onNavigate('auth')} />
+        <HeroSection onGetStarted={() => navigateToAuth('/auth/register')} />
         <FeaturesSection />
-        <AssessmentShowcase onGetStarted={() => onNavigate('auth')} />
-        <PricingPreview onGetStarted={() => onNavigate('auth')} />
-        <DemoSection onGetStarted={() => onNavigate('auth')} />
-        <Footer onNavigate={onNavigate} />
+        <AssessmentShowcase onGetStarted={() => navigateToAuth('/auth/register')} />
+        <PricingPreview onGetStarted={(plan) => navigateToAuth(plan ? `/auth/register?plan=${plan}` : '/auth/register')} />
+        <DemoSection onGetStarted={() => navigateToAuth('/auth/register?role=SCHOOL_ADMIN')} />
+        <Footer onNavigate={() => navigateToAuth('/auth/register')} />
       </div>
     </div>
   )
 }
 
-// ============================================================
-// AUTH SECTION
-// ============================================================
-
-function AuthSection({ onNavigate, onLogin }: { onNavigate: (page: Page) => void; onLogin: (data: UserData) => void }) {
-  const [isRegister, setIsRegister] = useState(true)
-  const [selectedRole, setSelectedRole] = useState('DELEGATE')
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [schoolSearch, setSchoolSearch] = useState('')
-  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false)
-  const [selectedSchool, setSelectedSchool] = useState('')
-  const [schoolNotListed, setSchoolNotListed] = useState(false)
-
-  const roles = [
-    { value: 'DELEGATE', label: 'Student / Delegate', icon: Users, desc: 'Join conferences, train, and compete' },
-    { value: 'TEACHER', label: 'Teacher / MUN Advisor', icon: GraduationCap, desc: 'Guide students and manage programs' },
-    { value: 'SCHOOL_ADMIN', label: 'School Administrator', icon: Building2, desc: 'Oversee school MUN programs' },
-    { value: 'SECRETARIAT', label: 'Secretariat', icon: Gavel, desc: 'Organize and run conferences' },
-  ]
-
-  const filteredSchools = SCHOOLS_LIST.filter(s =>
-    s.toLowerCase().includes(schoolSearch.toLowerCase())
-  ).slice(0, 6)
-
-  const handleSubmit = () => {
-    const roleLabel = roles.find(r => r.value === selectedRole)?.label || 'Delegate'
-    onLogin({
-      name: name || 'Alex Diplomat',
-      email: email || 'alex@diplomatiq.io',
-      role: roleLabel,
-      xp: 2450,
-      level: 'Ambassador',
-      levelIndex: 2,
-      conferencesAttended: 8,
-      committeesServed: 12,
-      trainingProgress: 67,
-    })
-  }
-
-  return (
-    <div className="min-h-screen bg-[#0D1B2A] text-white flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#D4A843] rounded-full opacity-[0.03] blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#D4A843] rounded-full opacity-[0.03] blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] border border-[#D4A843]/[0.05] rounded-full" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] border border-[#D4A843]/[0.03] rounded-full" />
-      </div>
-      <motion.div className="relative z-10 w-full max-w-md" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-lg bg-[#D4A843] flex items-center justify-center">
-            <Globe className="w-6 h-6 text-[#0D1B2A]" />
-          </div>
-          <span className="text-xl font-bold">Diplomati<span className="text-[#D4A843]">Q</span></span>
-        </div>
-        <Card className="bg-white/[0.05] border-white/[0.08] backdrop-blur-xl">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl text-white">Welcome to DiplomatiQ</CardTitle>
-            <CardDescription className="text-white/45">
-              {isRegister ? 'Begin your diplomatic journey' : 'Continue your mission'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isRegister && (
-              <div className="space-y-2">
-                <Label className="text-white/60 text-sm">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
-                  <Input
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-10 bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/25 focus:border-[#D4A843]/40 focus:ring-[#D4A843]/15"
-                  />
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label className="text-white/60 text-sm">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
-                <Input
-                  placeholder="your@email.com"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/25 focus:border-[#D4A843]/40 focus:ring-[#D4A843]/15"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-white/60 text-sm">Password</Label>
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
-                <Input
-                  placeholder="Enter your password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/25 focus:border-[#D4A843]/40 focus:ring-[#D4A843]/15"
-                />
-              </div>
-            </div>
-            {isRegister && (
-              <>
-                <div className="space-y-3">
-                  <Label className="text-white/60 text-sm">I am a...</Label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {roles.map((role) => (
-                      <button
-                        key={role.value}
-                        onClick={() => setSelectedRole(role.value)}
-                        className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
-                          selectedRole === role.value
-                            ? 'border-[#D4A843]/40 bg-[#D4A843]/10'
-                            : 'border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.05]'
-                        }`}
-                      >
-                        <role.icon className={`w-5 h-5 ${selectedRole === role.value ? 'text-[#D4A843]' : 'text-white/30'}`} />
-                        <div className="flex-1 min-w-0">
-                          <div className={`text-sm font-medium ${selectedRole === role.value ? 'text-[#D4A843]' : 'text-white/60'}`}>
-                            {role.label}
-                          </div>
-                          <div className="text-xs text-white/30">{role.desc}</div>
-                        </div>
-                        {selectedRole === role.value && <CheckCircle2 className="w-4 h-4 text-[#D4A843] shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* School Selector */}
-                {(selectedRole === 'DELEGATE' || selectedRole === 'TEACHER' || selectedRole === 'SCHOOL_ADMIN') && (
-                  <div className="space-y-2">
-                    <Label className="text-white/60 text-sm">School</Label>
-                    <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
-                      <Input
-                        placeholder="Search for your school..."
-                        value={schoolNotListed ? 'My school is not listed' : schoolSearch || selectedSchool}
-                        onChange={(e) => {
-                          if (schoolNotListed) {
-                            setSchoolNotListed(false)
-                            setSchoolSearch('')
-                            setSelectedSchool('')
-                          } else {
-                            setSchoolSearch(e.target.value)
-                            setSelectedSchool('')
-                            setShowSchoolDropdown(true)
-                          }
-                        }}
-                        onFocus={() => { if (!schoolNotListed && !selectedSchool) setShowSchoolDropdown(true) }}
-                        onBlur={() => setTimeout(() => setShowSchoolDropdown(false), 200)}
-                        className="pl-10 bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/25 focus:border-[#D4A843]/40 focus:ring-[#D4A843]/15"
-                      />
-                      {showSchoolDropdown && filteredSchools.length > 0 && !selectedSchool && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0D1B2A] border border-white/[0.08] rounded-lg shadow-xl z-20 max-h-48 overflow-y-auto">
-                          {filteredSchools.map((school) => (
-                            <button
-                              key={school}
-                              className="w-full text-left px-4 py-2.5 text-sm text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors"
-                              onMouseDown={() => {
-                                setSelectedSchool(school)
-                                setSchoolSearch('')
-                                setShowSchoolDropdown(false)
-                              }}
-                            >
-                              {school}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {!schoolNotListed && (
-                      <button
-                        onClick={() => { setSchoolNotListed(true); setSelectedSchool(''); setSchoolSearch('') }}
-                        className="text-xs text-[#0A7E8C] hover:text-[#0A9EAC] transition-colors"
-                      >
-                        My school is not listed
-                      </button>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-          <CardFooter className="flex-col gap-4">
-            <Button className="w-full bg-[#D4A843] text-[#0D1B2A] hover:bg-[#E0BC6A] font-semibold h-11" onClick={handleSubmit}>
-              {isRegister ? 'Create Account' : 'Sign In'} <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <button onClick={() => setIsRegister(!isRegister)} className="text-sm text-white/35 hover:text-white/55 transition-colors">
-              {isRegister ? 'Already have an account? Sign in' : "Don't have an account? Register"}
-            </button>
-          </CardFooter>
-        </Card>
-        <button onClick={() => onNavigate('landing')} className="mt-6 text-sm text-white/25 hover:text-white/45 transition-colors flex items-center gap-1 mx-auto">
-          <ChevronRight className="w-3 h-3 rotate-180" /> Back to home
-        </button>
-      </motion.div>
-    </div>
-  )
-}
+// AuthSection removed — auth is handled by /auth/signin and /auth/register routes.
 
 // ============================================================
 // MAIN COMPONENT
 // ============================================================
 
 export default function Home() {
-  const [page, setPage] = useState<Page>('landing')
-  const { user: storeUser, isAuthenticated, demoLogin, logout: storeLogout } = useAuthStore()
-  const { navigate } = useNavStore()
+  const { isAuthenticated, checkSession } = useAuthStore()
 
-  const handleLogin = (data: UserData) => {
-    const roleMap: Record<string, UserRole> = {
-      'Student / Delegate': 'STUDENT',
-      'Teacher / MUN Advisor': 'TEACHER',
-      'School Administrator': 'SCHOOL_ADMIN',
-      'Secretariat': 'ADMIN',
+  // Check for existing session on mount
+  useEffect(() => {
+    checkSession()
+  }, [checkSession])
+
+  // If authenticated, redirect to dashboard route
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.location.href = '/dashboard'
     }
-    const role = roleMap[data.role] || 'STUDENT'
-    demoLogin(role)
-    navigate('dashboard')
-    setPage('dashboard')
-  }
+  }, [isAuthenticated])
 
-  const handleLogout = () => {
-    storeLogout()
-    setPage('landing')
-  }
-
-  // Landing page
-  if (page === 'landing' || (!isAuthenticated && page !== 'auth')) {
-    return <LandingSection onNavigate={setPage} />
-  }
-
-  // Auth page
-  if (page === 'auth' && !isAuthenticated) {
-    return <AuthSection onNavigate={setPage} onLogin={handleLogin} />
-  }
-
-  // Dashboard - use AppShell with Zustand store integration
-  if (isAuthenticated) {
-    return <AppShell />
-  }
-
-  return <LandingSection onNavigate={setPage} />
+  // Landing page — auth is handled by proper Next.js routes (/auth/signin, /auth/register, etc.)
+  return <LandingSection />
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { stripe } from '@/lib/stripe'
+import { stripe, isStripeConfigured } from '@/lib/stripe'
 import { db } from '@/lib/db'
 import Stripe from 'stripe'
 
@@ -10,6 +10,30 @@ export const runtime = 'nodejs'
 async function getRawBody(req: NextRequest): Promise<Buffer> {
   const arrayBuffer = await req.arrayBuffer()
   return Buffer.from(arrayBuffer)
+}
+
+/**
+ * Log an event to the AuditLog table
+ */
+async function logAuditEvent(event: Stripe.Event, details?: string) {
+  try {
+    await db.auditLog.create({
+      data: {
+        userId: (event.data.object as { metadata?: { userId?: string } })?.metadata?.userId || null,
+        action: 'CREATE' as const,
+        resource: 'stripe_webhook',
+        resourceId: event.id,
+        details: JSON.stringify({
+          type: event.type,
+          eventId: event.id,
+          timestamp: new Date(event.created * 1000).toISOString(),
+          ...(details ? { info: details } : {}),
+        }),
+      },
+    })
+  } catch (logError) {
+    console.error('Failed to log audit event:', logError)
+  }
 }
 
 async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
@@ -84,6 +108,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     canceled: 'CANCELLED',
     unpaid: 'EXPIRED',
     paused: 'PAST_DUE',
+    incomplete: 'PAST_DUE',
+    incomplete_expired: 'EXPIRED',
   }
 
   const dbStatus = statusMap[subscription.status] || 'PAST_DUE'
@@ -190,6 +216,62 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   console.log(`Webhook: invoice payment failed for customer ${customerId}`)
 }
 
+async function handleCustomerCreated(customer: Stripe.Customer) {
+  console.log(`Webhook: customer created ${customer.id} (${customer.email})`)
+}
+
+async function handleCustomerUpdated(customer: Stripe.Customer) {
+  console.log(`Webhook: customer updated ${customer.id}`)
+}
+
+async function handleCustomerDeleted(customer: Stripe.Customer) {
+  // Remove Stripe customer ID from any subscriptions
+  await db.subscription.updateMany({
+    where: { stripeCustomerId: customer.id },
+    data: { stripeCustomerId: null },
+  })
+  console.log(`Webhook: customer deleted ${customer.id}`)
+}
+
+async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+  console.log(`Webhook: payment intent succeeded ${paymentIntent.id}`)
+}
+
+async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+  console.log(`Webhook: payment intent failed ${paymentIntent.id}`)
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const customerId = charge.customer as string
+  if (!customerId) return
+
+  const sub = await db.subscription.findFirst({
+    where: { stripeCustomerId: customerId },
+  })
+
+  if (sub) {
+    await db.payment.create({
+      data: {
+        userId: sub.userId,
+        amount: -(charge.amount_refunded / 100),
+        currency: charge.currency || 'usd',
+        status: 'REFUNDED',
+        stripePaymentId: charge.payment_intent as string || undefined,
+        description: 'Refund processed',
+        metadata: JSON.stringify({ chargeId: charge.id, refundAmount: charge.amount_refunded }),
+      },
+    })
+  }
+
+  console.log(`Webhook: charge refunded ${charge.id}`)
+}
+
+async function handleTrialWillEnd(subscription: Stripe.Subscription) {
+  const stripeSubscriptionId = subscription.id
+  console.log(`Webhook: trial will end for subscription ${stripeSubscriptionId}`)
+  // Could send notification email here in the future
+}
+
 export async function POST(req: NextRequest) {
   const body = await getRawBody(req)
   const headersList = await headers()
@@ -200,10 +282,22 @@ export async function POST(req: NextRequest) {
   }
 
   let event: Stripe.Event
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
   try {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_placeholder'
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    if (webhookSecret && webhookSecret !== 'whsec_placeholder') {
+      // Production: verify signature with real webhook secret
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    } else {
+      // Development: log warning but still parse the event without verification
+      console.warn('⚠️ STRIPE_WEBHOOK_SECRET not configured — skipping signature verification. This is insecure for production!')
+      try {
+        event = JSON.parse(body.toString()) as Stripe.Event
+      } catch {
+        // If we can't parse the body as JSON and have no secret, try constructEvent anyway
+        event = stripe.webhooks.constructEvent(body, signature, 'whsec_placeholder')
+      }
+    }
   } catch (err) {
     console.error('Webhook signature verification failed:', err)
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
@@ -211,6 +305,7 @@ export async function POST(req: NextRequest) {
 
   // Log all events for audit
   console.log(`Webhook received: ${event.type} [${event.id}]`)
+  await logAuditEvent(event)
 
   try {
     switch (event.type) {
@@ -232,6 +327,12 @@ export async function POST(req: NextRequest) {
         break
       }
 
+      case 'customer.subscription.trial_will_end': {
+        const subscription = event.data.object as Stripe.Subscription
+        await handleTrialWillEnd(subscription)
+        break
+      }
+
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice
         await handleInvoicePaymentSucceeded(invoice)
@@ -244,11 +345,86 @@ export async function POST(req: NextRequest) {
         break
       }
 
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice
+        await handleInvoicePaymentSucceeded(invoice)
+        break
+      }
+
+      case 'invoice.payment_action_required': {
+        const invoice = event.data.object as Stripe.Invoice
+        console.log(`Webhook: invoice payment action required ${invoice.id}`)
+        break
+      }
+
+      case 'customer.created': {
+        const customer = event.data.object as Stripe.Customer
+        await handleCustomerCreated(customer)
+        break
+      }
+
+      case 'customer.updated': {
+        const customer = event.data.object as Stripe.Customer
+        await handleCustomerUpdated(customer)
+        break
+      }
+
+      case 'customer.deleted': {
+        const customer = event.data.object as Stripe.Customer
+        await handleCustomerDeleted(customer)
+        break
+      }
+
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        await handlePaymentIntentSucceeded(paymentIntent)
+        break
+      }
+
+      case 'payment_intent.payment_failed': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent
+        await handlePaymentIntentFailed(paymentIntent)
+        break
+      }
+
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge
+        await handleChargeRefunded(charge)
+        break
+      }
+
+      case 'charge.dispute.created': {
+        const dispute = event.data.object as Stripe.Dispute
+        console.warn(`Webhook: charge dispute created ${dispute.id} for charge ${dispute.charge}`)
+        break
+      }
+
+      case 'charge.dispute.updated': {
+        const dispute = event.data.object as Stripe.Dispute
+        console.log(`Webhook: charge dispute updated ${dispute.id}`)
+        break
+      }
+
+      case 'charge.dispute.closed': {
+        const dispute = event.data.object as Stripe.Dispute
+        console.log(`Webhook: charge dispute closed ${dispute.id}, status: ${dispute.status}`)
+        break
+      }
+
+      case 'product.created':
+      case 'product.updated':
+      case 'price.created':
+      case 'price.updated': {
+        console.log(`Webhook: ${event.type} — ${event.data.object.id}`)
+        break
+      }
+
       default:
         console.log(`Webhook: unhandled event type ${event.type}`)
     }
   } catch (error) {
     console.error(`Webhook handler error for ${event.type}:`, error)
+    await logAuditEvent(event, `HANDLER_ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`)
     return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
   }
 

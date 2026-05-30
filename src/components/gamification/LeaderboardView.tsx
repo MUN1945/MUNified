@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Trophy, Globe, Building2, Users, Medal, Crown, Shield,
@@ -52,7 +52,8 @@ function getXPProgressLocal(xp: number): number {
 }
 
 // ============================================================
-// MOCK DATA - 25 users with varied XP
+// DEMO DATA — placeholder until real users populate the platform
+// In production, this will be replaced entirely by API data
 // ============================================================
 
 interface LeaderboardUser {
@@ -66,41 +67,22 @@ interface LeaderboardUser {
 }
 
 const MOCK_USERS: LeaderboardUser[] = [
-  { id: 'u1', name: 'Elena Vasquez', school: 'Lycée Français de New York', xp: 7200, conferences: 15, diplomacy: 95, research: 88 },
+  // Demo placeholder data — will be replaced by real API data as platform grows
+  { id: 'u1', name: 'Elena Vasquez', school: 'Lycée Français', xp: 7200, conferences: 15, diplomacy: 95, research: 88 },
   { id: 'u2', name: 'Kai Nakamura', school: 'Tokyo International School', xp: 6500, conferences: 12, diplomacy: 90, research: 92 },
   { id: 'u3', name: 'Fatima Al-Rashid', school: 'American School Dubai', xp: 5800, conferences: 14, diplomacy: 92, research: 85 },
   { id: 'u4', name: 'Lucas Schmidt', school: 'Berlin International School', xp: 4200, conferences: 10, diplomacy: 85, research: 80 },
   { id: 'u5', name: 'Priya Sharma', school: 'Delhi Public School', xp: 3800, conferences: 9, diplomacy: 88, research: 78 },
-  { id: 'u6', name: 'Oliver Brooks', school: 'Westminster School', xp: 3200, conferences: 8, diplomacy: 80, research: 82 },
-  { id: 'u7', name: 'Sofia Costa', school: "St. Paul's School Brazil", xp: 2900, conferences: 7, diplomacy: 82, research: 76 },
-  { id: 'u8', name: 'Chen Wei', school: 'Shanghai International', xp: 2600, conferences: 6, diplomacy: 78, research: 90 },
-  { id: 'demo-student-1', name: 'Amara Okafor', school: 'International School of Geneva', xp: 2450, conferences: 8, diplomacy: 85, research: 90 },
-  { id: 'u10', name: 'Aisha Mohammed', school: 'Cairo English School', xp: 2100, conferences: 5, diplomacy: 75, research: 72 },
-  { id: 'u11', name: 'Raj Patel', school: 'Mumbai International', xp: 1800, conferences: 5, diplomacy: 72, research: 68 },
-  { id: 'u12', name: 'Isabella Rossi', school: 'Rome International School', xp: 1500, conferences: 4, diplomacy: 70, research: 65 },
-  { id: 'u13', name: 'Yuki Tanaka', school: 'Osaka International', xp: 1200, conferences: 3, diplomacy: 68, research: 60 },
-  { id: 'u14', name: 'David Kim', school: 'Seoul Foreign School', xp: 950, conferences: 3, diplomacy: 65, research: 55 },
-  { id: 'u15', name: 'Maria Santos', school: 'Lisbon British School', xp: 800, conferences: 2, diplomacy: 60, research: 58 },
-  { id: 'u16', name: 'James Wilson', school: 'Eton College', xp: 650, conferences: 2, diplomacy: 55, research: 50 },
-  { id: 'u17', name: 'Leila Hassan', school: 'Casablanca Academy', xp: 500, conferences: 2, diplomacy: 58, research: 48 },
-  { id: 'u18', name: 'Hans Mueller', school: 'Vienna International', xp: 400, conferences: 1, diplomacy: 50, research: 45 },
-  { id: 'u19', name: 'Anna Petrov', school: 'Moscow International', xp: 300, conferences: 1, diplomacy: 45, research: 42 },
-  { id: 'u20', name: 'Carlos Garcia', school: 'Madrid British School', xp: 200, conferences: 1, diplomacy: 40, research: 38 },
-  { id: 'u21', name: 'Mei Lin', school: 'Hong Kong International', xp: 150, conferences: 1, diplomacy: 35, research: 40 },
-  { id: 'u22', name: 'Thomas Anderson', school: 'Phillips Academy', xp: 120, conferences: 0, diplomacy: 30, research: 35 },
-  { id: 'u23', name: 'Aria Singh', school: 'Singapore American School', xp: 80, conferences: 0, diplomacy: 25, research: 30 },
-  { id: 'u24', name: 'Noah Brown', school: 'Sidwell Friends School', xp: 50, conferences: 0, diplomacy: 20, research: 25 },
-  { id: 'u25', name: 'Zara Ahmed', school: 'International School Manila', xp: 30, conferences: 0, diplomacy: 15, research: 20 },
 ]
 
 // ============================================================
 // PODIUM CARD (Top 3)
 // ============================================================
 
-function PodiumCard({ user, rank }: { user: LeaderboardUser; rank: number }) {
+function PodiumCard({ user, rank, currentUserId }: { user: LeaderboardUser; rank: number; currentUserId: string }) {
   const level = getLevelForXP(user.xp)
   const LevelIcon = level.icon
-  const isCurrentUser = user.id === 'demo-student-1'
+  const isCurrentUser = user.id === currentUserId
 
   const medals = [
     { bg: 'bg-gradient-to-b from-[#D4A843] to-[#B8902A]', text: 'text-[#1B3A4B]', ring: 'ring-[#D4A843]', label: '1st', size: 'w-20 h-20' },
@@ -152,10 +134,10 @@ function PodiumCard({ user, rank }: { user: LeaderboardUser; rank: number }) {
 // LEADERBOARD ROW
 // ============================================================
 
-function LeaderboardRow({ user, rank, category }: { user: LeaderboardUser; rank: number; category: string }) {
+function LeaderboardRow({ user, rank, category, currentUserId }: { user: LeaderboardUser; rank: number; category: string; currentUserId: string }) {
   const level = getLevelForXP(user.xp)
   const LevelIcon = level.icon
-  const isCurrentUser = user.id === 'demo-student-1'
+  const isCurrentUser = user.id === currentUserId
 
   const getValue = () => {
     switch (category) {
@@ -221,7 +203,7 @@ function LeaderboardRow({ user, rank, category }: { user: LeaderboardUser; rank:
 // CATEGORY LEADERBOARD
 // ============================================================
 
-function CategoryLeaderboard({ category, users }: { category: string; users: LeaderboardUser[] }) {
+function CategoryLeaderboard({ category, users, currentUserId }: { category: string; users: LeaderboardUser[]; currentUserId: string }) {
   const sorted = useMemo(() => {
     return [...users].sort((a, b) => {
       switch (category) {
@@ -237,7 +219,7 @@ function CategoryLeaderboard({ category, users }: { category: string; users: Lea
     <ScrollArea className="h-[600px]">
       <div className="space-y-1 pr-2">
         {sorted.map((user, i) => (
-          <LeaderboardRow key={user.id} user={user} rank={i + 1} category={category} />
+          <LeaderboardRow key={user.id} user={user} rank={i + 1} category={category} currentUserId={currentUserId} />
         ))}
       </div>
     </ScrollArea>
@@ -252,12 +234,42 @@ export default function LeaderboardView() {
   const { user } = useAuthStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('global')
+  const [apiUsers, setApiUsers] = useState<LeaderboardUser[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const currentUserId = 'demo-student-1'
-  const userSchool = 'International School of Geneva'
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await fetch('/api/gamification')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.leaderboard && Array.isArray(data.leaderboard) && data.leaderboard.length > 0) {
+            setApiUsers(data.leaderboard.map((u: Record<string, unknown>) => ({
+              id: u.id || String(Math.random()),
+              name: u.name || 'Unknown',
+              school: u.school || '',
+              xp: u.xp || 0,
+              conferences: u.conferences || 0,
+              diplomacy: u.diplomacy || 0,
+              research: u.research || 0,
+            })))
+          }
+        }
+      } catch {
+        // API not available, use mock data
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLeaderboard()
+  }, [])
+
+  const allUsers = apiUsers.length > 0 ? apiUsers : MOCK_USERS
+  const currentUserId = user?.id || ''
+  const userSchool = user?.schoolName || ''
 
   const filteredUsers = useMemo(() => {
-    let filtered = MOCK_USERS
+    let filtered = allUsers
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       filtered = filtered.filter(u =>
@@ -304,11 +316,11 @@ export default function LeaderboardView() {
           <CardContent className="p-6">
             <div className="flex items-center justify-center gap-4 md:gap-8">
               {/* 2nd place */}
-              {top3[1] && <PodiumCard user={top3[1]} rank={2} />}
+              {top3[1] && <PodiumCard user={top3[1]} rank={2} currentUserId={currentUserId} />}
               {/* 1st place */}
-              {top3[0] && <PodiumCard user={top3[0]} rank={1} />}
+              {top3[0] && <PodiumCard user={top3[0]} rank={1} currentUserId={currentUserId} />}
               {/* 3rd place */}
-              {top3[2] && <PodiumCard user={top3[2]} rank={3} />}
+              {top3[2] && <PodiumCard user={top3[2]} rank={3} currentUserId={currentUserId} />}
             </div>
           </CardContent>
         </Card>
@@ -323,32 +335,16 @@ export default function LeaderboardView() {
                 <Flame className="w-5 h-5 text-[#0D7377]" />
               </div>
               <div className="flex-1">
-                <div className="text-sm font-medium text-[#1B3A4B]">Your Position: <span className="text-[#0D7377] font-bold">#{globalSorted.findIndex(u => u.id === currentUserId) + 1}</span> of {globalSorted.length}</div>
+                <div className="text-sm font-medium text-[#1B3A4B]">Your Position: <span className="text-[#0D7377] font-bold">
+                  {globalSorted.findIndex(u => u.id === currentUserId) >= 0 ? `#${globalSorted.findIndex(u => u.id === currentUserId) + 1}` : 'Unranked'}
+                </span> of {globalSorted.length}</div>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-muted-foreground">{user?.name || 'Amara Okafor'}</span>
-                  <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-0 text-[10px]">
-                    {getLevelForXP(2450).name.replace('_', ' ')}
-                  </Badge>
+                  <span className="text-xs text-muted-foreground">{user?.name || 'You'}</span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-lg font-bold text-[#0D7377]">2,450 XP</div>
-                <div className="text-[10px] text-muted-foreground">
-                  {(() => {
-                    const next = getNextLevelForXP(2450)
-                    return next ? `${(next.minXP - 2450).toLocaleString()} XP to ${next.name.replace('_', ' ')}` : 'Max Level!'
-                  })()}
-                </div>
-              </div>
-            </div>
-            <div className="mt-3">
-              <div className="h-2 bg-white/50 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full bg-[#0D7377]"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${getXPProgressLocal(2450)}%` }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                />
+                <div className="text-lg font-bold text-[#0D7377]">0 XP</div>
+                <div className="text-[10px] text-muted-foreground">Start your journey!</div>
               </div>
             </div>
           </CardContent>
@@ -388,7 +384,7 @@ export default function LeaderboardView() {
                 </div>
               </CardHeader>
               <CardContent>
-                <CategoryLeaderboard category="xp" users={filteredUsers} />
+                <CategoryLeaderboard category="xp" users={filteredUsers} currentUserId={currentUserId} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -403,7 +399,7 @@ export default function LeaderboardView() {
               </CardHeader>
               <CardContent>
                 {schoolUsers.length > 0 ? (
-                  <CategoryLeaderboard category="xp" users={schoolUsers} />
+                  <CategoryLeaderboard category="xp" users={schoolUsers} currentUserId={currentUserId} />
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -420,7 +416,7 @@ export default function LeaderboardView() {
                 <CardTitle className="text-base text-[#1B3A4B]">XP Rankings</CardTitle>
               </CardHeader>
               <CardContent>
-                <CategoryLeaderboard category="xp" users={filteredUsers} />
+                <CategoryLeaderboard category="xp" users={filteredUsers} currentUserId={currentUserId} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -431,7 +427,7 @@ export default function LeaderboardView() {
                 <CardTitle className="text-base text-[#1B3A4B]">Conference Rankings</CardTitle>
               </CardHeader>
               <CardContent>
-                <CategoryLeaderboard category="conferences" users={filteredUsers} />
+                <CategoryLeaderboard category="conferences" users={filteredUsers} currentUserId={currentUserId} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -442,7 +438,7 @@ export default function LeaderboardView() {
                 <CardTitle className="text-base text-[#1B3A4B]">Diplomacy Rankings</CardTitle>
               </CardHeader>
               <CardContent>
-                <CategoryLeaderboard category="diplomacy" users={filteredUsers} />
+                <CategoryLeaderboard category="diplomacy" users={filteredUsers} currentUserId={currentUserId} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -453,7 +449,7 @@ export default function LeaderboardView() {
                 <CardTitle className="text-base text-[#1B3A4B]">Research Rankings</CardTitle>
               </CardHeader>
               <CardContent>
-                <CategoryLeaderboard category="research" users={filteredUsers} />
+                <CategoryLeaderboard category="research" users={filteredUsers} currentUserId={currentUserId} />
               </CardContent>
             </Card>
           </TabsContent>

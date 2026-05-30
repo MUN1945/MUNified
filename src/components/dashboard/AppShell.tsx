@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Bell, Menu, X, Globe
@@ -63,6 +63,7 @@ function ViewRouter({ view }: { view: ViewName }) {
   const { user } = useAuthStore()
 
   const isStudent = user?.role === 'STUDENT'
+  const isFounderOrSuperAdmin = user?.role === 'FOUNDER' || user?.role === 'SUPER_ADMIN'
 
   switch (view) {
     case 'dashboard':
@@ -94,6 +95,9 @@ function ViewRouter({ view }: { view: ViewName }) {
     case 'notifications':
       return <PlaceholderView title="Notifications" description="Stay updated on conferences, training, and achievements." />
     case 'founder':
+      if (!isFounderOrSuperAdmin) {
+        return <PlaceholderView title="Access Denied" description="The Command Center is only accessible to founders and super admins." />
+      }
       return <FounderDashboard />
     case 'schools':
       return <SchoolDirectory />
@@ -114,13 +118,7 @@ export default function AppShell() {
 
   const unreadCount = notifications.filter(n => !n.isRead).length
 
-  // Load demo data on mount
-  useEffect(() => {
-    if (user) {
-      const { loadDemoData } = useAppStore.getState()
-      loadDemoData(user.role)
-    }
-  }, [user])
+  // Session is already managed by auth store — no demo data loading needed
 
   if (!user) return null
 

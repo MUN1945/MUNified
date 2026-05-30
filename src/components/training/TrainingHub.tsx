@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   BookOpen, Clock, Zap, Award, ChevronRight, ChevronLeft,
@@ -258,18 +258,84 @@ export default function TrainingHub() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTab, setFilterTab] = useState('all')
   const [xpNotification, setXpNotification] = useState<{ xp: number; visible: boolean }>({ xp: 0, visible: false })
+  const [loading, setLoading] = useState(true)
 
-  // Course completion state (mock local state)
+  // Course data from API
+  const [apiCourses, setApiCourses] = useState<Course[]>([])
+  const [apiEnrollments, setApiEnrollments] = useState<Record<string, { progress: number; completed: boolean }>>({})
+
+  // Fetch courses and enrollments from API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const [coursesRes, enrollmentsRes] = await Promise.allSettled([
+          fetch('/api/courses?limit=50'),
+          fetch('/api/enrollments'),
+        ])
+        if (coursesRes.status === 'fulfilled' && coursesRes.value.ok) {
+          const raw = await coursesRes.value.json()
+          const courseList = raw.data || (Array.isArray(raw) ? raw : raw.courses || [])
+          // Map API courses to local Course type
+          setApiCourses(courseList.map((c: Record<string, unknown>) => {
+            // Find matching local course for lesson content
+            const localMatch = COURSES.find(lc => lc.id === c.id || lc.title.toLowerCase() === String(c.title || '').toLowerCase())
+            return {
+              id: String(c.id || ''),
+              title: String(c.title || ''),
+              description: String(c.description || ''),
+              difficulty: String(c.difficulty || 'Beginner') as 'Beginner' | 'Intermediate' | 'Advanced',
+              duration: c.duration ? String(c.duration) : (localMatch?.duration || 'Self-paced'),
+              xpReward: Number(c.xpReward || localMatch?.xpReward || 50),
+              gradient: localMatch?.gradient || 'from-[#0D7377] to-[#059669]',
+              icon: localMatch?.icon || BookOpen,
+              roleTag: c.targetRole ? String(c.targetRole) : localMatch?.roleTag,
+              lessons: localMatch?.lessons || (Array.isArray(c.lessons) ? c.lessons.map((l: Record<string, unknown>, i: number) => ({
+                id: String(l.id || `${c.id}-lesson-${i}`),
+                title: String(l.title || `Lesson ${i + 1}`),
+                description: String(l.description || ''),
+                duration: String(l.duration || '30m'),
+                completed: false,
+                content: String(l.content || ''),
+              })) : []),
+              category: String(c.category || localMatch?.category || 'General'),
+            }
+          }))
+        }
+        if (enrollmentsRes.status === 'fulfilled' && enrollmentsRes.value.ok) {
+          const raw = await enrollmentsRes.value.json()
+          const data = raw.data || (Array.isArray(raw) ? raw : raw.enrollments || [])
+          const enrollmentMap: Record<string, { progress: number; completed: boolean }> = {}
+          for (const e of data as Record<string, unknown>[]) {
+            const courseId = String(e.courseId || (e.course as Record<string, unknown>)?.id || '')
+            if (courseId) {
+              enrollmentMap[courseId] = { progress: Number(e.progress || 0), completed: Boolean(e.completed) }
+            }
+          }
+          setApiEnrollments(enrollmentMap)
+        }
+      } catch {
+        // Fallback to local courses
+        setApiCourses(COURSES)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  // Course completion state (local tracking for lesson-level)
   const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({
     'pp-1': true, 'pp-2': true, 'rw-1': true,
   })
   const [userXp] = useState(2450)
   const [streak] = useState(3)
 
-  const selectedCourse = useMemo(() => COURSES.find(c => c.id === selectedCourseId) || null, [selectedCourseId])
+  const courses = apiCourses.length > 0 ? apiCourses : COURSES
+  const selectedCourse = useMemo(() => courses.find(c => c.id === selectedCourseId) || null, [selectedCourseId, courses])
 
   const filteredCourses = useMemo(() => {
-    let filtered = COURSES
+    let filtered = courses
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       filtered = filtered.filter(c => c.title.toLowerCase().includes(q) || c.category.toLowerCase().includes(q))
@@ -286,12 +352,16 @@ export default function TrainingHub() {
       filtered = filtered.filter(c => c.difficulty === 'Advanced')
     }
     return filtered
-  }, [searchQuery, filterTab, completedLessons])
+  }, [searchQuery, filterTab, completedLessons, courses])
 
   const getCourseProgress = useCallback((course: Course) => {
+    // Check API enrollment progress first
+    const enrollment = apiEnrollments[course.id]
+    if (enrollment && enrollment.progress > 0) return enrollment.progress
+    // Fall back to local lesson tracking
     const done = course.lessons.filter(l => completedLessons[l.id]).length
     return Math.round((done / course.lessons.length) * 100)
-  }, [completedLessons])
+  }, [completedLessons, apiEnrollments])
 
   const handleOpenCourse = useCallback((courseId: string) => {
     setSelectedCourseId(courseId)
@@ -553,6 +623,7 @@ export default function TrainingHub() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
+              disabled={loading}
             />
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -581,6 +652,14 @@ export default function TrainingHub() {
       </motion.div>
 
       {/* Course Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-72 bg-muted/30 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : (
+      <>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {filteredCourses.map((course, i) => {
           const progress = getCourseProgress(course)
@@ -681,6 +760,8 @@ export default function TrainingHub() {
           </CardContent>
         </Card>
       </motion.div>
+      </>
+      )}
     </div>
   )
 }

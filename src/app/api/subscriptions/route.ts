@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { isStripeConfigured } from "@/lib/stripe"
 
 // GET /api/subscriptions - Get current subscription
 export async function GET() {
@@ -37,7 +38,7 @@ export async function GET() {
         where: { id: subscription.id },
         data: { status: "EXPIRED" },
       })
-      return NextResponse.json({ success: true, data: updated })
+      return NextResponse.json({ success: true, data: updated, stripeConfigured: isStripeConfigured() })
     }
 
     // Get available pricing plans
@@ -50,6 +51,7 @@ export async function GET() {
       success: true,
       data: subscription,
       plans,
+      stripeConfigured: isStripeConfigured(),
     })
   } catch (error) {
     console.error("Get subscription error:", error)
@@ -72,11 +74,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { action, tier, paymentMethodId } = body
+    const { action, tier } = body
 
     if (action === "checkout") {
-      // Create a checkout session
-      // In production, this would use Stripe
+      // Validate tier
       if (!tier) {
         return NextResponse.json(
           { success: false, error: "Subscription tier is required" },
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const validTiers = ["FREE", "STUDENT_PRO", "TEACHER_PRO", "SCHOOL_ENTERPRISE"]
+      const validTiers = ["FREE", "STUDENT_PRO", "TEACHER_PRO", "SCHOOL_STARTER", "SCHOOL_PROFESSIONAL", "SCHOOL_ENTERPRISE", "CONFERENCE_PACKAGE"]
       if (!validTiers.includes(tier)) {
         return NextResponse.json(
           { success: false, error: "Invalid subscription tier" },
@@ -92,51 +93,45 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Simulated checkout URL (in production, this would be a Stripe checkout URL)
-      const checkoutUrl = `${process.env.APP_URL}/api/subscriptions?action=success&tier=${tier}`
-
-      return NextResponse.json({
-        success: true,
-        data: { checkoutUrl, tier },
-        message: "Checkout session created",
-      })
-    }
-
-    if (action === "success") {
-      // Handle successful payment
-      if (!tier) {
-        return NextResponse.json(
-          { success: false, error: "Subscription tier is required" },
-          { status: 400 }
-        )
+      // Enterprise plan — always redirect to contact sales
+      if (tier === "SCHOOL_ENTERPRISE") {
+        return NextResponse.json({
+          success: true,
+          data: { redirect: "/contact-sales" },
+          message: "Enterprise plans require custom pricing. Please contact our sales team.",
+        })
       }
 
-      const now = new Date()
-      const periodEnd = new Date()
-      periodEnd.setMonth(periodEnd.getMonth() + 1)
+      // Check if Stripe is configured
+      if (!isStripeConfigured()) {
+        // For Student/Teacher plans without Stripe, show payment setup message
+        if (tier === "STUDENT_PRO" || tier === "TEACHER_PRO") {
+          return NextResponse.json({
+            success: false,
+            error: "Payment processing is currently being configured. Please try again later or contact support.",
+            code: "STRIPE_NOT_CONFIGURED",
+          }, { status: 503 })
+        }
 
-      const subscription = await db.subscription.upsert({
-        where: { userId: session.user.id },
-        update: {
-          tier: tier as never,
-          status: "ACTIVE",
-          currentPeriodStart: now,
-          currentPeriodEnd: periodEnd,
-          cancelAtPeriodEnd: false,
-        },
-        create: {
-          userId: session.user.id,
-          tier: tier as never,
-          status: "ACTIVE",
-          currentPeriodStart: now,
-          currentPeriodEnd: periodEnd,
-        },
-      })
+        // For School plans without Stripe, offer "Contact Sales" flow
+        return NextResponse.json({
+          success: true,
+          data: { redirect: "/contact-sales" },
+          message: "Payment processing is being configured. Please contact our sales team to set up your subscription.",
+          code: "STRIPE_NOT_CONFIGURED",
+        })
+      }
 
+      // Stripe is configured — redirect to the real Stripe checkout endpoint
       return NextResponse.json({
         success: true,
-        data: subscription,
-        message: "Subscription activated successfully",
+        data: {
+          checkoutEndpoint: "/api/stripe/checkout",
+          tier,
+          userId: session.user.id,
+          email: session.user.email,
+        },
+        message: "Use /api/stripe/checkout to create a Stripe checkout session",
       })
     }
 
@@ -153,6 +148,19 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // If there's a Stripe subscription, cancel via Stripe
+      if (subscription.stripeSubscriptionId && isStripeConfigured()) {
+        try {
+          const { stripe } = await import("@/lib/stripe")
+          await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+            cancel_at_period_end: true,
+          })
+        } catch (stripeError) {
+          console.error("Stripe cancellation error:", stripeError)
+          // Still mark locally even if Stripe fails
+        }
+      }
+
       const updated = await db.subscription.update({
         where: { id: subscription.id },
         data: { cancelAtPeriodEnd: true },
@@ -165,41 +173,52 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    if (action === "webhook") {
-      // Handle Stripe webhook
-      // In production, verify webhook signature
-      const { type: eventType, data: eventData } = body
+    if (action === "reactivate") {
+      // Reactivate a subscription that was set to cancel
+      const subscription = await db.subscription.findUnique({
+        where: { userId: session.user.id },
+      })
 
-      if (eventType === "customer.subscription.updated") {
-        const stripeSubscriptionId = eventData?.object?.id
-        if (stripeSubscriptionId) {
-          await db.subscription.updateMany({
-            where: { stripeSubscriptionId },
-            data: {
-              status: eventData.object.status === "active" ? "ACTIVE" : "PAST_DUE",
-              currentPeriodEnd: eventData.object.current_period_end
-                ? new Date(eventData.object.current_period_end * 1000)
-                : undefined,
-            },
+      if (!subscription) {
+        return NextResponse.json(
+          { success: false, error: "No subscription found" },
+          { status: 404 }
+        )
+      }
+
+      if (!subscription.cancelAtPeriodEnd) {
+        return NextResponse.json(
+          { success: false, error: "Subscription is not scheduled for cancellation" },
+          { status: 400 }
+        )
+      }
+
+      // If there's a Stripe subscription, reactivate via Stripe
+      if (subscription.stripeSubscriptionId && isStripeConfigured()) {
+        try {
+          const { stripe } = await import("@/lib/stripe")
+          await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+            cancel_at_period_end: false,
           })
+        } catch (stripeError) {
+          console.error("Stripe reactivation error:", stripeError)
         }
       }
 
-      if (eventType === "customer.subscription.deleted") {
-        const stripeSubscriptionId = eventData?.object?.id
-        if (stripeSubscriptionId) {
-          await db.subscription.updateMany({
-            where: { stripeSubscriptionId },
-            data: { status: "CANCELLED" },
-          })
-        }
-      }
+      const updated = await db.subscription.update({
+        where: { id: subscription.id },
+        data: { cancelAtPeriodEnd: false },
+      })
 
-      return NextResponse.json({ success: true })
+      return NextResponse.json({
+        success: true,
+        data: updated,
+        message: "Subscription has been reactivated",
+      })
     }
 
     return NextResponse.json(
-      { success: false, error: "Invalid action. Use: checkout, success, cancel, or webhook" },
+      { success: false, error: "Invalid action. Use: checkout, cancel, or reactivate" },
       { status: 400 }
     )
   } catch (error) {

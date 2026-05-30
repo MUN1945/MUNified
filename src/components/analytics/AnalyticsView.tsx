@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Users, GraduationCap, BarChart3, TrendingUp, Award,
@@ -137,17 +137,59 @@ const COLORS = {
 // ============================================================
 
 function TeacherAnalytics() {
+  const [loading, setLoading] = useState(true)
+  const [apiData, setApiData] = useState<{
+    totalStudents: number; avgAssessment: number; trainingCompletion: number; confParticipation: number;
+    assessmentDist: { range: string; count: number }[]; trainingProg: { name: string; progress: number; students: number }[];
+    monthlyAct: { month: string; active: number; assessments: number; conferences: number }[];
+    confSuccess: { name: string; value: number; color: string }[];
+    topStudents: { name: string; school: string; xp: number; score: number; level: string }[];
+  } | null>(null)
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch('/api/analytics')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.teacherAnalytics) {
+            setApiData(data.teacherAnalytics)
+          }
+        }
+      } catch {
+        // API not available, use sample data
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAnalytics()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-6 h-6 border-2 border-[#0D7377]/30 border-t-[#0D7377] rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  const totalStudents = apiData?.totalStudents ?? 0
+  const avgAssessment = apiData?.avgAssessment ?? 0
+  const trainingCompletion = apiData?.trainingCompletion ?? 0
+  const confParticipation = apiData?.confParticipation ?? 0
+
+  const stats = [
+    { label: 'Total Students', value: totalStudents, icon: Users, color: 'text-[#0D7377]', bg: 'bg-[#0D7377]/10', trend: '', suffix: '' },
+    { label: 'Avg Assessment', value: avgAssessment, icon: Target, color: 'text-[#059669]', bg: 'bg-[#059669]/10', trend: '', suffix: '%' },
+    { label: 'Training Complete', value: trainingCompletion, icon: GraduationCap, color: 'text-purple-500', bg: 'bg-purple-500/10', trend: '', suffix: '%' },
+    { label: 'Conf. Participation', value: confParticipation, icon: Globe, color: 'text-[#D4A843]', bg: 'bg-[#D4A843]/10', trend: '', suffix: '%' },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Students', value: 47, icon: Users, color: 'text-[#0D7377]', bg: 'bg-[#0D7377]/10', trend: '+5 this month' },
-          { label: 'Active Delegates', value: 38, icon: Shield, color: 'text-[#D4A843]', bg: 'bg-[#D4A843]/10', trend: '+12% growth' },
-          { label: 'Avg Assessment', value: 82, icon: Target, color: 'text-[#059669]', bg: 'bg-[#059669]/10', trend: '+3% improvement', suffix: '%' },
-          { label: 'Training Complete', value: 68, icon: GraduationCap, color: 'text-purple-500', bg: 'bg-purple-500/10', trend: '+8% this week', suffix: '%' },
-          { label: 'Conf. Participation', value: 74, icon: Globe, color: 'text-[#D4A843]', bg: 'bg-[#D4A843]/10', trend: '+2 conferences', suffix: '%' },
-        ].map((stat, i) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {stats.map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.08 }}>
             <Card className="border-[#E8DED0]/60 hover:shadow-md transition-shadow">
               <CardContent className="p-4">
@@ -156,14 +198,20 @@ function TeacherAnalytics() {
                 </div>
                 <div className="text-2xl font-bold text-[#1B3A4B]">{stat.value}{stat.suffix || ''}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
-                <div className="flex items-center gap-1 mt-1.5 text-[10px] text-[#059669]">
-                  <ArrowUpRight className="w-3 h-3" /> {stat.trend}
-                </div>
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </div>
+
+      {totalStudents === 0 && !apiData ? (
+        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-sm">
+          <BarChart3 className="w-12 h-12 mb-4 opacity-30" />
+          <p>No analytics data available yet</p>
+          <p className="text-xs mt-1">Data will appear as users engage with the platform</p>
+        </div>
+      ) : (
+      <>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Assessment Score Distribution */}
@@ -326,6 +374,8 @@ function TeacherAnalytics() {
           </CardContent>
         </Card>
       </motion.div>
+      </>
+      )}
     </div>
   )
 }
