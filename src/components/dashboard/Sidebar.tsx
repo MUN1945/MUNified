@@ -84,8 +84,8 @@ function getNavItems(role: string): NavItem[] {
 function SubscriptionBadge({ tier }: { tier: string }) {
   const config: Record<string, { label: string; className: string }> = {
     FREE: { label: 'Free', className: 'bg-white/10 text-white/60' },
-    STUDENT_PRO: { label: 'Pro', className: 'bg-[#0D7377]/20 text-[#0D7377]' },
-    TEACHER_PRO: { label: 'Pro', className: 'bg-[#0D7377]/20 text-[#0D7377]' },
+    DELEGATE_PRO: { label: 'Pro', className: 'bg-[#0D7377]/20 text-[#0D7377]' },
+    DIRECTOR_PRO: { label: 'Pro', className: 'bg-[#0D7377]/20 text-[#0D7377]' },
     SCHOOL_ENTERPRISE: { label: 'Enterprise', className: 'bg-[#D4A843]/20 text-[#D4A843]' },
   }
   const c = config[tier] || config.FREE

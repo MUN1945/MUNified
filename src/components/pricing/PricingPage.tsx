@@ -30,9 +30,9 @@ interface PlanFeature {
   enterprise: boolean | string
 }
 
-const STUDENT_PLANS = [
+const DELEGATE_PLANS = [
   {
-    id: 'STUDENT_PRO' as const,
+    id: 'DELEGATE_PRO' as const,
     name: 'Delegate Pro',
     monthlyPrice: 11,
     yearlyPrice: 109,
@@ -54,9 +54,9 @@ const STUDENT_PLANS = [
   },
 ]
 
-const TEACHER_PLANS = [
+const DIRECTOR_PLANS = [
   {
-    id: 'TEACHER_PRO' as const,
+    id: 'DIRECTOR_PRO' as const,
     name: 'Director Pro',
     monthlyPrice: 29,
     yearlyPrice: 278,
@@ -242,7 +242,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'What payment methods do you accept?',
-    answer: 'We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and bank transfers for School Enterprise plans. All payments are processed securely through Stripe.',
+    answer: 'We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and bank transfers for School Enterprise plans. All payments are processed securely through Lemon Squeezy.',
   },
   {
     question: 'Is my data secure on DiplomatiQ?',
@@ -528,14 +528,12 @@ export default function PricingPage() {
     setLoadingPlan(planId)
 
     try {
-      const response = await fetch('/api/stripe/checkout', {
+      const response = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planType: planId,
           billingPeriod,
-          userId: user?.id,
-          email: user?.email,
         }),
       })
 
@@ -595,7 +593,7 @@ export default function PricingPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <ObserverCard isCurrentPlan={currentPlan === 'FREE'} />
-          {STUDENT_PLANS.map((plan) => (
+          {DELEGATE_PLANS.map((plan) => (
             <PricingCard
               key={plan.id}
               plan={plan}
@@ -605,7 +603,7 @@ export default function PricingPage() {
               loading={loadingPlan === plan.id}
             />
           ))}
-          {TEACHER_PLANS.map((plan) => (
+          {DIRECTOR_PLANS.map((plan) => (
             <PricingCard
               key={plan.id}
               plan={plan}

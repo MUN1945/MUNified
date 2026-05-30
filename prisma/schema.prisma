@@ -32,8 +32,8 @@ enum MUNRole {
 
 enum SubscriptionTier {
   FREE
-  STUDENT_PRO
-  TEACHER_PRO
+  DELEGATE_PRO
+  DIRECTOR_PRO
   SCHOOL_STARTER
   SCHOOL_PROFESSIONAL
   SCHOOL_ENTERPRISE
@@ -333,9 +333,9 @@ model Subscription {
   userId            String            @unique
   tier              SubscriptionTier  @default(FREE)
   status            SubscriptionStatus @default(TRIAL)
-  stripeCustomerId  String?
-  stripePriceId     String?
-  stripeSubscriptionId String?
+  lemonsqueezyCustomerId    String?
+  lemonsqueezyVariantId     String?
+  lemonsqueezySubscriptionId String?
   trialStartsAt     DateTime?
   trialEndsAt       DateTime?
   currentPeriodStart DateTime?
@@ -348,7 +348,7 @@ model Subscription {
 
   @@index([tier])
   @@index([status])
-  @@index([stripeCustomerId])
+  @@index([lemonsqueezyCustomerId])
 }
 
 model SchoolSubscription {
@@ -358,8 +358,8 @@ model SchoolSubscription {
   status            SubscriptionStatus @default(TRIAL)
   maxStudents       Int               @default(50)
   maxTeachers       Int               @default(5)
-  stripeCustomerId  String?
-  stripeSubscriptionId String?
+  lemonsqueezyCustomerId    String?
+  lemonsqueezySubscriptionId String?
   trialEndsAt       DateTime?
   currentPeriodEnd  DateTime?
   createdAt         DateTime          @default(now())
@@ -727,8 +727,8 @@ model Payment {
   amount            Float
   currency          String        @default("USD")
   status            PaymentStatus @default(PENDING)
-  stripePaymentId   String?
-  stripeInvoiceId   String?
+  lemonsqueezyOrderId String?
+  lemonsqueezyInvoiceId String?
   description       String?
   metadata          String?
   createdAt         DateTime      @default(now())
@@ -750,7 +750,7 @@ model Invoice {
   description   String?
   dueDate       DateTime?
   paidAt        DateTime?
-  stripeInvoiceId String?
+  lemonsqueezyInvoiceId String?
   pdfUrl        String?
   metadata      String?
   createdAt     DateTime      @default(now())

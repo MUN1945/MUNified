@@ -45,8 +45,8 @@ const BILLING_HISTORY = [
 // ============================================================
 
 const UPGRADE_OPTIONS = [
-  { id: 'STUDENT_PRO', name: 'Delegate Pro', price: '$9/mo', icon: GraduationCap, color: '#0D7377' },
-  { id: 'TEACHER_PRO', name: 'Director Pro', price: '$29/mo', icon: Crown, color: '#D4A843' },
+  { id: 'DELEGATE_PRO', name: 'Delegate Pro', price: '$11/mo', icon: GraduationCap, color: '#0D7377' },
+  { id: 'DIRECTOR_PRO', name: 'Director Pro', price: '$29/mo', icon: Crown, color: '#D4A843' },
   { id: 'SCHOOL_STARTER', name: 'School Starter', price: '$99/mo', icon: Building2, color: '#0D7377' },
   { id: 'SCHOOL_PROFESSIONAL', name: 'School Professional', price: '$249/mo', icon: Building2, color: '#D4A843' },
 ]
@@ -340,8 +340,8 @@ function BillingSubscriptionSection() {
 
   const planNames: Record<string, string> = {
     FREE: 'Observer (Free)',
-    STUDENT_PRO: 'Delegate Pro',
-    TEACHER_PRO: 'Director Pro',
+    DELEGATE_PRO: 'Delegate Pro',
+    DIRECTOR_PRO: 'Director Pro',
     SCHOOL_STARTER: 'School Starter',
     SCHOOL_PROFESSIONAL: 'School Professional',
     SCHOOL_ENTERPRISE: 'School Enterprise',
@@ -350,8 +350,8 @@ function BillingSubscriptionSection() {
 
   const planPrices: Record<string, string> = {
     FREE: 'Free',
-    STUDENT_PRO: '$9/month',
-    TEACHER_PRO: '$29/month',
+    DELEGATE_PRO: '$11/month',
+    DIRECTOR_PRO: '$29/month',
     SCHOOL_STARTER: '$99/month',
     SCHOOL_PROFESSIONAL: '$249/month',
     SCHOOL_ENTERPRISE: 'Custom',
@@ -359,24 +359,16 @@ function BillingSubscriptionSection() {
   }
 
   const handleManageSubscription = async () => {
-    // Open Stripe portal
+    // Open Lemon Squeezy customer portal
     setPortalLoading(true)
     try {
-      // In production, this would use the user's stripeCustomerId
-      // Show upgrade prompt
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      // Show toast notification instead of alert
-      try {
-        const res = await fetch('/api/stripe/portal', { method: 'POST' })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.url) {
-            window.location.href = data.url
-            return
-          }
+      const res = await fetch('/api/billing/portal', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.url) {
+          window.location.href = data.url
+          return
         }
-      } catch {
-        // Portal not configured yet
       }
       // Fallback: show inline message
       setPortalLoading(false)
@@ -390,14 +382,12 @@ function BillingSubscriptionSection() {
   const handleUpgrade = async (planId: string) => {
     setUpgrading(planId)
     try {
-      const response = await fetch('/api/stripe/checkout', {
+      const response = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planType: planId,
           billingPeriod: 'monthly',
-          userId: user?.id,
-          email: user?.email,
         }),
       })
       const data = await response.json()
@@ -520,12 +510,12 @@ function BillingSubscriptionSection() {
             </>
           )}
 
-          {/* Stripe Portal Features */}
+          {/* Lemon Squeezy Portal Features */}
           {!isFreePlan && (
             <>
               <Separator className="bg-[#E8DED0]" />
               <div>
-                <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3">Manage via Stripe Portal</h4>
+                <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3">Manage via Lemon Squeezy Portal</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="flex items-center gap-2 p-3 rounded-lg bg-[#F5F0EB]/50">
                     <CreditCard className="w-4 h-4 text-[#0D7377]" />

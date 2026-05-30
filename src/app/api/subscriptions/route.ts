@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { isStripeConfigured } from "@/lib/stripe"
+import { isLemonSqueezyConfigured, getCheckoutUrl, PLANS, type PlanKey, planKeyToSubscriptionTier } from "@/lib/lemonsqueezy"
+import { cancelSubscription, updateSubscription } from "@lemonsqueezy/lemonsqueezy.js"
 
 // GET /api/subscriptions - Get current subscription
 export async function GET() {
@@ -38,7 +39,7 @@ export async function GET() {
         where: { id: subscription.id },
         data: { status: "EXPIRED" },
       })
-      return NextResponse.json({ success: true, data: updated, stripeConfigured: isStripeConfigured() })
+      return NextResponse.json({ success: true, data: updated, billingConfigured: isLemonSqueezyConfigured() })
     }
 
     // Get available pricing plans
@@ -51,7 +52,7 @@ export async function GET() {
       success: true,
       data: subscription,
       plans,
-      stripeConfigured: isStripeConfigured(),
+      billingConfigured: isLemonSqueezyConfigured(),
     })
   } catch (error) {
     console.error("Get subscription error:", error)
@@ -62,7 +63,7 @@ export async function GET() {
   }
 }
 
-// POST /api/subscriptions - Create checkout session or handle subscription actions
+// POST /api/subscriptions - Create checkout or handle subscription actions
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const validTiers = ["FREE", "STUDENT_PRO", "TEACHER_PRO", "SCHOOL_STARTER", "SCHOOL_PROFESSIONAL", "SCHOOL_ENTERPRISE", "CONFERENCE_PACKAGE"]
+      const validTiers = ["FREE", "DELEGATE_PRO", "DIRECTOR_PRO", "SCHOOL_STARTER", "SCHOOL_PROFESSIONAL", "SCHOOL_ENTERPRISE", "CONFERENCE_PACKAGE"]
       if (!validTiers.includes(tier)) {
         return NextResponse.json(
           { success: false, error: "Invalid subscription tier" },
@@ -102,36 +103,36 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Check if Stripe is configured
-      if (!isStripeConfigured()) {
-        // For Student/Teacher plans without Stripe, show payment setup message
-        if (tier === "STUDENT_PRO" || tier === "TEACHER_PRO") {
+      // Check if Lemon Squeezy is configured
+      if (!isLemonSqueezyConfigured()) {
+        // For Delegate/Director plans without billing, show payment setup message
+        if (tier === "DELEGATE_PRO" || tier === "DIRECTOR_PRO") {
           return NextResponse.json({
             success: false,
             error: "Payment processing is currently being configured. Please try again later or contact support.",
-            code: "STRIPE_NOT_CONFIGURED",
+            code: "BILLING_NOT_CONFIGURED",
           }, { status: 503 })
         }
 
-        // For School plans without Stripe, offer "Contact Sales" flow
+        // For School plans without billing, offer "Contact Sales" flow
         return NextResponse.json({
           success: true,
           data: { redirect: "/contact-sales" },
           message: "Payment processing is being configured. Please contact our sales team to set up your subscription.",
-          code: "STRIPE_NOT_CONFIGURED",
+          code: "BILLING_NOT_CONFIGURED",
         })
       }
 
-      // Stripe is configured — redirect to the real Stripe checkout endpoint
+      // Lemon Squeezy is configured — redirect to the billing checkout endpoint
       return NextResponse.json({
         success: true,
         data: {
-          checkoutEndpoint: "/api/stripe/checkout",
+          checkoutEndpoint: "/api/billing/checkout",
           tier,
           userId: session.user.id,
           email: session.user.email,
         },
-        message: "Use /api/stripe/checkout to create a Stripe checkout session",
+        message: "Use /api/billing/checkout to get a Lemon Squeezy checkout URL",
       })
     }
 
@@ -148,16 +149,13 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // If there's a Stripe subscription, cancel via Stripe
-      if (subscription.stripeSubscriptionId && isStripeConfigured()) {
+      // If there's a Lemon Squeezy subscription, cancel via API
+      if (subscription.lemonsqueezySubscriptionId && isLemonSqueezyConfigured()) {
         try {
-          const { stripe } = await import("@/lib/stripe")
-          await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-            cancel_at_period_end: true,
-          })
-        } catch (stripeError) {
-          console.error("Stripe cancellation error:", stripeError)
-          // Still mark locally even if Stripe fails
+          await cancelSubscription(subscription.lemonsqueezySubscriptionId)
+        } catch (lsError) {
+          console.error("Lemon Squeezy cancellation error:", lsError)
+          // Still mark locally even if LS API fails
         }
       }
 
@@ -193,15 +191,14 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // If there's a Stripe subscription, reactivate via Stripe
-      if (subscription.stripeSubscriptionId && isStripeConfigured()) {
+      // If there's a Lemon Squeezy subscription, reactivate via API
+      if (subscription.lemonsqueezySubscriptionId && isLemonSqueezyConfigured()) {
         try {
-          const { stripe } = await import("@/lib/stripe")
-          await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-            cancel_at_period_end: false,
+          await updateSubscription(subscription.lemonsqueezySubscriptionId, {
+            cancelled: false,
           })
-        } catch (stripeError) {
-          console.error("Stripe reactivation error:", stripeError)
+        } catch (lsError) {
+          console.error("Lemon Squeezy reactivation error:", lsError)
         }
       }
 
