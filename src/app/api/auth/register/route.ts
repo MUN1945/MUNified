@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { hashPassword } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
+import { randomUUID } from "crypto"
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,9 +33,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const normalizedEmail = email.toLowerCase().trim()
+
     // Check if user already exists
     const existingUser = await db.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: normalizedEmail },
     })
 
     if (existingUser) {
@@ -86,7 +89,7 @@ export async function POST(request: NextRequest) {
     // Create user with delegate profile and trial subscription in a transaction
     const user = await db.user.create({
       data: {
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         name,
         password: hashedPassword,
         role: userRole,
@@ -125,6 +128,38 @@ export async function POST(request: NextRequest) {
         delegateProfile: true,
       },
     })
+
+    // Generate email verification token
+    const verificationToken = randomUUID()
+    const verificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+    await db.emailVerificationToken.create({
+      data: {
+        email: normalizedEmail,
+        token: verificationToken,
+        expiresAt: verificationExpiresAt,
+      },
+    })
+
+    // Send verification + welcome emails (non-blocking — don't block the response)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const verificationUrl = `${appUrl}/auth/verify-email?token=${verificationToken}`
+
+    // Fire and forget — emails should not block registration
+    ;(async () => {
+      try {
+        const { sendVerificationEmail, sendWelcomeEmail } = await import("@/lib/email")
+        await Promise.all([
+          sendVerificationEmail(normalizedEmail, name, verificationUrl),
+          sendWelcomeEmail(normalizedEmail, name, userRole),
+        ])
+        console.log(`[REGISTER] Verification + welcome emails sent to ${normalizedEmail}`)
+      } catch (emailError) {
+        console.error("[REGISTER] Failed to send emails:", emailError)
+        // Log the verification URL so it can be used manually if email fails
+        console.log(`[REGISTER] Manual verification link for ${normalizedEmail}: ${verificationUrl}`)
+      }
+    })()
 
     // Return user data without password (using `user` key for store compatibility)
     const { password: _, ...userWithoutPassword } = user
