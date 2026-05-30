@@ -31,24 +31,23 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_place
 export const PRICING_PLANS = {
   STUDENT_PRO: {
     name: 'Delegate Pro',
-    // NOTE: Replace with real Stripe price IDs after running createStripeProducts() or creating manually in Stripe Dashboard
-    monthlyPriceId: 'price_student_monthly',
-    yearlyPriceId: 'price_student_yearly',
+    monthlyPriceId: 'price_1Tcu6pRW2clKYAKGSNuM78OY',
+    yearlyPriceId: 'price_1Tcu6pRW2clKYAKGIUpl2MqS',
     monthlyPrice: 9,
     yearlyPrice: 86,
     currency: 'USD',
   },
   TEACHER_PRO: {
     name: 'Director Pro',
-    monthlyPriceId: 'price_teacher_monthly',
-    yearlyPriceId: 'price_teacher_yearly',
+    monthlyPriceId: 'price_1Tcu6qRW2clKYAKG7B8SUt4m',
+    yearlyPriceId: 'price_1Tcu6qRW2clKYAKGnjIv0PSb',
     monthlyPrice: 29,
     yearlyPrice: 278,
     currency: 'USD',
   },
   SCHOOL_STARTER: {
     name: 'School Starter',
-    monthlyPriceId: 'price_school_starter_monthly',
+    monthlyPriceId: 'price_1Tcu6rRW2clKYAKGiGsg980R',
     monthlyPrice: 99,
     currency: 'USD',
     maxStudents: 50,
@@ -56,7 +55,7 @@ export const PRICING_PLANS = {
   },
   SCHOOL_PROFESSIONAL: {
     name: 'School Professional',
-    monthlyPriceId: 'price_school_pro_monthly',
+    monthlyPriceId: 'price_1Tcu6rRW2clKYAKG4hi1CsyG',
     monthlyPrice: 249,
     currency: 'USD',
     maxStudents: 200,
@@ -65,20 +64,20 @@ export const PRICING_PLANS = {
   SCHOOL_ENTERPRISE: {
     name: 'School Enterprise',
     monthlyPriceId: 'price_school_enterprise',
-    monthlyPrice: 0, // Custom pricing
+    monthlyPrice: 0, // Custom pricing — contact sales
     currency: 'USD',
     maxStudents: -1, // Unlimited
     maxTeachers: -1,
   },
   CONFERENCE_PAY_PER_EVENT: {
     name: 'Conference Pay-Per-Event',
-    priceId: 'price_conference_single',
+    priceId: 'price_1Tcu6sRW2clKYAKGgi0IdYx2',
     price: 49,
     currency: 'USD',
   },
   CONFERENCE_ANNUAL: {
     name: 'Conference Annual License',
-    yearlyPriceId: 'price_conference_annual',
+    yearlyPriceId: 'price_1Tcu6tRW2clKYAKGS0ksISlR',
     yearlyPrice: 399,
     currency: 'USD',
   },
