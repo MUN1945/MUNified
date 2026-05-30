@@ -115,3 +115,27 @@ Stage Summary:
 - "Book a Demo"/"Watch Demo" removed
 - 24-hour free trial with restricted access enforced with visible banner
 - All changes pushed to GitHub
+---
+Task ID: 2
+Agent: Main Agent + Full-Stack Developer Subagent
+Task: Replace Stripe with Lemon Squeezy payment integration
+
+Work Log:
+- Created 8 products in Lemon Squeezy (Delegate Pro Monthly/Yearly, Director Pro Monthly/Yearly, School Starter, School Professional, Conference Pay-Per-Event, Conference Annual)
+- Got API key and all product/variant IDs from Lemon Squeezy API
+- Added LEMONSQUEEZY_API_KEY and LEMONSQUEEZY_STORE_ID to Vercel (production/preview/development)
+- Installed @lemonsqueezy/lemonsqueezy.js, removed stripe and @stripe/stripe-js
+- Created src/lib/lemonsqueezy.ts with all product configuration and helpers
+- Created /api/billing/checkout, /api/billing/portal, /api/billing/webhook routes
+- Deleted all /api/stripe/* routes
+- Updated Prisma schema: STUDENT_PRO→DELEGATE_PRO, TEACHER_PRO→DIRECTOR_PRO, stripe*→lemonsqueezy* fields
+- Migrated database: added new enum values, updated existing records, pushed schema
+- Updated all UI components (PricingPage, SettingsView, Sidebar, Store)
+- Build verified, committed, pushed to GitHub, deployed to Vercel
+
+Stage Summary:
+- Stripe completely removed from codebase
+- Lemon Squeezy fully integrated with 8 products
+- Database migrated with new enum values and field names
+- Deployed to https://mun-diplomatiq.vercel.app
+- Still TODO: Set up webhook in Lemon Squeezy dashboard, set LEMONSQUEEZY_WEBHOOK_SECRET
