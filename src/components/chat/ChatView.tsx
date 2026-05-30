@@ -64,77 +64,8 @@ interface ChatMessage {
 }
 
 // ============================================================
-// MOCK DATA
+// DATA IS FETCHED FROM /api/channels AND /api/messages
 // ============================================================
-
-const MOCK_CHANNELS: ChatChannel[] = [
-  { id: 'ch-general', name: 'general', type: 'text', category: 'General', description: 'General discussion for all delegates', unread: 5, isMuted: false },
-  { id: 'ch-announcements', name: 'announcements', type: 'announcement', category: 'General', description: 'Important updates and announcements', unread: 2, isMuted: false },
-  { id: 'ch-casual', name: 'casual', type: 'text', category: 'General', description: 'Off-topic conversations and socializing', unread: 0, isMuted: false },
-  { id: 'ch-security-council', name: 'security-council', type: 'text', category: 'Committee Rooms', description: 'Security Council delegates discussion', unread: 3, isMuted: false },
-  { id: 'ch-ecosoc', name: 'ecosoc', type: 'text', category: 'Committee Rooms', description: 'ECOSOC delegates discussion', unread: 1, isMuted: false },
-  { id: 'ch-crisis-committee', name: 'crisis-committee', type: 'text', category: 'Committee Rooms', description: 'Crisis Committee delegates only', unread: 0, isMuted: true },
-  { id: 'ch-ga-disarmament', name: 'ga-disarmament', type: 'text', category: 'Committee Rooms', description: 'GA First Committee — Disarmament', unread: 4, isMuted: false },
-  { id: 'ch-study-group', name: 'study-group', type: 'study', category: 'Study Groups', description: 'Collaborative research and preparation', unread: 0, isMuted: false },
-]
-
-const MOCK_USERS: ChatUser[] = [
-  { id: 'u-sarah', name: 'Dr. Sarah Chen', role: 'TEACHER', status: 'online' },
-  { id: 'u-james', name: 'Prof. James Wright', role: 'TEACHER', status: 'online' },
-  { id: 'u-maria', name: 'Dr. Maria Santos', role: 'TEACHER', status: 'away' },
-  { id: 'u-amara', name: 'Amara Okafor', role: 'STUDENT', status: 'online' },
-  { id: 'u-elena', name: 'Elena Vasquez', role: 'STUDENT', status: 'online' },
-  { id: 'u-kai', name: 'Kai Nakamura', role: 'STUDENT', status: 'online' },
-  { id: 'u-fatima', name: 'Fatima Al-Rashid', role: 'STUDENT', status: 'away' },
-  { id: 'u-lucas', name: 'Lucas Schmidt', role: 'STUDENT', status: 'online' },
-  { id: 'u-priya', name: 'Priya Sharma', role: 'STUDENT', status: 'offline' },
-  { id: 'u-oliver', name: 'Oliver Brooks', role: 'STUDENT', status: 'online' },
-  { id: 'u-sofia', name: 'Sofia Costa', role: 'STUDENT', status: 'away' },
-  { id: 'u-chen', name: 'Chen Wei', role: 'STUDENT', status: 'offline' },
-  { id: 'u-aisha', name: 'Aisha Mohammed', role: 'STUDENT', status: 'online' },
-]
-
-const MOCK_MESSAGES: ChatMessage[] = [
-  // General channel
-  { id: 'm1', channelId: 'ch-general', userId: 'system', userName: 'System', userRole: 'STUDENT', content: 'Amara Okafor has joined the server', timestamp: '2026-03-01T09:00:00Z', isSystem: true },
-  { id: 'm2', channelId: 'ch-general', userId: 'u-sarah', userName: 'Dr. Sarah Chen', userRole: 'TEACHER', content: 'Good morning everyone! 🌍 Registration for Harvard WorldMUN closes this Friday. Make sure you\'ve submitted your country preferences.', timestamp: '2026-03-01T09:05:00Z' },
-  { id: 'm3', channelId: 'ch-general', userId: 'u-elena', userName: 'Elena Vasquez', userRole: 'STUDENT', content: 'Thank you Dr. Chen! I\'ve already submitted mine — really hoping for Spain on the Security Council.', timestamp: '2026-03-01T09:12:00Z' },
-  { id: 'm4', channelId: 'ch-general', userId: 'u-kai', userName: 'Kai Nakamura', userRole: 'STUDENT', content: 'Has anyone started researching the nuclear non-proliferation topic? I found some great UNODA resources.', timestamp: '2026-03-01T09:18:00Z' },
-  { id: 'm5', channelId: 'ch-general', userId: 'u-amara', userName: 'Amara Okafor', userRole: 'STUDENT', content: 'Yes! The NPT review conference documents from 2023 are super helpful. Also check out the IAEA safeguards reports.', timestamp: '2026-03-01T09:25:00Z' },
-  { id: 'm6', channelId: 'ch-general', userId: 'u-fatima', userName: 'Fatima Al-Rashid', userRole: 'STUDENT', content: 'Can someone explain the difference between a working paper and a draft resolution? I keep getting confused.', timestamp: '2026-03-01T09:30:00Z' },
-  { id: 'm7', channelId: 'ch-general', userId: 'u-james', userName: 'Prof. James Wright', userRole: 'TEACHER', content: 'Great question Fatima! A working paper is informal — it\'s your initial ideas. A draft resolution follows specific UN format with pre-ambulatory and operative clauses. Check the Academy module on Resolution Writing for detailed guidance.', timestamp: '2026-03-01T09:35:00Z' },
-  { id: 'm8', channelId: 'ch-general', userId: 'u-lucas', userName: 'Lucas Schmidt', userRole: 'STUDENT', content: 'The Resolution Writing course is excellent — went from zero to drafting a full resolution in one afternoon.', timestamp: '2026-03-01T09:40:00Z' },
-  { id: 'm9', channelId: 'ch-general', userId: 'u-oliver', userName: 'Oliver Brooks', userRole: 'STUDENT', content: 'Anyone else representing UK? Would love to coordinate our positions before the conference.', timestamp: '2026-03-01T09:50:00Z' },
-  { id: 'm10', channelId: 'ch-general', userId: 'u-sofia', userName: 'Sofia Costa', userRole: 'STUDENT', content: 'Is the crisis committee doing a historical or futuristic scenario this year?', timestamp: '2026-03-01T10:00:00Z' },
-  { id: 'm11', channelId: 'ch-general', userId: 'u-sarah', userName: 'Dr. Sarah Chen', userRole: 'TEACHER', content: 'It\'s a futuristic scenario this year — cybersecurity threats to critical infrastructure. Very timely topic!', timestamp: '2026-03-01T10:05:00Z' },
-  { id: 'm12', channelId: 'ch-general', userId: 'u-aisha', userName: 'Aisha Mohammed', userRole: 'STUDENT', content: 'That sounds amazing. Does anyone have resources on cyber warfare treaties? The Tallinn Manual is a start but I need more.', timestamp: '2026-03-01T10:12:00Z' },
-
-  // Security Council channel
-  { id: 'm13', channelId: 'ch-security-council', userId: 'system', userName: 'System', userRole: 'STUDENT', content: 'This channel is for Security Council delegates only', timestamp: '2026-03-01T08:00:00Z', isSystem: true },
-  { id: 'm14', channelId: 'ch-security-council', userId: 'u-elena', userName: 'Elena Vasquez', userRole: 'STUDENT', content: 'SC delegates — let\'s discuss our approach to the Korean Peninsula denuclearization topic. Should we push for a new resolution or amend existing ones?', timestamp: '2026-03-01T10:30:00Z' },
-  { id: 'm15', channelId: 'ch-security-council', userId: 'u-kai', userName: 'Kai Nakamura', userRole: 'STUDENT', content: 'I think building on Resolution 1718 makes more sense than starting from scratch. The framework is there, we just need stronger enforcement mechanisms.', timestamp: '2026-03-01T10:35:00Z' },
-  { id: 'm16', channelId: 'ch-security-council', userId: 'u-amara', userName: 'Amara Okafor', userRole: 'STUDENT', content: 'Agreed. Nigeria\'s position would favor diplomatic engagement alongside enforcement. The Six-Party Talks framework deserves another look.', timestamp: '2026-03-01T10:42:00Z' },
-  { id: 'm17', channelId: 'ch-security-council', userId: 'u-james', userName: 'Prof. James Wright', userRole: 'TEACHER', content: 'Excellent analysis team! Remember that SC resolutions need 9 affirmative votes and no veto from the P5. Consider your alliances carefully.', timestamp: '2026-03-01T10:48:00Z' },
-
-  // ECOSOC channel
-  { id: 'm18', channelId: 'ch-ecosoc', userId: 'u-fatima', userName: 'Fatima Al-Rashid', userRole: 'STUDENT', content: 'For the Global Trade Equity topic, I found the WTO\'s latest report on developing nations\' market access barriers very insightful.', timestamp: '2026-03-01T11:00:00Z' },
-  { id: 'm19', channelId: 'ch-ecosoc', userId: 'u-lucas', userName: 'Lucas Schmidt', userRole: 'STUDENT', content: 'Germany\'s perspective is interesting — we\'re pro-free trade but also want fair competition. How do we balance that with developing nations\' needs?', timestamp: '2026-03-01T11:08:00Z' },
-  { id: 'm20', channelId: 'ch-ecosoc', userId: 'u-maria', userName: 'Dr. Maria Santos', userRole: 'TEACHER', content: 'Consider looking into the concept of "policy space" for developing countries. UNCTAD has excellent resources on this. Also, think about how digital trade is reshaping the global economy.', timestamp: '2026-03-01T11:15:00Z' },
-
-  // GA Disarmament
-  { id: 'm21', channelId: 'ch-ga-disarmament', userId: 'u-oliver', userName: 'Oliver Brooks', userRole: 'STUDENT', content: 'Quick reminder: our working paper on autonomous weapons systems is due Thursday. Can we meet tonight to finalize the operative clauses?', timestamp: '2026-03-01T14:00:00Z' },
-  { id: 'm22', channelId: 'ch-ga-disarmament', userId: 'u-aisha', userName: 'Aisha Mohammed', userRole: 'STUDENT', content: 'I\'ll be there! I\'ve drafted clauses 4-7 on verification mechanisms. We should also address the humanitarian impact angle.', timestamp: '2026-03-01T14:10:00Z' },
-  { id: 'm23', channelId: 'ch-ga-disarmament', userId: 'u-sofia', userName: 'Sofia Costa', userRole: 'STUDENT', content: 'Brazil supports a complete ban on lethal autonomous weapons. We should align with the Campaign to Stop Killer Robots\' framework.', timestamp: '2026-03-01T14:18:00Z' },
-
-  // Announcements
-  { id: 'm24', channelId: 'ch-announcements', userId: 'u-sarah', userName: 'Dr. Sarah Chen', userRole: 'TEACHER', content: '📋 **IMPORTANT**: Conference registration deadline extended to Sunday, March 9th. All country preferences and committee selections must be submitted by 11:59 PM UTC.', timestamp: '2026-03-01T08:00:00Z' },
-  { id: 'm25', channelId: 'ch-announcements', userId: 'u-james', userName: 'Prof. James Wright', userRole: 'TEACHER', content: '🎓 New Academy module available: "Advanced Crisis Management" — essential preparation for crisis committee delegates. 2 hours, worth 150 XP.', timestamp: '2026-03-01T12:00:00Z' },
-  { id: 'm26', channelId: 'ch-announcements', userId: 'u-maria', userName: 'Dr. Maria Santos', userRole: 'TEACHER', content: '🏆 Congratulations to Elena Vasquez and Kai Nakamura for earning the "Diplomat" badge! Your dedication to research is exemplary.', timestamp: '2026-03-01T16:00:00Z' },
-
-  // Study Group
-  { id: 'm27', channelId: 'ch-study-group', userId: 'u-priya', userName: 'Priya Sharma', userRole: 'STUDENT', content: 'Starting a study session on parliamentary procedure at 7 PM tonight. We\'ll practice making motions, points of order, and voting procedures. All welcome!', timestamp: '2026-03-01T15:00:00Z' },
-  { id: 'm28', channelId: 'ch-study-group', userId: 'u-chen', userName: 'Chen Wei', userRole: 'STUDENT', content: 'I\'ll join! Also, has anyone created flashcards for the UN Charter articles? Would be super helpful for quick reference during debate.', timestamp: '2026-03-01T15:15:00Z' },
-]
 
 // ============================================================
 // ROLE COLORS
@@ -342,14 +273,14 @@ function ChannelSidebar({
         <div className="relative">
           <Avatar className="w-8 h-8">
             <AvatarFallback className="bg-[#0D7377]/30 text-[#0D7377] text-xs font-semibold">
-              AO
+              <Users className="w-4 h-4" />
             </AvatarFallback>
           </Avatar>
           <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#1B3A4B] bg-[#059669]" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium text-white truncate">Amara Okafor</div>
-          <div className="text-[10px] text-white/40">Delegate · Online</div>
+          <div className="text-xs font-medium text-white truncate">Chat</div>
+          <div className="text-[10px] text-white/40">Online</div>
         </div>
         <div className="flex items-center gap-1">
           <button className="text-white/30 hover:text-white/60 p-1"><Mic className="w-3.5 h-3.5" /></button>
@@ -707,21 +638,41 @@ export default function ChatView() {
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const channels = MOCK_CHANNELS
-  const currentChannel = channels.find((c) => c.id === activeChannel) || channels[0]
-  const channelMessages = MOCK_MESSAGES.filter((m) => m.channelId === activeChannel)
+  const [channels, setChannels] = useState<ChatChannel[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [users, setUsers] = useState<ChatUser[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Simulate typing indicator
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7) {
-        const randomUser = MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)]
-        setTypingUsers([randomUser.name.split(' ')[0]])
-        setTimeout(() => setTypingUsers([]), 3000)
+    const fetchData = async () => {
+      try {
+        const [channelsRes, messagesRes] = await Promise.all([
+          fetch('/api/channels'),
+          fetch('/api/messages'),
+        ])
+        if (channelsRes.ok) {
+          const data = await channelsRes.json()
+          const channelList = Array.isArray(data) ? data : (data.channels || data.data || [])
+          setChannels(channelList)
+          if (channelList.length > 0 && !channelList.find((c: ChatChannel) => c.id === activeChannel)) {
+            setActiveChannel(channelList[0].id)
+          }
+        }
+        if (messagesRes.ok) {
+          const data = await messagesRes.json()
+          setMessages(Array.isArray(data) ? data : (data.messages || data.data || []))
+        }
+      } catch {
+        // API not available, show empty states
+      } finally {
+        setLoading(false)
       }
-    }, 5000)
-    return () => clearInterval(interval)
+    }
+    fetchData()
   }, [])
+
+  const currentChannel = channels.find((c) => c.id === activeChannel) || channels[0]
+  const channelMessages = messages.filter((m) => m.channelId === activeChannel)
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -733,18 +684,23 @@ export default function ChatView() {
     setMobileSidebarOpen(false)
   }
 
-  const handleSendMessage = (content: string) => {
-    // In a real app, this would send to backend
-    const newMsg: ChatMessage = {
-      id: `m-${Date.now()}`,
-      channelId: activeChannel,
-      userId: 'u-amara',
-      userName: 'Amara Okafor',
-      userRole: 'STUDENT',
-      content,
-      timestamp: new Date().toISOString(),
+  const handleSendMessage = async (content: string) => {
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channelId: activeChannel,
+          content,
+        }),
+      })
+      if (res.ok) {
+        const newMsg = await res.json()
+        setMessages(prev => [...prev, newMsg])
+      }
+    } catch {
+      // Failed to send message
     }
-    MOCK_MESSAGES.push(newMsg)
   }
 
   // Determine consecutive messages from same user
@@ -902,7 +858,7 @@ export default function ChatView() {
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <OnlineUsersSidebar users={MOCK_USERS} />
+          <OnlineUsersSidebar users={users} />
         </motion.div>
       )}
 
@@ -913,7 +869,7 @@ export default function ChatView() {
             <SheetHeader className="sr-only">
               <SheetTitle>Members</SheetTitle>
             </SheetHeader>
-            <OnlineUsersSidebar users={MOCK_USERS} onClose={() => setShowMembers(false)} />
+            <OnlineUsersSidebar users={users} onClose={() => setShowMembers(false)} />
           </SheetContent>
         </Sheet>
       )}

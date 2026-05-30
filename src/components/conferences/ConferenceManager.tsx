@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Plus, CalendarDays, MapPin, Users, Building2,
@@ -125,94 +125,8 @@ const LAYOUT_CONFIG: Record<LayoutType, { label: string; icon: React.ElementType
 }
 
 // ============================================================
-// MOCK DATA
+// DATA IS FETCHED FROM /api/conferences
 // ============================================================
-
-const MOCK_CONFERENCES: Conference[] = [
-  {
-    id: 'conf-1',
-    name: 'Harvard WorldMUN 2026',
-    description: 'The world\'s most diverse MUN conference, bringing together delegates from 110+ countries for five days of intense diplomacy and global collaboration.',
-    startDate: '2026-03-15',
-    endDate: '2026-03-19',
-    location: 'Paris, France',
-    status: 'REGISTRATION_OPEN',
-    theme: 'Bridging Divides: Diplomacy in a Fragmented World',
-    layout: 'U_SHAPE',
-    committees: [
-      { id: 'cm-1', name: 'Security Council', type: 'SECURITY_COUNCIL', topic: 'Nuclear Non-Proliferation in the Korean Peninsula', countryLimit: 15, chair: 'Dr. Sarah Chen' },
-      { id: 'cm-2', name: 'General Assembly - Plenary', type: 'GENERAL_ASSEMBLY', topic: 'Climate Action and Sustainable Development Goals', countryLimit: 193, chair: 'Prof. James Wright' },
-      { id: 'cm-3', name: 'ECOSOC', type: 'ECOSOC', topic: 'Global Trade Equity and Fair Market Access', countryLimit: 54, chair: 'Dr. Maria Santos' },
-      { id: 'cm-4', name: 'Crisis Committee', type: 'CRISIS_COMMITTEE', topic: 'Emergency Response to Global Pandemic Threat', countryLimit: 20, chair: 'Amb. David Park' },
-      { id: 'cm-5', name: 'Human Rights Council', type: 'HUMAN_RIGHTS_COUNCIL', topic: 'Protecting Rights of Displaced Populations', countryLimit: 47, chair: 'Dr. Amina Hassan' },
-    ],
-    delegates: [
-      { id: 'd1', name: 'Amara Okafor', country: 'Nigeria', committeeId: 'cm-1', school: 'Intl School of Geneva' },
-      { id: 'd2', name: 'Elena Vasquez', country: 'Spain', committeeId: 'cm-2', school: 'Lycee Francais' },
-      { id: 'd3', name: 'Kai Nakamura', country: 'Japan', committeeId: 'cm-1', school: 'Tokyo International' },
-      { id: 'd4', name: 'Fatima Al-Rashid', country: 'UAE', committeeId: 'cm-3', school: 'American School Dubai' },
-      { id: 'd5', name: 'Lucas Schmidt', country: 'Germany', committeeId: 'cm-4', school: 'Berlin Intl School' },
-      { id: 'd6', name: 'Priya Sharma', country: 'India', committeeId: 'cm-2', school: 'Delhi Public School' },
-    ],
-  },
-  {
-    id: 'conf-2',
-    name: 'NMUN New York 2026',
-    description: 'National Model United Nations in the heart of New York City, featuring 20+ committees and delegates from around the world at the UN Headquarters.',
-    startDate: '2026-04-07',
-    endDate: '2026-04-11',
-    location: 'New York, USA',
-    status: 'REGISTRATION_CLOSED',
-    theme: 'Global Cooperation for a Sustainable Future',
-    layout: 'CLASSROOM',
-    committees: [
-      { id: 'cm-6', name: 'Security Council', type: 'SECURITY_COUNCIL', topic: 'Middle East Peace Process', countryLimit: 15, chair: 'Dr. Robert Kim' },
-      { id: 'cm-7', name: 'GA First Committee', type: 'GENERAL_ASSEMBLY', topic: 'Disarmament and International Security', countryLimit: 193, chair: 'Prof. Lisa Chang' },
-      { id: 'cm-8', name: 'WHO', type: 'WHO', topic: 'Universal Health Coverage', countryLimit: 34, chair: 'Dr. Ahmed Patel' },
-    ],
-    delegates: [
-      { id: 'd7', name: 'Oliver Brooks', country: 'United Kingdom', committeeId: 'cm-6', school: 'Westminster School' },
-      { id: 'd8', name: 'Sofia Costa', country: 'Brazil', committeeId: 'cm-7', school: 'St. Paul\'s Brazil' },
-      { id: 'd9', name: 'Chen Wei', country: 'China', committeeId: 'cm-8', school: 'Shanghai Intl' },
-    ],
-  },
-  {
-    id: 'conf-3',
-    name: 'RomeMUN 2026',
-    description: 'Diplomacy in the Eternal City — an immersive MUN experience in the heart of Rome with a focus on cultural heritage and international cooperation.',
-    startDate: '2026-05-20',
-    endDate: '2026-05-24',
-    location: 'Rome, Italy',
-    status: 'IN_PROGRESS',
-    theme: 'Sustainable Futures: Heritage, Innovation, and Peace',
-    layout: 'ROUND_TABLE',
-    committees: [
-      { id: 'cm-9', name: 'ICJ', type: 'ICJ', topic: 'Maritime Boundary Dispute Advisory', countryLimit: 15, chair: 'Justice Maria Torres' },
-      { id: 'cm-10', name: 'UNEP', type: 'UNEP', topic: 'Ocean Conservation and Marine Biodiversity', countryLimit: 30, chair: 'Dr. Paolo Rossi' },
-      { id: 'cm-11', name: 'Crisis Committee', type: 'CRISIS_COMMITTEE', topic: 'Cybersecurity Threats to Critical Infrastructure', countryLimit: 20, chair: 'Amb. Yuki Tanaka' },
-    ],
-    delegates: [
-      { id: 'd10', name: 'Aisha Mohammed', country: 'Egypt', committeeId: 'cm-9', school: 'Cairo English School' },
-      { id: 'd11', name: 'Marco Bianchi', country: 'Italy', committeeId: 'cm-10', school: 'Liceo Classico Roma' },
-    ],
-  },
-  {
-    id: 'conf-4',
-    name: 'THIMUN Singapore 2026',
-    description: 'The Hague International Model United Nations — Singapore edition, fostering diplomatic excellence in Southeast Asia.',
-    startDate: '2026-06-10',
-    endDate: '2026-06-14',
-    location: 'Singapore',
-    status: 'DRAFT',
-    theme: 'Innovation & Progress: Navigating the Global South',
-    layout: 'HORSESHOE',
-    committees: [
-      { id: 'cm-12', name: 'Security Council', type: 'SECURITY_COUNCIL', topic: 'TBD', countryLimit: 15 },
-      { id: 'cm-13', name: 'ECOSOC', type: 'ECOSOC', topic: 'TBD', countryLimit: 54 },
-    ],
-    delegates: [],
-  },
-]
 
 // ============================================================
 // ANIMATION VARIANTS
@@ -1167,10 +1081,34 @@ function ParticipationCalculator() {
 // ============================================================
 
 export default function ConferenceManager() {
-  const [conferences, setConferences] = useState<Conference[]>(MOCK_CONFERENCES)
+  const [conferences, setConferences] = useState<Conference[]>([])
+  const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'detail' | 'create' | 'edit'>('list')
   const [selectedConference, setSelectedConference] = useState<Conference | null>(null)
   const [showCalculator, setShowCalculator] = useState(false)
+
+  useEffect(() => {
+    const fetchConferences = async () => {
+      try {
+        const res = await fetch('/api/conferences')
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data)) {
+            setConferences(data)
+          } else if (data.conferences && Array.isArray(data.conferences)) {
+            setConferences(data.conferences)
+          } else if (data.data && Array.isArray(data.data)) {
+            setConferences(data.data)
+          }
+        }
+      } catch {
+        // API not available, show empty state
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchConferences()
+  }, [])
 
   const handleSelect = (conf: Conference) => {
     setSelectedConference(conf)
@@ -1221,6 +1159,12 @@ export default function ConferenceManager() {
         </div>
       )}
 
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="w-8 h-8 border-2 border-[#0D7377] border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-sm text-muted-foreground">Loading conferences...</p>
+        </div>
+      ) : (
       <AnimatePresence mode="wait">
         {view === 'list' && (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -1262,6 +1206,7 @@ export default function ConferenceManager() {
           </motion.div>
         )}
       </AnimatePresence>
+      )}
     </div>
   )
 }

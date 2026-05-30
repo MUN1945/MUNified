@@ -5,13 +5,6 @@ import { motion } from 'framer-motion'
 import { ArrowRight, Globe, Handshake, Gavel } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const stats = [
-  { value: '50+', label: 'Schools' },
-  { value: '2,000+', label: 'Delegates' },
-  { value: '100+', label: 'Conferences' },
-  { value: '98%', label: 'Satisfaction' },
-]
-
 const floatingIcons = [
   { Icon: Globe, x: '10%', y: '20%', delay: 0, size: 24 },
   { Icon: Handshake, x: '85%', y: '25%', delay: 0.5, size: 20 },
@@ -162,26 +155,7 @@ export default function Hero() {
           </a>
         </motion.div>
 
-        {/* Stats Bar */}
-        <motion.div
-          className="mt-20 md:mt-24 pt-8 border-t border-white/10"
-          variants={itemVariants}
-        >
-          <div className="flex flex-wrap items-center justify-center gap-8 md:gap-16">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                className="flex flex-col items-center"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1 + i * 0.1 }}
-              >
-                <span className="text-2xl md:text-3xl font-bold text-[#D4A843]">{stat.value}</span>
-                <span className="text-sm text-white/65 mt-1">{stat.label}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+        {/* Stats Bar removed - stats will populate as platform grows */}
       </motion.div>
 
       {/* Bottom gradient fade */}

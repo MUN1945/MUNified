@@ -125,129 +125,31 @@ const sparkData = (base: number, variance: number) =>
     v: base + Math.round(Math.sin(i * 0.8) * variance + variance * 0.5)
   }))
 
-const OVERVIEW_METRICS: MetricCardData[] = [
-  { title: 'Total Schools', value: '—', change: 0, icon: Building2, iconBg: 'bg-[#0D7377]/20', iconColor: 'text-[#0D7377]', sparkData: sparkData(0, 1) },
-  { title: 'Total Teachers', value: '—', change: 0, icon: GraduationCap, iconBg: 'bg-[#D4A843]/20', iconColor: 'text-[#D4A843]', sparkData: sparkData(0, 1) },
-  { title: 'Total Students', value: '—', change: 0, icon: Users, iconBg: 'bg-[#059669]/20', iconColor: 'text-[#059669]', sparkData: sparkData(0, 1) },
-  { title: 'Active Users', value: '—', change: 0, icon: Activity, iconBg: 'bg-[#8B5CF6]/20', iconColor: 'text-[#8B5CF6]', sparkData: sparkData(0, 1) },
-  { title: 'New Registrations', value: '—', change: 0, icon: UserPlus, iconBg: 'bg-[#F59E0B]/20', iconColor: 'text-[#F59E0B]', sparkData: sparkData(0, 1) },
-  { title: 'Subscriptions', value: '—', change: 0, icon: CreditCard, iconBg: 'bg-[#0A7E8C]/20', iconColor: 'text-[#0A7E8C]', sparkData: sparkData(0, 1) },
-  { title: 'Churn Rate', value: '—', change: 0, icon: TrendingDown, iconBg: 'bg-[#EF4444]/20', iconColor: 'text-[#EF4444]', sparkData: sparkData(0, 1) },
-  { title: 'Revenue', value: '—', change: 0, icon: DollarSign, iconBg: 'bg-[#059669]/20', iconColor: 'text-[#059669]', sparkData: sparkData(0, 1) },
-]
+const OVERVIEW_METRICS: MetricCardData[] = []
 
-const MRR_DATA = [
-  { month: 'Sep', mrr: 186000 },
-  { month: 'Oct', mrr: 201000 },
-  { month: 'Nov', mrr: 218000 },
-  { month: 'Dec', mrr: 235000 },
-  { month: 'Jan', mrr: 256000 },
-  { month: 'Feb', mrr: 284000 },
-]
+const MRR_DATA: { month: string; mrr: number }[] = []
 
-const SUBSCRIPTION_BY_TIER = [
-  { tier: 'Free', count: 32100 },
-  { tier: 'Student Pro', count: 8942 },
-  { tier: 'Teacher Pro', count: 2340 },
-  { tier: 'Enterprise', count: 347 },
-]
+const SUBSCRIPTION_BY_TIER: { tier: string; count: number }[] = []
 
-const REVENUE_FORECAST = [
-  { month: 'Mar', actual: 284000, forecast: 284000 },
-  { month: 'Apr', actual: null, forecast: 302000 },
-  { month: 'May', actual: null, forecast: 318000 },
-  { month: 'Jun', actual: null, forecast: 337000 },
-  { month: 'Jul', actual: null, forecast: 356000 },
-  { month: 'Aug', actual: null, forecast: 378000 },
-]
+const REVENUE_FORECAST: { month: string; actual: number | null; forecast: number | null }[] = []
 
-const PL_DATA = [
-  { category: 'Subscriptions', amount: 284000 },
-  { category: 'Enterprise', amount: 98000 },
-  { category: 'One-time', amount: 12000 },
-  { category: 'Infrastructure', amount: -68000 },
-  { category: 'Salaries', amount: -142000 },
-  { category: 'Marketing', amount: -34000 },
-  { category: 'Operations', amount: -22000 },
-]
+const PL_DATA: { category: string; amount: number }[] = []
 
-const REVENUE_BY_PLAN = [
-  { plan: 'Student Pro', revenue: 89420 },
-  { plan: 'Teacher Pro', revenue: 58500 },
-  { plan: 'Enterprise', revenue: 98000 },
-  { plan: 'Add-ons', revenue: 12000 },
-]
+const REVENUE_BY_PLAN: { plan: string; revenue: number }[] = []
 
-const INITIAL_USERS: UserData[] = [
-  { id: 'u1', name: 'Amara Okafor', email: 'amara@diplomatiq.io', role: 'STUDENT', school: 'Intl School of Geneva', status: 'Active', subscription: 'Student Pro', lastLogin: '2 min ago' },
-  { id: 'u2', name: 'Dr. Sarah Chen', email: 'sarah@diplomatiq.io', role: 'TEACHER', school: 'Intl School of Geneva', status: 'Active', subscription: 'Teacher Pro', lastLogin: '15 min ago' },
-  { id: 'u3', name: 'Kai Nakamura', email: 'kai@tokyo-intl.jp', role: 'STUDENT', school: 'Tokyo International', status: 'Active', subscription: 'Free', lastLogin: '1 hr ago' },
-  { id: 'u4', name: 'Elena Vasquez', email: 'elena@lycee.fr', role: 'STUDENT', school: 'Lycee Francais', status: 'Active', subscription: 'Student Pro', lastLogin: '3 hr ago' },
-  { id: 'u5', name: 'James Wright', email: 'james@diplomatiq.io', role: 'SUPER_ADMIN', school: 'DiplomatiQ HQ', status: 'Active', subscription: 'Enterprise', lastLogin: 'Just now' },
-  { id: 'u6', name: 'Priya Sharma', email: 'priya@dps.edu.in', role: 'STUDENT', school: 'Delhi Public School', status: 'Suspended', subscription: 'Free', lastLogin: '5 days ago' },
-  { id: 'u7', name: 'Marcus Weber', email: 'marcus@berlin-intl.de', role: 'TEACHER', school: 'Berlin Intl School', status: 'Active', subscription: 'Teacher Pro', lastLogin: '2 hr ago' },
-  { id: 'u8', name: 'Fatima Al-Rashid', email: 'fatima@asd.ae', role: 'SCHOOL_ADMIN', school: 'American School Dubai', status: 'Active', subscription: 'Enterprise', lastLogin: '30 min ago' },
-  { id: 'u9', name: 'Oliver Brooks', email: 'oliver@westminster.uk', role: 'STUDENT', school: 'Westminster School', status: 'Unverified', subscription: 'Free', lastLogin: 'Never' },
-  { id: 'u10', name: 'Sofia Costa', email: 'sofia@stpauls.br', role: 'STUDENT', school: "St. Paul's Brazil", status: 'Active', subscription: 'Student Pro', lastLogin: '6 hr ago' },
-]
+const INITIAL_USERS: UserData[] = []
 
-const INITIAL_SCHOOLS: SchoolData[] = [
-  { id: 's1', name: 'International School of Geneva', city: 'Geneva', country: 'Switzerland', type: 'International', verified: true, students: 1240, teachers: 87, status: 'Active', featured: true },
-  { id: 's2', name: 'Tokyo International School', city: 'Tokyo', country: 'Japan', type: 'International', verified: true, students: 980, teachers: 62, status: 'Active', featured: true },
-  { id: 's3', name: 'American School Dubai', city: 'Dubai', country: 'UAE', type: 'International', verified: true, students: 2100, teachers: 134, status: 'Active', featured: false },
-  { id: 's4', name: 'Berlin International School', city: 'Berlin', country: 'Germany', type: 'International', verified: true, students: 760, teachers: 48, status: 'Active', featured: false },
-  { id: 's5', name: 'Lycee Francais de New York', city: 'New York', country: 'USA', type: 'Bilingual', verified: true, students: 1560, teachers: 98, status: 'Active', featured: true },
-  { id: 's6', name: 'Westminster School', city: 'London', country: 'UK', type: 'Independent', verified: true, students: 840, teachers: 56, status: 'Active', featured: false },
-  { id: 's7', name: 'Nairobi Academy', city: 'Nairobi', country: 'Kenya', type: 'International', verified: false, students: 320, teachers: 24, status: 'Pending', featured: false },
-  { id: 's8', name: 'Shanghai United', city: 'Shanghai', country: 'China', type: 'International', verified: false, students: 0, teachers: 0, status: 'Pending', featured: false },
-]
+const INITIAL_SCHOOLS: SchoolData[] = []
 
-const INITIAL_TEACHERS: TeacherData[] = [
-  { id: 't1', name: 'Dr. Sarah Chen', email: 'sarah@diplomatiq.io', school: 'Intl School of Geneva', students: 87, conferences: 12, activityScore: 94, status: 'Active' },
-  { id: 't2', name: 'Marcus Weber', email: 'marcus@berlin-intl.de', school: 'Berlin Intl School', students: 48, conferences: 8, activityScore: 78, status: 'Active' },
-  { id: 't3', name: 'Aisha Patel', email: 'aisha@asd.ae', school: 'American School Dubai', students: 134, conferences: 15, activityScore: 91, status: 'Active' },
-  { id: 't4', name: 'Hiroshi Tanaka', email: 'hiroshi@tokyo-intl.jp', school: 'Tokyo International', students: 62, conferences: 10, activityScore: 85, status: 'Active' },
-  { id: 't5', name: 'Claire Dubois', email: 'claire@lycee.fr', school: 'Lycee Francais', students: 98, conferences: 11, activityScore: 88, status: 'Active' },
-  { id: 't6', name: 'Robert Osei', email: 'robert@nairobi-ac.ke', school: 'Nairobi Academy', students: 24, conferences: 2, activityScore: 32, status: 'Inactive' },
-]
+const INITIAL_TEACHERS: TeacherData[] = []
 
-const INITIAL_STUDENTS: StudentData[] = [
-  { id: 'st1', name: 'Amara Okafor', email: 'amara@diplomatiq.io', school: 'Intl School of Geneva', xpLevel: 'Ambassador', tier: 'Student Pro', coursesCompleted: 12, assessmentScore: 84 },
-  { id: 'st2', name: 'Kai Nakamura', email: 'kai@tokyo-intl.jp', school: 'Tokyo International', xpLevel: 'Envoy', tier: 'Free', coursesCompleted: 8, assessmentScore: 91 },
-  { id: 'st3', name: 'Elena Vasquez', email: 'elena@lycee.fr', school: 'Lycee Francais', xpLevel: 'Envoy', tier: 'Student Pro', coursesCompleted: 15, assessmentScore: 96 },
-  { id: 'st4', name: 'Priya Sharma', email: 'priya@dps.edu.in', school: 'Delhi Public School', xpLevel: 'Delegate', tier: 'Free', coursesCompleted: 3, assessmentScore: 62 },
-  { id: 'st5', name: 'Oliver Brooks', email: 'oliver@westminster.uk', school: 'Westminster School', xpLevel: 'Delegate', tier: 'Free', coursesCompleted: 5, assessmentScore: 71 },
-  { id: 'st6', name: 'Sofia Costa', email: 'sofia@stpauls.br', school: "St. Paul's Brazil", xpLevel: 'Ambassador', tier: 'Student Pro', coursesCompleted: 11, assessmentScore: 88 },
-  { id: 'st7', name: 'Fatima Al-Rashid', email: 'fatima@asd.ae', school: 'American School Dubai', xpLevel: 'Diplomat', tier: 'Student Pro', coursesCompleted: 9, assessmentScore: 79 },
-  { id: 'st8', name: 'Chen Wei', email: 'wei@shanghai-intl.cn', school: 'Shanghai United', xpLevel: 'Delegate', tier: 'Free', coursesCompleted: 2, assessmentScore: 55 },
-]
+const INITIAL_STUDENTS: StudentData[] = []
 
-const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
-  { id: 'al1', action: 'USER_SUSPENDED', user: 'James Wright', target: 'Priya Sharma', timestamp: '2026-03-01 14:23:10', ip: '192.168.1.45', severity: 'warning' },
-  { id: 'al2', action: 'SCHOOL_APPROVED', user: 'James Wright', target: 'Nairobi Academy', timestamp: '2026-03-01 13:45:00', ip: '192.168.1.45', severity: 'info' },
-  { id: 'al3', action: 'ROLE_CHANGED', user: 'James Wright', target: 'Fatima Al-Rashid', timestamp: '2026-03-01 11:20:30', ip: '192.168.1.45', severity: 'warning' },
-  { id: 'al4', action: 'PASSWORD_RESET', user: 'System', target: 'Oliver Brooks', timestamp: '2026-03-01 10:15:00', ip: '203.45.67.89', severity: 'info' },
-  { id: 'al5', action: 'LOGIN_FAILED', user: 'Unknown', target: 'admin@diplomatiq.io', timestamp: '2026-03-01 09:45:22', ip: '45.33.32.156', severity: 'critical' },
-  { id: 'al6', action: 'SUBSCRIPTION_CANCELLED', user: 'System', target: 'Marcus Weber', timestamp: '2026-02-28 22:10:00', ip: 'N/A', severity: 'info' },
-  { id: 'al7', action: 'BULK_IMPORT', user: 'James Wright', target: '42 students', timestamp: '2026-02-28 16:30:00', ip: '192.168.1.45', severity: 'info' },
-  { id: 'al8', action: 'SUSPICIOUS_LOGIN', user: 'System', target: 'amara@diplomatiq.io', timestamp: '2026-02-28 03:22:11', ip: '91.108.56.23', severity: 'critical' },
-]
+const INITIAL_AUDIT_LOGS: AuditLogEntry[] = []
 
-const INITIAL_TICKETS: SupportTicket[] = [
-  { id: 'tk1', type: 'PASSWORD_RESET', subject: 'Cannot access my account', user: 'Oliver Brooks', status: 'Open', priority: 'High', createdAt: '2026-03-01 10:15' },
-  { id: 'tk2', type: 'VERIFICATION', subject: 'School verification request', user: 'Nairobi Academy', status: 'Pending', priority: 'Medium', createdAt: '2026-02-28 16:45' },
-  { id: 'tk3', type: 'BILLING', subject: 'Double charge on subscription', user: 'Sofia Costa', status: 'Open', priority: 'High', createdAt: '2026-02-28 14:20' },
-  { id: 'tk4', type: 'TECHNICAL', subject: 'Assessment not loading', user: 'Chen Wei', status: 'In Progress', priority: 'Medium', createdAt: '2026-02-27 09:30' },
-  { id: 'tk5', type: 'INCIDENT', subject: 'Data sync failure - Geneva', user: 'System Alert', status: 'Resolved', priority: 'Critical', createdAt: '2026-02-26 21:00' },
-]
+const INITIAL_TICKETS: SupportTicket[] = []
 
-const RECENT_LOGINS = [
-  { user: 'James Wright', ip: '192.168.1.45', location: 'San Francisco, US', time: '2 min ago', device: 'Chrome / macOS' },
-  { user: 'Dr. Sarah Chen', ip: '85.214.32.10', location: 'Geneva, CH', time: '15 min ago', device: 'Safari / iOS' },
-  { user: 'Kai Nakamura', ip: '210.168.45.22', location: 'Tokyo, JP', time: '1 hr ago', device: 'Chrome / Windows' },
-  { user: 'Unknown', ip: '45.33.32.156', location: 'Unknown', time: '3 hr ago', device: 'Firefox / Linux' },
-  { user: 'Fatima Al-Rashid', ip: '94.200.87.33', location: 'Dubai, AE', time: '4 hr ago', device: 'Safari / iOS' },
-]
+const RECENT_LOGINS: { user: string; ip: string; location: string; time: string; device: string }[] = []
 
 // ============================================================
 // CHART CONFIG
@@ -648,22 +550,22 @@ function FinancialDashboard({ revenue, subscriptionBreakdown }: { revenue: numbe
         <DarkCard>
           <CardContent className="p-4 text-center">
             <div className="text-xs text-slate-400 mb-1">Refunds (This Month)</div>
-            <div className="text-xl font-bold text-red-400">$2,340</div>
-            <div className="text-xs text-slate-500">7 refunds</div>
+            <div className="text-xl font-bold text-red-400">$0</div>
+            <div className="text-xs text-slate-500">No refunds</div>
           </CardContent>
         </DarkCard>
         <DarkCard>
           <CardContent className="p-4 text-center">
             <div className="text-xs text-slate-400 mb-1">Net Revenue</div>
-            <div className="text-xl font-bold text-emerald-400">$128,660</div>
+            <div className="text-xl font-bold text-emerald-400">$0</div>
             <div className="text-xs text-slate-500">After costs</div>
           </CardContent>
         </DarkCard>
         <DarkCard>
           <CardContent className="p-4 text-center">
             <div className="text-xs text-slate-400 mb-1">ARPU</div>
-            <div className="text-xl font-bold text-[#0A7E8C]">$31.75</div>
-            <div className="text-xs text-slate-500">Avg revenue per user</div>
+            <div className="text-xl font-bold text-[#0A7E8C]">—</div>
+            <div className="text-xs text-slate-500">No subscriptions yet</div>
           </CardContent>
         </DarkCard>
       </div>

@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Check, X, Sparkles, HelpCircle, Mail,
-  Zap, Shield, Globe, Users, Building2, Phone,
+  Zap, Shield, Globe, Users, Building2,
   Crown, GraduationCap, School, Landmark, Lock,
   Loader2, ArrowRight, CreditCard, BadgeCheck
 } from 'lucide-react'
@@ -741,9 +741,6 @@ export default function PricingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button className="bg-[#D4A843] text-[#1B3A4B] hover:bg-[#D4BA6E] font-semibold px-6">
                 <Mail className="w-4 h-4 mr-2" /> Contact Sales
-              </Button>
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 px-6">
-                <Phone className="w-4 h-4 mr-2" /> Schedule Demo
               </Button>
             </div>
           </CardContent>

@@ -957,7 +957,7 @@ function PlatformSection({ onGetStarted }: { onGetStarted: () => void }) {
                 </div>
                 {/* Welcome card */}
                 <div className="rounded-lg bg-gradient-to-r from-[#1B3A4B] to-[#243656] p-4 border border-[#D4A843]/15">
-                  <div className="text-sm font-bold text-white mb-1">Welcome back, Amara</div>
+                  <div className="text-sm font-bold text-white mb-1">Your Dashboard</div>
                   <div className="text-xs text-white/50">Delegate · 2,450 XP · Ambassador Level</div>
                   <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div className="h-full w-[45%] bg-[#D4A843] rounded-full" />
@@ -966,9 +966,9 @@ function PlatformSection({ onGetStarted }: { onGetStarted: () => void }) {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Conferences', val: '8', color: 'bg-blue-500/10 text-blue-400' },
-                    { label: 'Committees', val: '12', color: 'bg-[#D4A843]/10 text-[#D4A843]' },
-                    { label: 'Training', val: '67%', color: 'bg-emerald-500/10 text-emerald-400' },
+                    { label: 'Conferences', val: 'â', color: 'bg-blue-500/10 text-blue-400' },
+                    { label: 'Committees', val: 'â', color: 'bg-[#D4A843]/10 text-[#D4A843]' },
+                    { label: 'Training', val: 'â%', color: 'bg-emerald-500/10 text-emerald-400' },
                   ].map((s) => (
                     <div key={s.label} className="rounded-lg bg-white/[0.03] p-3 border border-white/[0.05]">
                       <div className={`text-lg font-bold ${s.color.split(' ')[1]}`}>{s.val}</div>

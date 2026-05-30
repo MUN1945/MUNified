@@ -73,8 +73,8 @@ export default function Demo() {
                   {/* Top bar */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-white font-semibold text-sm">Welcome back, Sarah</div>
-                      <div className="text-white/40 text-xs">Ambassador Level · 2,450 XP</div>
+                      <div className="text-white font-semibold text-sm">Your Dashboard</div>
+                      <div className="text-white/40 text-xs">Track your progress and achievements</div>
                     </div>
                     <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/30 text-[10px]">
                       Director Pro
@@ -84,9 +84,9 @@ export default function Demo() {
                   {/* Stats row */}
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { label: 'Conferences', value: '8', color: 'text-[#0D7377]' },
-                      { label: 'Delegates', value: '34', color: 'text-[#D4A843]' },
-                      { label: 'Avg. Score', value: '87%', color: 'text-[#059669]' },
+                      { label: 'Conferences', value: '—', color: 'text-[#0D7377]' },
+                      { label: 'Delegates', value: '—', color: 'text-[#D4A843]' },
+                      { label: 'Avg. Score', value: '—%', color: 'text-[#059669]' },
                     ].map((stat) => (
                       <div key={stat.label} className="bg-white/[0.06] rounded-xl p-3 text-center border border-white/[0.06]">
                         <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
@@ -98,14 +98,14 @@ export default function Demo() {
                   {/* Progress bars */}
                   <div className="space-y-3">
                     {[
-                      { label: 'Resolution Writing', pct: 78 },
-                      { label: 'Public Speaking', pct: 65 },
-                      { label: 'Diplomatic Procedures', pct: 92 },
+                      { label: 'Resolution Writing', pct: 0 },
+                      { label: 'Public Speaking', pct: 0 },
+                      { label: 'Diplomatic Procedures', pct: 0 },
                     ].map((item) => (
                       <div key={item.label}>
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-white/50">{item.label}</span>
-                          <span className="text-white/40">{item.pct}%</span>
+                          <span className="text-white/40">Start learning</span>
                         </div>
                         <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                           <motion.div
@@ -122,12 +122,12 @@ export default function Demo() {
 
                   {/* Activity */}
                   <div className="bg-white/[0.04] rounded-xl p-3 border border-white/[0.06]">
-                    <div className="text-white/60 text-xs font-medium mb-2">Recent Activity</div>
+                    <div className="text-white/60 text-xs font-medium mb-2">Getting Started</div>
                     <div className="space-y-2">
                       {[
-                        'Completed "Crisis Management 101"',
-                        'New delegate joined: Omar K.',
-                        'Conference registration confirmed',
+                        'Complete your first assessment',
+                        'Join a conference',
+                        'Start a training module',
                       ].map((activity, j) => (
                         <div key={j} className="flex items-center gap-2 text-[11px] text-white/40">
                           <CheckCircle2 className="w-3 h-3 text-[#059669] shrink-0" />

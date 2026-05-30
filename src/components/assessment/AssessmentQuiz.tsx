@@ -1715,7 +1715,7 @@ export default function AssessmentQuiz() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {/* Sample history entries - these would come from the database in production */}
+                {/* Assessment history entries come from the database */}
                 <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/20">
                   <div className="w-10 h-10 rounded-lg bg-white/50 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5 text-muted-foreground/40" />

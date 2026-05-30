@@ -2,15 +2,9 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Globe, Users, Trophy, ArrowRight, Sparkles } from 'lucide-react'
+import { Globe, ArrowRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-
-const stats = [
-  { icon: Users, value: '2,000+', label: 'Delegates Worldwide' },
-  { icon: Globe, value: '50+', label: 'Countries Represented' },
-  { icon: Trophy, value: '100+', label: 'Conferences Powered' },
-]
 
 const reasons = [
   {
@@ -55,22 +49,6 @@ export default function Testimonials() {
           <p className="mt-4 text-lg text-[#0D1B2A]/60 leading-relaxed">
             Schools and delegates around the world trust DiplomatiQ to elevate their MUN experience.
           </p>
-        </motion.div>
-
-        {/* Stats Row */}
-        <motion.div
-          className="grid grid-cols-3 gap-6 mb-16 max-w-2xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-50px' }}
-          transition={{ duration: 0.6 }}
-        >
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-[#0D7377]">{stat.value}</div>
-              <div className="text-sm text-[#1B3A4B]/60 mt-1">{stat.label}</div>
-            </div>
-          ))}
         </motion.div>
 
         {/* Reason Cards */}

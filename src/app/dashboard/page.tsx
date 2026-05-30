@@ -1,35 +1,41 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import AppShell from '@/components/dashboard/AppShell'
 import { useAuthStore, useNavStore } from '@/lib/store'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, isAuthenticated, isLoading, checkSession } = useAuthStore()
+  const { data: session, status: sessionStatus } = useSession()
+  const { user, isAuthenticated, checkSession } = useAuthStore()
   const { navigate } = useNavStore()
+  const [sessionChecked, setSessionChecked] = useState(false)
 
+  // Check session on mount
   useEffect(() => {
     const init = async () => {
       await checkSession()
+      setSessionChecked(true)
     }
     init()
   }, [checkSession])
 
+  // Set dashboard view on mount
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/auth/signin?callbackUrl=/dashboard')
-    }
-  }, [isLoading, isAuthenticated, router])
-
-  useEffect(() => {
-    // Set the nav store to dashboard view when mounting this route
     navigate('dashboard')
   }, [navigate])
 
-  // Loading state
-  if (isLoading || !isAuthenticated || !user) {
+  // Redirect to login only after session check completes and user is not authenticated
+  useEffect(() => {
+    if (sessionChecked && !isAuthenticated && sessionStatus !== 'loading') {
+      router.push('/auth/signin?callbackUrl=/dashboard')
+    }
+  }, [sessionChecked, isAuthenticated, sessionStatus, router])
+
+  // Loading state — show while session is being checked
+  if (!sessionChecked || sessionStatus === 'loading' || !isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-[#FFF8F0] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

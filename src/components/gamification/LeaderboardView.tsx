@@ -52,8 +52,7 @@ function getXPProgressLocal(xp: number): number {
 }
 
 // ============================================================
-// Leaderboard data — populated from API as platform grows
-// In production, this will be replaced entirely by API data
+// Leaderboard data — populated from API
 // ============================================================
 
 interface LeaderboardUser {
@@ -66,14 +65,7 @@ interface LeaderboardUser {
   research: number
 }
 
-const MOCK_USERS: LeaderboardUser[] = [
-  // Initial data — will be replaced by real API data as platform grows
-  { id: 'u1', name: 'Elena Vasquez', school: 'Lycée Français', xp: 7200, conferences: 15, diplomacy: 95, research: 88 },
-  { id: 'u2', name: 'Kai Nakamura', school: 'Tokyo International School', xp: 6500, conferences: 12, diplomacy: 90, research: 92 },
-  { id: 'u3', name: 'Fatima Al-Rashid', school: 'American School Dubai', xp: 5800, conferences: 14, diplomacy: 92, research: 85 },
-  { id: 'u4', name: 'Lucas Schmidt', school: 'Berlin International School', xp: 4200, conferences: 10, diplomacy: 85, research: 80 },
-  { id: 'u5', name: 'Priya Sharma', school: 'Delhi Public School', xp: 3800, conferences: 9, diplomacy: 88, research: 78 },
-]
+const MOCK_USERS: LeaderboardUser[] = []
 
 // ============================================================
 // PODIUM CARD (Top 3)
@@ -264,7 +256,7 @@ export default function LeaderboardView() {
     fetchLeaderboard()
   }, [])
 
-  const allUsers = apiUsers.length > 0 ? apiUsers : MOCK_USERS
+  const allUsers = apiUsers
   const currentUserId = user?.id || ''
   const userSchool = user?.schoolName || ''
 

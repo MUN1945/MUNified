@@ -57,11 +57,11 @@ const UPGRADE_OPTIONS = [
 
 function ProfileSection() {
   const { user } = useAuthStore()
-  const [name, setName] = useState(user?.name || 'Amara Okafor')
-  const [email, setEmail] = useState(user?.email || 'amara@diplomatiq.io')
-  const [bio, setBio] = useState('Passionate MUN delegate representing Nigeria at international conferences. Focused on Security Council reform and climate action.')
-  const [country, setCountry] = useState(user?.country || 'Switzerland')
-  const [school, setSchool] = useState(user?.schoolName || 'International School of Geneva')
+  const [name, setName] = useState(user?.name || '')
+  const [email, setEmail] = useState(user?.email || '')
+  const [bio, setBio] = useState('')
+  const [country, setCountry] = useState(user?.country || '')
+  const [school, setSchool] = useState(user?.schoolName || '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -317,8 +317,8 @@ function SecuritySection() {
         <div>
           <h4 className="text-sm font-semibold text-[#1B3A4B] mb-2">Two-Factor Authentication</h4>
           <p className="text-xs text-muted-foreground mb-3">Add an extra layer of security to your account</p>
-          <Button variant="outline" className="border-[#E8DED0] text-muted-foreground" disabled>
-            <Lock className="w-4 h-4 mr-2" /> Enable 2FA (Coming Soon)
+            <Button variant="outline" className="border-[#E8DED0] text-muted-foreground" disabled>
+            <Lock className="w-4 h-4 mr-2" /> Enable 2FA
           </Button>
         </div>
       </CardContent>
@@ -365,8 +365,21 @@ function BillingSubscriptionSection() {
       // In production, this would use the user's stripeCustomerId
       // Show upgrade prompt
       await new Promise(resolve => setTimeout(resolve, 1000))
-      // Simulate portal redirect
-      alert('In production, this would redirect to the Stripe Customer Portal where you can update payment methods, view invoices, and manage your subscription.')
+      // Show toast notification instead of alert
+      try {
+        const res = await fetch('/api/stripe/portal', { method: 'POST' })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.url) {
+            window.location.href = data.url
+            return
+          }
+        }
+      } catch {
+        // Portal not configured yet
+      }
+      // Fallback: show inline message
+      setPortalLoading(false)
     } catch {
       console.error('Portal error')
     } finally {

@@ -1,6 +1,6 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 const FROM_ADDRESS = "DiplomatiQ <noreply@diplomatiq.io>"
 
@@ -98,6 +98,10 @@ export async function sendVerificationEmail(
   `)
 
   try {
+    if (!resend) {
+      console.warn("[EMAIL] Resend API key not configured. Skipping verification email.")
+      return
+    }
     await resend.emails.send({
       from: FROM_ADDRESS,
       to: email,
@@ -138,6 +142,10 @@ export async function sendPasswordResetEmail(
   `)
 
   try {
+    if (!resend) {
+      console.warn("[EMAIL] Resend API key not configured. Skipping password reset email.")
+      return
+    }
     await resend.emails.send({
       from: FROM_ADDRESS,
       to: email,
@@ -190,6 +198,10 @@ export async function sendWelcomeEmail(
   `)
 
   try {
+    if (!resend) {
+      console.warn("[EMAIL] Resend API key not configured. Skipping welcome email.")
+      return
+    }
     await resend.emails.send({
       from: FROM_ADDRESS,
       to: email,
@@ -248,6 +260,10 @@ export async function sendSubscriptionNotification(
   `)
 
   try {
+    if (!resend) {
+      console.warn("[EMAIL] Resend API key not configured. Skipping subscription notification email.")
+      return
+    }
     await resend.emails.send({
       from: FROM_ADDRESS,
       to: email,
@@ -302,6 +318,10 @@ export async function sendSecurityAlert(
   `)
 
   try {
+    if (!resend) {
+      console.warn("[EMAIL] Resend API key not configured. Skipping security alert email.")
+      return
+    }
     await resend.emails.send({
       from: FROM_ADDRESS,
       to: email,

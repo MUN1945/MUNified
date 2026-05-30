@@ -49,7 +49,7 @@ function PlaceholderView({ title, description }: { title: string; description: s
         </div>
         <h2 className="text-2xl font-bold text-[#1B3A4B]">{title}</h2>
         <p className="text-muted-foreground mt-2 max-w-md">{description}</p>
-        <p className="text-sm text-muted-foreground mt-4">Coming soon in the next update</p>
+        <p className="text-sm text-muted-foreground mt-4">This feature is currently in development</p>
       </motion.div>
     </div>
   )
