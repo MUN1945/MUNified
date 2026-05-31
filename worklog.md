@@ -244,3 +244,41 @@ Stage Summary:
 - 34 standard MUN committee channels created with AI welcome messages
 - DiplomatiQ Guru AI assistant is active in all committee channels
 - AI assistant enforces scope, safety, and functional restrictions per requirements
+---
+Task ID: training-redesign-1
+Agent: Main Agent
+Task: Ultra-professional Training Hub UI, progressive Assessment, and teacher training courses
+
+Work Log:
+- Investigated current TrainingHub.tsx (835 lines) and AssessmentQuiz.tsx (2401 lines)
+- Identified layout issues: overflowing text, inconsistent fonts, no symmetry in cards
+- Completely redesigned TrainingHub.tsx with:
+  - Fixed all layout/font/symmetry issues
+  - Consistent card heights with overflow-hidden and line-clamp
+  - Rich lesson content renderer supporting TIP/WARNING/KEY POINT/CHECK callout boxes
+  - "For Teachers" filter for teacher-specific courses
+  - Teacher/Director role tags and new category styles
+  - Professional loading skeletons
+- Completely redesigned AssessmentQuiz.tsx with:
+  - Progressive tier system: 3 wrong answers per tier = assessment stops
+  - Auto-advancing questions with green/red feedback
+  - Tier gate transitions between tiers
+  - GenZ-friendly result messages per tier with confetti/sparkle effects
+  - "Start Your Journey" button linking to recommended course
+  - Timer bar, strike indicators, option cards
+  - Course mapping: Tier 1→Parliamentary Procedure, Tier 2→Resolution Writing, etc.
+- Created 5 teacher-specific training courses (23 lessons total):
+  1. Director's Guide to MUN Program Setup (5 lessons)
+  2. Observing & Mentoring Student Delegates (4 lessons)
+  3. Evaluating Research Papers & Position Papers (5 lessons)
+  4. Classroom Management & Consequences Matrix (5 lessons)
+  5. Running Effective Weekly MUN Meetings (4 lessons)
+- Ran teacher course seed script successfully
+- Fixed TypeScript error in AssessmentQuiz (ringColor → boxShadow)
+- Build verified successfully
+
+Stage Summary:
+- Training Hub is now ultra-professional with perfect layout symmetry
+- Assessment is progressive (stops at failure) with fun GenZ result messages
+- 5 new teacher courses with rich, engaging content (consequences matrix, observation, etc.)
+- Total courses: 13 (8 delegate + 5 teacher), total lessons: 54

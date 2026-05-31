@@ -10,14 +10,14 @@ import {
   Flame, Scale, Landmark, Globe, FileText, Sword, Compass,
   ShieldCheck, Gem, Medal, Rocket, Lightbulb, XCircle,
   TrendingUp, ArrowUpRight, Lock, Unlock, Timer, ScrollText,
-  BadgeCheck, CircleDot, ListChecks, BarChart3, GraduationCap, Heart
+  BadgeCheck, CircleDot, ListChecks, BarChart3, GraduationCap, Heart,
+  PartyPopper
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
-import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -40,8 +40,8 @@ interface Question {
   text: string
   subtext?: string
   options: { text: string; score: number; feedback?: string }[]
-  timeLimit: number // seconds
-  checkpoint: boolean // competency checkpoint question
+  timeLimit: number
+  checkpoint: boolean
 }
 
 interface TierDef {
@@ -55,7 +55,7 @@ interface TierDef {
   gradientFrom: string
   gradientTo: string
   description: string
-  passingScore: number // percentage needed to advance
+  passingScore: number
   questionsPerTier: number
 }
 
@@ -73,13 +73,15 @@ interface AssessmentState {
   currentTier: number
   currentQuestionIndex: number
   answers: Record<string, number>
-  failedCheckpoints: number
+  tierWrongAnswers: Record<number, number>
   tierScores: Record<number, number>
   maxTierReached: number
   assessmentComplete: boolean
   timePerQuestion: Record<string, number>
   startedAt: number
   completedAt?: number
+  placementTier: number
+  stopReason: 'wrong-answers' | 'tier-failed' | 'completed' | null
 }
 
 // ============================================================
@@ -139,7 +141,7 @@ const TIERS: TierDef[] = [
 ]
 
 // ============================================================
-// DIMENSIONS
+// DIMENSIONS (with strategic_thinking added)
 // ============================================================
 
 const DIMENSIONS: { key: string; name: string; color: string; icon: React.ElementType; category: 'knowledge' | 'skills' | 'behavior' }[] = [
@@ -148,6 +150,7 @@ const DIMENSIONS: { key: string; name: string; color: string; icon: React.Elemen
   { key: 'un_systems', name: 'UN Systems', color: '#1E40AF', icon: Globe, category: 'knowledge' },
   { key: 'international_relations', name: 'International Relations', color: '#7C3AED', icon: Scale, category: 'knowledge' },
   { key: 'geopolitics', name: 'Geopolitical Awareness', color: '#DC2626', icon: Compass, category: 'knowledge' },
+  { key: 'strategic_thinking', name: 'Strategic Thinking', color: '#B45309', icon: Brain, category: 'knowledge' },
   // Skills
   { key: 'research', name: 'Research Skills', color: '#059669', icon: BookOpen, category: 'skills' },
   { key: 'public_speaking', name: 'Public Speaking', color: '#E11D48', icon: Mic, category: 'skills' },
@@ -161,6 +164,58 @@ const DIMENSIONS: { key: string; name: string; color: string; icon: React.Elemen
   { key: 'collaboration', name: 'Collaboration', color: '#10B981', icon: Users, category: 'behavior' },
   { key: 'professionalism', name: 'Professionalism', color: '#6366F1', icon: BadgeCheck, category: 'behavior' },
 ]
+
+// ============================================================
+// COURSE MAPPING & GENZ MESSAGES
+// ============================================================
+
+const COURSE_MAP: Record<number, string> = {
+  1: "Parliamentary Procedure & Robert's Rules of Order",
+  2: "Resolution Writing Workshop",
+  3: "Diplomatic Negotiation Strategies",
+  4: "Committee Chair Training",
+  5: "Crisis Committee Protocols",
+  6: "Secretary-General Leadership Program",
+  7: "Secretary-General Leadership Program",
+}
+
+const GENZ_MESSAGES: Record<number, { emoji: string; message: string; subtext: string }> = {
+  1: {
+    emoji: '🎮',
+    message: "Alright, you're officially in the game!",
+    subtext: "Time to build that foundation from the ground up. Start with Parliamentary Procedure and you'll be debating like a pro in no time!"
+  },
+  2: {
+    emoji: '💪',
+    message: "Not bad at all! You know your stuff!",
+    subtext: "But there's room to level up. Resolution Writing and Negotiation are your next power-ups!"
+  },
+  3: {
+    emoji: '🔥',
+    message: "Okay, we see you!",
+    subtext: "You've got leadership potential written all over you. Time to sharpen those skills and own that committee room!"
+  },
+  4: {
+    emoji: '👑',
+    message: "Chair material spotted!",
+    subtext: "You've got the procedural mastery. Now polish those leadership skills and you'll be running sessions like a boss!"
+  },
+  5: {
+    emoji: '🧠',
+    message: "Strategic mastermind in the making!",
+    subtext: "Crisis management is your playground. Keep pushing and you'll be running the whole operation!"
+  },
+  6: {
+    emoji: '✨',
+    message: "Executive excellence!",
+    subtext: "You're basically running the show behind the scenes. One more level and you're at the absolute top!"
+  },
+  7: {
+    emoji: '💎',
+    message: "Absolute legend status!",
+    subtext: "You've reached the pinnacle. You don't just play the game — you define it. Now go inspire the next generation!"
+  },
+}
 
 // ============================================================
 // QUESTION BANK — 71 Questions Across 7 Tiers
@@ -1065,7 +1120,7 @@ function calculateDimensionScores(answers: Record<string, number>): DimensionSco
     for (const dimKey of q.dimensions) {
       if (dimensionTotals[dimKey]) {
         dimensionTotals[dimKey].total += answerScore
-        dimensionTotals[dimKey].max += 4 // max score per question
+        dimensionTotals[dimKey].max += 4
       }
     }
   }
@@ -1093,35 +1148,8 @@ function calculateTierScore(tier: number, answers: Record<string, number>): numb
   return Math.round((totalEarned / totalPossible) * 100)
 }
 
-function determinePlacement(maxTierReached: number, tierScores: Record<number, number>, failedCheckpoints: number): {
-  tier: number
-  tierName: string
-  readiness: 'Ready' | 'Needs Development' | 'Not Ready'
-} {
-  const tierDef = TIERS.find(t => t.id === maxTierReached) || TIERS[0]
-  const lastTierScore = tierScores[maxTierReached] || 0
-  const passingScore = tierDef.passingScore
-
-  let readiness: 'Ready' | 'Needs Development' | 'Not Ready'
-  if (lastTierScore >= passingScore + 15) readiness = 'Ready'
-  else if (lastTierScore >= passingScore) readiness = 'Needs Development'
-  else readiness = 'Not Ready'
-
-  return { tier: maxTierReached, tierName: tierDef.name, readiness }
-}
-
-function generateStrengthsAndWeaknesses(dimScores: DimensionScore[]): {
-  strengths: string[]
-  weaknesses: string[]
-} {
-  const sorted = [...dimScores].sort((a, b) => b.score - a.score)
-  const strengths = sorted.slice(0, 5).filter(s => s.score >= 50).map(s => `${s.name} (${s.score}%)`)
-  const weaknesses = sorted.slice(-5).filter(s => s.score < 70).map(s => `${s.name} (${s.score}%)`)
-
-  return {
-    strengths: strengths.length > 0 ? strengths : ['Foundational understanding demonstrated'],
-    weaknesses: weaknesses.length > 0 ? weaknesses : ['Continue building on existing strengths'],
-  }
+function isWrongAnswer(score: number): boolean {
+  return score <= 1
 }
 
 function getRecommendedTraining(dimScores: DimensionScore[]): string[] {
@@ -1131,6 +1159,7 @@ function getRecommendedTraining(dimScores: DimensionScore[]): string[] {
     'un_systems': 'UN Systems & Architecture Deep Dive',
     'international_relations': 'International Relations Foundations',
     'geopolitics': 'Global Geopolitics & Current Affairs',
+    'strategic_thinking': 'Strategic Thinking & Planning',
     'research': 'Research Methodology for MUN',
     'public_speaking': 'Public Speaking & Rhetoric Lab',
     'negotiation': 'Diplomatic Negotiation Workshop',
@@ -1146,95 +1175,86 @@ function getRecommendedTraining(dimScores: DimensionScore[]): string[] {
 }
 
 // ============================================================
-// ANIMATED SVG RADAR CHART
+// CONFETTI COMPONENT
 // ============================================================
 
-function AnimatedRadarChart({ scores, animate }: { scores: DimensionScore[]; animate: boolean }) {
-  const centerX = 200
-  const centerY = 200
-  const radius = 150
-  const axes = scores.length
+function ConfettiEffect({ active }: { active: boolean }) {
+  const particles = useMemo(() =>
+    Array.from({ length: 60 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      delay: Math.random() * 0.8,
+      duration: 2 + Math.random() * 2,
+      color: ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#D4A843', '#0D7377', '#7C3AED'][Math.floor(Math.random() * 10)],
+      size: 6 + Math.random() * 10,
+      rotation: Math.random() * 360,
+      shape: Math.random() > 0.5 ? 'circle' : 'rect',
+    })), []
+  )
 
-  const getPoint = (index: number, value: number) => {
-    const angle = (Math.PI * 2 * index) / axes - Math.PI / 2
-    const r = (value / 100) * radius
-    return {
-      x: centerX + r * Math.cos(angle),
-      y: centerY + r * Math.sin(angle),
-    }
-  }
-
-  const dataPoints = scores.map((s, i) => getPoint(i, animate ? s.score : 0))
-  const polygonPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
-
+  if (!active) return null
   return (
-    <svg viewBox="0 0 400 400" className="w-full max-w-[400px] mx-auto">
-      {[20, 40, 60, 80, 100].map((ring) => (
-        <polygon
-          key={ring}
-          points={Array.from({ length: axes }, (_, i) => {
-            const p = getPoint(i, ring)
-            return `${p.x},${p.y}`
-          }).join(' ')}
-          fill="none"
-          stroke="#e5e7eb"
-          strokeWidth="0.5"
-          opacity={0.4}
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {particles.map(p => (
+        <motion.div
+          key={p.id}
+          className="absolute"
+          style={{
+            left: `${p.x}%`,
+            top: '-20px',
+            width: p.size,
+            height: p.shape === 'rect' ? p.size * 0.6 : p.size,
+            backgroundColor: p.color,
+            borderRadius: p.shape === 'circle' ? '50%' : '2px',
+          }}
+          initial={{ y: 0, opacity: 1, rotate: 0, scale: 1 }}
+          animate={{ y: '110vh', opacity: 0, rotate: p.rotation + 720, scale: 0.5 }}
+          transition={{ duration: p.duration, delay: p.delay, ease: 'easeOut' }}
         />
       ))}
-      {scores.map((_, i) => {
-        const p = getPoint(i, 100)
-        return <line key={i} x1={centerX} y1={centerY} x2={p.x} y2={p.y} stroke="#d1d5db" strokeWidth="0.5" />
-      })}
-      <motion.path
-        d={polygonPath}
-        fill="#0D7377"
-        fillOpacity={0.15}
-        stroke="#0D7377"
-        strokeWidth={2}
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={animate ? { pathLength: 1, opacity: 1 } : { opacity: 0 }}
-        transition={{ duration: 1.5, ease: 'easeOut' }}
-      />
-      {dataPoints.map((p, i) => (
-        <motion.circle
-          key={i}
-          cx={p.x}
-          cy={p.y}
-          r={4}
-          fill={scores[i]?.color || '#0D7377'}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={animate ? { scale: 1, opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: 0.3, delay: 0.8 + i * 0.05 }}
-        />
-      ))}
-      {scores.map((s, i) => {
-        const angle = (Math.PI * 2 * i) / axes - Math.PI / 2
-        const labelR = radius + 32
-        const lx = centerX + labelR * Math.cos(angle)
-        const ly = centerY + labelR * Math.sin(angle)
-        return (
-          <text
-            key={i}
-            x={lx}
-            y={ly}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="text-[7px] fill-muted-foreground font-medium"
-          >
-            {s.name}
-          </text>
-        )
-      })}
-    </svg>
+    </div>
   )
 }
 
 // ============================================================
-// TIMER COMPONENT
+// SPARKLE COMPONENT
 // ============================================================
 
-function QuestionTimer({ timeLimit, onExpire, isActive }: {
+function SparkleEffect({ active }: { active: boolean }) {
+  const sparkles = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => ({
+      id: i,
+      x: 20 + Math.random() * 60,
+      y: 20 + Math.random() * 60,
+      delay: Math.random() * 2,
+      size: 8 + Math.random() * 16,
+    })), []
+  )
+
+  if (!active) return null
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {sparkles.map(s => (
+        <motion.div
+          key={s.id}
+          className="absolute"
+          style={{ left: `${s.x}%`, top: `${s.y}%` }}
+          initial={{ scale: 0, opacity: 0, rotate: 0 }}
+          animate={{ scale: [0, 1.2, 0], opacity: [0, 1, 0], rotate: [0, 180, 360] }}
+          transition={{ duration: 1.5, delay: s.delay, repeat: Infinity, repeatDelay: 2 }}
+        >
+          <Sparkles className="text-yellow-400" style={{ width: s.size, height: s.size }} />
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+// ============================================================
+// TIMER BAR COMPONENT
+// ============================================================
+
+function TimerBar({ timeLimit, onExpire, isActive }: {
   timeLimit: number
   onExpire: () => void
   isActive: boolean
@@ -1266,18 +1286,22 @@ function QuestionTimer({ timeLimit, onExpire, isActive }: {
   const isCritical = timeLeft <= 5
 
   return (
-    <div className="flex items-center gap-2">
-      <Timer className={`w-4 h-4 ${isCritical ? 'text-red-500 animate-pulse' : isWarning ? 'text-amber-500' : 'text-muted-foreground'}`} />
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[120px]">
+    <div className="w-full">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <motion.div
-          className={`h-full rounded-full transition-colors ${isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-[#0D7377]'}`}
+          className={`h-full rounded-full ${isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-[#0D7377]'}`}
           animate={{ width: `${percent}%` }}
           transition={{ duration: 0.5 }}
         />
       </div>
-      <span className={`text-xs font-mono font-semibold min-w-[28px] text-right ${isCritical ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-muted-foreground'}`}>
-        {timeLeft}s
-      </span>
+      <div className="flex items-center justify-end mt-1">
+        <div className="flex items-center gap-1">
+          <Timer className={`w-3 h-3 ${isCritical ? 'text-red-500 animate-pulse' : isWarning ? 'text-amber-500' : 'text-muted-foreground'}`} />
+          <span className={`text-[11px] font-mono font-semibold ${isCritical ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-muted-foreground'}`}>
+            {timeLeft}s
+          </span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1286,76 +1310,69 @@ function QuestionTimer({ timeLimit, onExpire, isActive }: {
 // TIER BADGE COMPONENT
 // ============================================================
 
-function TierBadge({ tier, size = 'md', showProgress, progress }: {
+function TierBadge({ tier, size = 'md' }: {
   tier: TierDef
   size?: 'sm' | 'md' | 'lg'
-  showProgress?: boolean
-  progress?: number
 }) {
-  const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
-  }
-  const iconSizes = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8',
-  }
+  const sizeClasses = { sm: 'w-8 h-8', md: 'w-12 h-12', lg: 'w-16 h-16' }
+  const iconSizes = { sm: 'w-4 h-4', md: 'w-6 h-6', lg: 'w-8 h-8' }
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div
-        className={`${sizeClasses[size]} rounded-xl flex items-center justify-center border-2 transition-all`}
-        style={{
-          backgroundColor: tier.bgColor,
-          borderColor: tier.borderColor,
-          boxShadow: `0 0 20px ${tier.color}20`,
-        }}
-      >
-        <tier.icon className={iconSizes[size]} style={{ color: tier.color }} />
-      </div>
-      {showProgress && progress !== undefined && (
-        <span className="text-[10px] font-semibold" style={{ color: tier.color }}>{progress}%</span>
-      )}
+    <div
+      className={`${sizeClasses[size]} rounded-xl flex items-center justify-center border-2`}
+      style={{
+        backgroundColor: tier.bgColor,
+        borderColor: tier.borderColor,
+        boxShadow: `0 0 20px ${tier.color}20`,
+      }}
+    >
+      <tier.icon className={iconSizes[size]} style={{ color: tier.color }} />
     </div>
   )
 }
 
 // ============================================================
-// TIER GATE ANIMATION
+// TIER GATE ANIMATION (auto-advances after 1.5s)
 // ============================================================
 
-function TierGateAnimation({ tier, onContinue }: { tier: TierDef; onContinue: () => void }) {
+function TierGateAnimation({ fromTier, toTier, onContinue }: {
+  fromTier: TierDef
+  toTier: TierDef
+  onContinue: () => void
+}) {
+  useEffect(() => {
+    const timer = setTimeout(onContinue, 1500)
+    return () => clearTimeout(timer)
+  }, [onContinue])
+
   return (
     <motion.div
-      className="flex flex-col items-center justify-center min-h-[500px] text-center"
+      className="flex flex-col items-center justify-center min-h-[400px] text-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="relative mb-8"
+        className="relative mb-6"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
+        transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
       >
         <div
-          className="w-28 h-28 rounded-2xl flex items-center justify-center border-4"
+          className="w-24 h-24 rounded-2xl flex items-center justify-center border-4"
           style={{
-            backgroundColor: tier.bgColor,
-            borderColor: tier.color,
-            boxShadow: `0 0 60px ${tier.color}40, 0 0 120px ${tier.color}20`,
+            backgroundColor: toTier.bgColor,
+            borderColor: toTier.color,
+            boxShadow: `0 0 60px ${toTier.color}40, 0 0 120px ${toTier.color}20`,
           }}
         >
-          <tier.icon className="w-14 h-14" style={{ color: tier.color }} />
+          <toTier.icon className="w-12 h-12" style={{ color: toTier.color }} />
         </div>
-        {/* Radiating rings */}
         {[1, 2, 3].map((ring) => (
           <motion.div
             key={ring}
             className="absolute inset-0 rounded-2xl border-2"
-            style={{ borderColor: `${tier.color}30` }}
+            style={{ borderColor: `${toTier.color}30` }}
             initial={{ scale: 1, opacity: 0.6 }}
             animate={{ scale: 1.5 + ring * 0.3, opacity: 0 }}
             transition={{ duration: 1.5, delay: ring * 0.3, repeat: Infinity, ease: 'easeOut' }}
@@ -1363,32 +1380,22 @@ function TierGateAnimation({ tier, onContinue }: { tier: TierDef; onContinue: ()
         ))}
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-      >
-        <Badge className="mb-3 text-xs" style={{ backgroundColor: tier.bgColor, color: tier.color, borderColor: tier.borderColor }}>
-          TIER {tier.id} UNLOCKED
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <Badge className="mb-2 text-xs" style={{ backgroundColor: fromTier.bgColor, color: fromTier.color, borderColor: fromTier.borderColor }}>
+          TIER {fromTier.id} COMPLETE
         </Badge>
-        <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: tier.color }}>
-          {tier.name}
+        <h2 className="text-2xl md:text-3xl font-bold mb-1" style={{ color: toTier.color }}>
+          Advancing to Tier {toTier.id}
         </h2>
-        <p className="text-muted-foreground text-sm max-w-md mb-6">{tier.description}</p>
-        <Button
-          className="font-semibold px-8 h-12"
-          style={{ backgroundColor: tier.color, color: tier.id <= 2 ? '#fff' : '#fff' }}
-          onClick={onContinue}
-        >
-          Begin Tier {tier.id} <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
+        <p className="text-base font-semibold mb-1" style={{ color: toTier.color }}>{toTier.name}</p>
+        <p className="text-muted-foreground text-sm max-w-md">{toTier.description}</p>
       </motion.div>
     </motion.div>
   )
 }
 
 // ============================================================
-// QUESTION TYPE INDICATOR
+// QUESTION TYPE BADGE
 // ============================================================
 
 function QuestionTypeBadge({ type }: { type: QuestionType }) {
@@ -1422,163 +1429,199 @@ export default function AssessmentQuiz() {
     currentTier: 1,
     currentQuestionIndex: 0,
     answers: {},
-    failedCheckpoints: 0,
+    tierWrongAnswers: {},
     tierScores: {},
     maxTierReached: 1,
     assessmentComplete: false,
     timePerQuestion: {},
     startedAt: Date.now(),
+    placementTier: 1,
+    stopReason: null,
   })
   const [showResults, setShowResults] = useState(false)
-  const [animatingOut, setAnimatingOut] = useState(false)
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
+  const [answeredCorrectly, setAnsweredCorrectly] = useState<boolean | null>(null)
+  const [feedbackShown, setFeedbackShown] = useState(false)
+  const [timerActive, setTimerActive] = useState(true)
 
   const currentTierDef = TIERS.find(t => t.id === state.currentTier) || TIERS[0]
   const tierQuestions = QUESTIONS.filter(q => q.tier === state.currentTier)
   const currentQuestion = tierQuestions[state.currentQuestionIndex]
   const tierProgress = tierQuestions.length > 0 ? ((state.currentQuestionIndex) / tierQuestions.length) * 100 : 0
 
-  // Checkpoint questions are at specific indices
-  const isCheckpoint = currentQuestion?.checkpoint ?? false
+  // Tier score so far for questions answered in current tier
+  const currentTierAnsweredCount = Object.keys(state.answers).filter(id => {
+    const q = QUESTIONS.find(qu => qu.id === id)
+    return q && q.tier === state.currentTier
+  }).length
+  const currentTierCorrectCount = Object.entries(state.answers).filter(([id, score]) => {
+    const q = QUESTIONS.find(qu => qu.id === id)
+    return q && q.tier === state.currentTier && score >= 3
+  }).length
 
-  // Calculate total progress across all tiers
-  const totalQuestionsAnswered = Object.keys(state.answers).length
-  const totalProgress = Math.round((totalQuestionsAnswered / QUESTIONS.length) * 100)
-
-  // Results calculations
   const dimensionScores = useMemo(() => calculateDimensionScores(state.answers), [state.answers])
-  const placement = useMemo(() =>
-    determinePlacement(state.maxTierReached, state.tierScores, state.failedCheckpoints),
-    [state.maxTierReached, state.tierScores, state.failedCheckpoints]
-  )
-  const strengthsWeaknesses = useMemo(() => generateStrengthsAndWeaknesses(dimensionScores), [dimensionScores])
   const recommendedTraining = useMemo(() => getRecommendedTraining(dimensionScores), [dimensionScores])
 
-  const handleSelectOption = useCallback((score: number) => {
+  const placementTierDef = TIERS.find(t => t.id === state.placementTier) || TIERS[0]
+  const genzMessage = GENZ_MESSAGES[state.placementTier] || GENZ_MESSAGES[1]
+  const recommendedCourse = COURSE_MAP[state.placementTier] || COURSE_MAP[1]
+  const overallScore = Math.round(dimensionScores.reduce((sum, d) => sum + d.score, 0) / dimensionScores.length)
+
+  const handleSelectOption = useCallback((score: number, index: number) => {
+    if (feedbackShown) return
     setSelectedOption(score)
-  }, [])
+    setAnsweredCorrectly(score >= 3)
+    setFeedbackShown(true)
+    setTimerActive(false)
+  }, [feedbackShown])
 
   const handleNext = useCallback(() => {
     if (!currentQuestion || selectedOption === null) return
 
     const newAnswers = { ...state.answers, [currentQuestion.id]: selectedOption }
-    const newFailedCheckpoints = state.failedCheckpoints + (isCheckpoint && selectedOption < 3 ? 1 : 0)
+    const isWrong = isWrongAnswer(selectedOption)
+    const currentWrongCount = (state.tierWrongAnswers[state.currentTier] || 0) + (isWrong ? 1 : 0)
+    const newTierWrongAnswers = { ...state.tierWrongAnswers, [state.currentTier]: currentWrongCount }
 
-    // Check if assessment should conclude (3 failed checkpoints)
-    if (newFailedCheckpoints >= 3) {
+    // CHECK 1: 3 wrong answers in this tier → assessment ends immediately
+    if (currentWrongCount >= 3) {
       const tierScore = calculateTierScore(state.currentTier, newAnswers)
       const newTierScores = { ...state.tierScores, [state.currentTier]: tierScore }
       setState(prev => ({
         ...prev,
         answers: newAnswers,
-        failedCheckpoints: newFailedCheckpoints,
+        tierWrongAnswers: newTierWrongAnswers,
         tierScores: newTierScores,
-        maxTierReached: state.currentTier,
+        maxTierReached: Math.max(prev.maxTierReached, state.currentTier),
         assessmentComplete: true,
         completedAt: Date.now(),
+        placementTier: state.currentTier,
+        stopReason: 'wrong-answers',
       }))
       setPhase('analyzing')
       setTimeout(() => {
         setPhase('results')
-        setTimeout(() => setShowResults(true), 100)
-      }, 3000)
+        setTimeout(() => setShowResults(true), 200)
+      }, 2500)
       return
     }
 
-    // Check if tier is complete
+    // CHECK 2: Is this the last question in the tier?
     if (state.currentQuestionIndex >= tierQuestions.length - 1) {
       const tierScore = calculateTierScore(state.currentTier, newAnswers)
       const newTierScores = { ...state.tierScores, [state.currentTier]: tierScore }
-
-      // Check if passed tier
       const passingScore = currentTierDef.passingScore
-      if (tierScore >= passingScore && state.currentTier < 7) {
-        // Advance to next tier
+
+      // All tiers completed?
+      if (state.currentTier >= 7) {
         setState(prev => ({
           ...prev,
           answers: newAnswers,
-          failedCheckpoints: newFailedCheckpoints,
-          tierScores: newTierScores,
-          currentTier: state.currentTier + 1,
-          currentQuestionIndex: 0,
-          maxTierReached: Math.max(state.maxTierReached, state.currentTier + 1),
-        }))
-        setSelectedOption(null)
-        setPhase('tier-gate')
-        return
-      } else if (state.currentTier >= 7) {
-        // Completed all tiers
-        setState(prev => ({
-          ...prev,
-          answers: newAnswers,
-          failedCheckpoints: newFailedCheckpoints,
+          tierWrongAnswers: newTierWrongAnswers,
           tierScores: newTierScores,
           maxTierReached: 7,
           assessmentComplete: true,
           completedAt: Date.now(),
+          placementTier: tierScore >= passingScore ? 7 : 7,
+          stopReason: 'completed',
         }))
         setPhase('analyzing')
         setTimeout(() => {
           setPhase('results')
-          setTimeout(() => setShowResults(true), 100)
-        }, 3000)
+          setTimeout(() => setShowResults(true), 200)
+        }, 2500)
         return
-      } else {
-        // Failed tier - assessment concludes
+      }
+
+      // Passed tier → advance to next
+      if (tierScore >= passingScore) {
         setState(prev => ({
           ...prev,
           answers: newAnswers,
-          failedCheckpoints: newFailedCheckpoints,
+          tierWrongAnswers: newTierWrongAnswers,
           tierScores: newTierScores,
-          maxTierReached: Math.max(state.maxTierReached, state.currentTier > 1 ? state.currentTier - 1 : 1),
-          assessmentComplete: true,
-          completedAt: Date.now(),
+          currentTier: state.currentTier + 1,
+          currentQuestionIndex: 0,
+          maxTierReached: Math.max(prev.maxTierReached, state.currentTier + 1),
         }))
-        setPhase('analyzing')
-        setTimeout(() => {
-          setPhase('results')
-          setTimeout(() => setShowResults(true), 100)
-        }, 3000)
+        setSelectedOption(null)
+        setAnsweredCorrectly(null)
+        setFeedbackShown(false)
+        setTimerActive(true)
+        setPhase('tier-gate')
         return
       }
-    }
 
-    // Next question in same tier
-    setAnimatingOut(true)
-    setTimeout(() => {
+      // Failed tier → assessment ends at this tier
       setState(prev => ({
         ...prev,
         answers: newAnswers,
-        failedCheckpoints: newFailedCheckpoints,
-        currentQuestionIndex: prev.currentQuestionIndex + 1,
+        tierWrongAnswers: newTierWrongAnswers,
+        tierScores: newTierScores,
+        maxTierReached: Math.max(prev.maxTierReached, state.currentTier),
+        assessmentComplete: true,
+        completedAt: Date.now(),
+        placementTier: state.currentTier,
+        stopReason: 'tier-failed',
       }))
-      setSelectedOption(null)
-      setAnimatingOut(false)
-    }, 200)
-  }, [currentQuestion, selectedOption, state, isCheckpoint, tierQuestions, currentTierDef])
+      setPhase('analyzing')
+      setTimeout(() => {
+        setPhase('results')
+        setTimeout(() => setShowResults(true), 200)
+      }, 2500)
+      return
+    }
+
+    // Next question in same tier
+    setState(prev => ({
+      ...prev,
+      answers: newAnswers,
+      tierWrongAnswers: newTierWrongAnswers,
+      currentQuestionIndex: prev.currentQuestionIndex + 1,
+    }))
+    setSelectedOption(null)
+    setAnsweredCorrectly(null)
+    setFeedbackShown(false)
+    setTimerActive(true)
+  }, [currentQuestion, selectedOption, state, tierQuestions, currentTierDef])
+
+  // Auto-advance after feedback
+  useEffect(() => {
+    if (feedbackShown && selectedOption !== null) {
+      const timer = setTimeout(handleNext, 1200)
+      return () => clearTimeout(timer)
+    }
+  }, [feedbackShown, selectedOption, handleNext])
 
   const handleTimerExpire = useCallback(() => {
-    if (selectedOption === null) {
-      // Auto-submit with lowest score
+    if (selectedOption === null && !feedbackShown) {
       setSelectedOption(0)
+      setAnsweredCorrectly(false)
+      setFeedbackShown(true)
+      setTimerActive(false)
     }
-  }, [selectedOption])
+  }, [selectedOption, feedbackShown])
 
   const handleRestart = useCallback(() => {
     setState({
       currentTier: 1,
       currentQuestionIndex: 0,
       answers: {},
-      failedCheckpoints: 0,
+      tierWrongAnswers: {},
       tierScores: {},
       maxTierReached: 1,
       assessmentComplete: false,
       timePerQuestion: {},
       startedAt: Date.now(),
+      placementTier: 1,
+      stopReason: null,
     })
     setPhase('intro')
     setShowResults(false)
     setSelectedOption(null)
+    setAnsweredCorrectly(null)
+    setFeedbackShown(false)
+    setTimerActive(true)
   }, [])
 
   // ──────────── INTRO PHASE ────────────
@@ -1587,13 +1630,11 @@ export default function AssessmentQuiz() {
       <div className="space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <h2 className="text-2xl font-bold text-[#1B3A4B]">Competency Assessment</h2>
-          <p className="text-muted-foreground mt-1">Progressive evaluation across 7 tiers of diplomatic mastery</p>
+          <p className="text-muted-foreground mt-1">Progressive evaluation — you advance until you hit your limit</p>
         </motion.div>
 
-        {/* Hero card with pyramid visualization */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
           <Card className="bg-gradient-to-br from-[#0D1B2A] to-[#1B3A4B] border-[#D4A843]/20 overflow-hidden relative">
-            {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4A843] rounded-full opacity-[0.04] -translate-y-1/2 translate-x-1/4" />
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#0D7377] rounded-full opacity-[0.06] translate-y-1/2 -translate-x-1/4" />
 
@@ -1601,38 +1642,35 @@ export default function AssessmentQuiz() {
               <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
                 <div className="flex-1">
                   <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/30 mb-3">
-                    <Gem className="w-3 h-3 mr-1" /> 7-Tier Progressive Framework
+                    <Gem className="w-3 h-3 mr-1" /> Progressive Tier System
                   </Badge>
                   <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
-                    Diplomatic Competency Assessment
+                    Find Your Diplomatic Level
                   </h3>
                   <p className="text-white/50 text-sm mb-4 leading-relaxed">
-                    A comprehensive progressive assessment that evaluates your knowledge, skills, and behavioral
-                    competencies across 7 tiers of diplomatic mastery. You earn advancement through demonstrated
-                    competence — not just completion.
+                    This isn&apos;t about answering all 71 questions. Start at Tier 1 and work your way up.
+                    Get 3 wrong answers in a tier and the assessment stops — you&apos;re placed at that level.
+                    Pass a tier and you advance. Simple as that.
                   </p>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {['Knowledge', 'Skills', 'Behavior'].map((cat) => (
-                      <Badge key={cat} variant="secondary" className="text-[10px] bg-white/10 text-white/70 border-white/10">
-                        {cat}
-                      </Badge>
-                    ))}
-                    <Badge variant="secondary" className="text-[10px] bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/20">
+                    <Badge variant="secondary" className="text-[10px] bg-white/10 text-white/70 border-white/10">
                       <Timer className="w-3 h-3 mr-1" /> Timed Questions
                     </Badge>
                     <Badge variant="secondary" className="text-[10px] bg-red-500/15 text-red-400 border-red-500/20">
-                      <AlertTriangle className="w-3 h-3 mr-1" /> 3-Strike System
+                      <AlertTriangle className="w-3 h-3 mr-1" /> 3 Wrong = Stop
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px] bg-emerald-500/15 text-emerald-400 border-emerald-500/20">
+                      <TrendingUp className="w-3 h-3 mr-1" /> Pass = Advance
                     </Badge>
                   </div>
                   <Button
                     className="bg-[#D4A843] text-[#1B3A4B] hover:bg-[#D4BA6E] font-semibold"
-                    onClick={() => setPhase('quiz')}
+                    onClick={() => { setPhase('quiz'); setTimerActive(true) }}
                   >
-                    <Play className="w-4 h-4 mr-2" /> Begin Placement Assessment
+                    <Play className="w-4 h-4 mr-2" /> Start Assessment
                   </Button>
                 </div>
 
-                {/* Pyramid visualization */}
                 <div className="w-full lg:w-[320px] shrink-0">
                   <div className="space-y-1.5">
                     {[...TIERS].reverse().map((tier, i) => {
@@ -1648,20 +1686,14 @@ export default function AssessmentQuiz() {
                           <div className="relative group" style={{ width: `${widthPercent}%` }}>
                             <div
                               className="flex items-center gap-2.5 p-2 rounded-lg border transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-lg"
-                              style={{
-                                backgroundColor: `${tier.color}12`,
-                                borderColor: `${tier.color}25`,
-                              }}
+                              style={{ backgroundColor: `${tier.color}12`, borderColor: `${tier.color}25` }}
                             >
-                              <div
-                                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                                style={{ backgroundColor: `${tier.color}20` }}
-                              >
+                              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${tier.color}20` }}>
                                 <tier.icon className="w-3.5 h-3.5" style={{ color: tier.color }} />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <span className="text-xs font-semibold text-white/90 block leading-tight">{tier.name}</span>
-                                <span className="text-[10px] text-white/40">{tier.subtitle} · {tier.passingScore}% to pass</span>
+                                <span className="text-[10px] text-white/40">{tier.subtitle} · {tier.passingScore}% pass</span>
                               </div>
                               <span className="text-[10px] font-mono font-bold" style={{ color: tier.color }}>T{tier.id}</span>
                             </div>
@@ -1676,18 +1708,17 @@ export default function AssessmentQuiz() {
           </Card>
         </motion.div>
 
-        {/* How it works */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">How Assessment Works</CardTitle>
+              <CardTitle className="text-base">How It Works</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { icon: ListChecks, title: 'Progressive Tiers', desc: 'Start at Tier 1 and earn your way up through demonstrated competence at each level.' },
-                  { icon: AlertTriangle, title: '3-Strike System', desc: 'Fail 3 competency checkpoints and the assessment concludes with your placement.' },
-                  { icon: Trophy, title: 'Placement Report', desc: 'Receive a detailed competency breakdown with personalized development recommendations.' },
+                  { icon: ListChecks, title: 'Start at Tier 1', desc: 'Answer questions starting from the basics. Each tier gets progressively harder.' },
+                  { icon: AlertTriangle, title: '3 Strikes Per Tier', desc: 'Get 3 wrong answers (score 0-1) in any tier and the assessment stops at that level.' },
+                  { icon: Trophy, title: 'Advance or Place', desc: 'Pass a tier to advance. Fail a tier and you\'re placed there with a personalized learning plan.' },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                     <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
@@ -1704,77 +1735,49 @@ export default function AssessmentQuiz() {
           </Card>
         </motion.div>
 
-        {/* Assessment History */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Assessment History</CardTitle>
-                <Badge variant="secondary" className="text-[10px]">Previous Attempts</Badge>
+                <CardTitle className="text-base">Tier Levels</CardTitle>
+                <Badge variant="secondary" className="text-[10px]">7 Tiers</Badge>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {/* Assessment history entries come from the database */}
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/30 border border-dashed border-muted-foreground/20">
-                  <div className="w-10 h-10 rounded-lg bg-white/50 flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 text-muted-foreground/40" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-muted-foreground/60">No assessments completed yet</div>
-                    <div className="text-xs text-muted-foreground/40">Begin your placement assessment to establish your competency tier</div>
-                  </div>
-                  <Button size="sm" variant="outline" className="text-xs" onClick={() => setPhase('quiz')}>
-                    <Play className="w-3 h-3 mr-1" /> Start
-                  </Button>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {TIERS.map((tier, i) => (
+                  <motion.div
+                    key={tier.id}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 + i * 0.05 }}
+                  >
+                    <Card className="hover:shadow-md transition-shadow h-full">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${tier.color}15` }}>
+                            <tier.icon className="w-4.5 h-4.5" style={{ color: tier.color }} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold leading-tight">{tier.name}</div>
+                            <div className="text-[10px] text-muted-foreground">Tier {tier.id} · {tier.subtitle}</div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed mb-2">{tier.description}</p>
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-muted-foreground">{tier.questionsPerTier} questions</span>
+                          <span className="font-medium" style={{ color: tier.color }}>{tier.passingScore}% pass</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Tier Details Grid */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-[#1B3A4B]">Tier Requirements</h3>
-            <Badge variant="secondary" className="text-[10px]">71 Questions Total</Badge>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {TIERS.map((tier, i) => (
-              <motion.div
-                key={tier.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.4 + i * 0.05 }}
-              >
-                <Card className="hover:shadow-md transition-shadow h-full">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div
-                        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${tier.color}15` }}
-                      >
-                        <tier.icon className="w-4.5 h-4.5" style={{ color: tier.color }} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold leading-tight">{tier.name}</div>
-                        <div className="text-[10px] text-muted-foreground">Tier {tier.id} · {tier.subtitle}</div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed mb-2">{tier.description}</p>
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-muted-foreground">{tier.questionsPerTier} questions</span>
-                      <span className="font-medium" style={{ color: tier.color }}>{tier.passingScore}% pass</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Research Paper Evaluation Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.5 }}>
           <Card className="border-[#0D7377]/20">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-[#0D7377]/10 flex items-center justify-center shrink-0">
@@ -1782,10 +1785,10 @@ export default function AssessmentQuiz() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold">Research Paper Evaluation</div>
-                <div className="text-xs text-muted-foreground">Submit your position papers for AI-powered evaluation with originality detection and citation analysis</div>
+                <div className="text-xs text-muted-foreground">Submit position papers for AI-powered evaluation with originality detection</div>
               </div>
               <Button size="sm" variant="outline" className="shrink-0 text-xs" onClick={() => navigate('research')}>
-                <ArrowRight className="w-3 h-3 mr-1" /> Go to Research Lab
+                <ArrowRight className="w-3 h-3 mr-1" /> Research Lab
               </Button>
             </CardContent>
           </Card>
@@ -1796,11 +1799,13 @@ export default function AssessmentQuiz() {
 
   // ──────────── TIER GATE PHASE ────────────
   if (phase === 'tier-gate') {
+    const fromTier = TIERS.find(t => t.id === state.currentTier - 1) || TIERS[0]
     return (
-      <div className="min-h-[500px]">
+      <div className="min-h-[400px]">
         <TierGateAnimation
-          tier={currentTierDef}
-          onContinue={() => setPhase('quiz')}
+          fromTier={fromTier}
+          toTier={currentTierDef}
+          onContinue={() => { setPhase('quiz'); setTimerActive(true) }}
         />
       </div>
     )
@@ -1822,8 +1827,8 @@ export default function AssessmentQuiz() {
           >
             <Brain className="w-10 h-10 text-white" />
           </motion.div>
-          <h3 className="text-xl font-bold mb-2">Generating Competency Report...</h3>
-          <p className="text-muted-foreground text-sm">Analyzing {dimensionScores.length} competency dimensions across {state.maxTierReached} tiers</p>
+          <h3 className="text-xl font-bold mb-2">Analyzing Your Results...</h3>
+          <p className="text-muted-foreground text-sm">Calculating placement across {state.maxTierReached} tier{state.maxTierReached > 1 ? 's' : ''}</p>
           <div className="mt-6 flex gap-2">
             {DIMENSIONS.slice(0, 10).map((dim, i) => (
               <motion.div
@@ -1840,397 +1845,298 @@ export default function AssessmentQuiz() {
     )
   }
 
-  // ──────────── RESULTS PHASE ────────────
+  // ──────────── RESULTS PHASE (GenZ Popup) ────────────
   if (phase === 'results') {
-    const placementTier = TIERS.find(t => t.id === placement.tier) || TIERS[0]
-    const overallScore = Math.round(dimensionScores.reduce((sum, d) => sum + d.score, 0) / dimensionScores.length)
     const radarData = dimensionScores.map(d => ({ subject: d.name, value: d.score, fullMark: 100 }))
-
-    // Development plan
-    const nextTier = TIERS.find(t => t.id === placement.tier + 1)
-    const devSteps = [
-      `Complete the recommended training modules to strengthen weak areas`,
-      `Practice ${placementTier.name}-level scenarios and committee simulations`,
-      nextTier ? `Focus on skills needed for ${nextTier.name} tier advancement` : 'Continue refining your mastery at the highest level',
-      `Seek feedback from experienced delegates and mentors`,
-      `Re-take this assessment after 30 days of focused training`,
-    ]
+    const showConfetti = state.placementTier >= 3 || (state.stopReason === 'completed')
 
     return (
-      <ScrollArea className="max-h-[calc(100vh-8rem)]">
-        <div className="space-y-6 pb-8">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={showResults ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.6, type: 'spring' }}
-          >
-            <div className="text-center mb-6">
-              <motion.div
-                className="w-20 h-20 rounded-2xl mx-auto mb-4 flex items-center justify-center border-2"
-                style={{
-                  backgroundColor: placementTier.bgColor,
-                  borderColor: placementTier.color,
-                  boxShadow: `0 0 40px ${placementTier.color}30`,
-                }}
-                initial={{ scale: 0 }}
-                animate={showResults ? { scale: 1 } : {}}
-                transition={{ duration: 0.5, delay: 0.3, type: 'spring' }}
-              >
-                <placementTier.icon className="w-10 h-10" style={{ color: placementTier.color }} />
-              </motion.div>
-              <h2 className="text-2xl md:text-3xl font-bold text-[#1B3A4B]">Competency Assessment Report</h2>
-              <p className="text-muted-foreground mt-1">Your DiplomatiQ placement has been determined</p>
-            </div>
-          </motion.div>
-
-          {/* Placement Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={showResults ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Card className="overflow-hidden border-2" style={{ borderColor: `${placementTier.color}40` }}>
-              <div className="h-2" style={{ backgroundColor: placementTier.color }} />
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${placementTier.color}15` }}>
-                        <placementTier.icon className="w-6 h-6" style={{ color: placementTier.color }} />
-                      </div>
-                      <div>
-                        <Badge className="text-[10px] mb-1" style={{ backgroundColor: `${placementTier.color}15`, color: placementTier.color, borderColor: `${placementTier.color}30` }}>
-                          RECOMMENDED PLACEMENT
-                        </Badge>
-                        <h3 className="text-xl font-bold" style={{ color: placementTier.color }}>
-                          Tier {placement.tier}: {placement.tierName}
-                        </h3>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <Badge variant="outline" className={placement.readiness === 'Ready' ? 'border-emerald-500/30 text-emerald-600' : placement.readiness === 'Needs Development' ? 'border-amber-500/30 text-amber-600' : 'border-red-500/30 text-red-600'}>
-                        {placement.readiness === 'Ready' && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                        {placement.readiness === 'Needs Development' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                        {placement.readiness === 'Not Ready' && <XCircle className="w-3 h-3 mr-1" />}
-                        {placement.readiness}
-                      </Badge>
-                      <Badge variant="secondary" className="text-[10px]">
-                        Tier {placement.tier} of 7 Reached
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{placementTier.description}</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="relative w-32 h-32">
-                      <svg width={128} height={128} className="-rotate-90">
-                        <circle cx={64} cy={64} r={52} fill="none" stroke="#e5e7eb" strokeWidth={8} />
-                        <motion.circle
-                          cx={64} cy={64} r={52} fill="none" stroke={placementTier.color} strokeWidth={8}
-                          strokeLinecap="round"
-                          strokeDasharray={2 * Math.PI * 52}
-                          initial={{ strokeDashoffset: 2 * Math.PI * 52 }}
-                          animate={showResults ? { strokeDashoffset: 2 * Math.PI * 52 * (1 - overallScore / 100) } : {}}
-                          transition={{ duration: 1.5, ease: 'easeOut', delay: 0.5 }}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <motion.span
-                          className="text-3xl font-bold"
-                          style={{ color: placementTier.color }}
-                          initial={{ opacity: 0 }}
-                          animate={showResults ? { opacity: 1 } : {}}
-                          transition={{ delay: 1 }}
-                        >
-                          {overallScore}
-                        </motion.span>
-                        <span className="text-[10px] text-muted-foreground font-medium">OVERALL</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Tier Progress Map */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={showResults ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Tier Progression Map</CardTitle>
-                <CardDescription>Your journey through the 7-tier framework</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-7 gap-2">
-                  {TIERS.map((tier) => {
-                    const reached = tier.id <= state.maxTierReached
-                    const score = state.tierScores[tier.id]
-                    return (
-                      <div
-                        key={tier.id}
-                        className={`flex flex-col items-center p-2 rounded-lg border transition-all ${
-                          reached
-                            ? 'border-current'
-                            : 'border-muted opacity-40'
-                        }`}
-                        style={reached ? { borderColor: `${tier.color}40`, backgroundColor: `${tier.color}08` } : {}}
-                      >
-                        <tier.icon className="w-5 h-5 mb-1" style={{ color: reached ? tier.color : '#94A3B8' }} />
-                        <span className="text-[10px] font-semibold text-center" style={{ color: reached ? tier.color : undefined }}>
-                          {tier.name.split(' ')[0]}
-                        </span>
-                        {score !== undefined && (
-                          <span className="text-[9px] font-bold mt-0.5" style={{ color: tier.color }}>{score}%</span>
-                        )}
-                        {reached && (
-                          <CheckCircle2 className="w-3 h-3 mt-1" style={{ color: tier.color }} />
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Radar Chart and Skill Breakdown */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <>
+        <ConfettiEffect active={showResults && showConfetti} />
+        <ScrollArea className="max-h-[calc(100vh-8rem)]">
+          <div className="space-y-6 pb-8">
+            {/* GenZ Result Hero */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={showResults ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.4 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={showResults ? { opacity: 1, scale: 1 } : {}}
+              transition={{ duration: 0.6, type: 'spring' }}
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Competency Radar</CardTitle>
-                  <CardDescription>14-dimension diplomatic skill profile</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="w-full aspect-square max-w-[400px] mx-auto">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={radarData}>
-                        <PolarGrid stroke="#e5e7eb" strokeOpacity={0.5} />
-                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#64748b' }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 8, fill: '#94a3b8' }} />
-                        <Radar
-                          name="Score"
-                          dataKey="value"
-                          stroke="#0D7377"
-                          fill="#0D7377"
-                          fillOpacity={0.15}
-                          strokeWidth={2}
-                        />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+              <Card className="overflow-hidden border-2 relative" style={{ borderColor: `${placementTierDef.color}40` }}>
+                <div className="h-3" style={{ background: `linear-gradient(90deg, ${placementTierDef.gradientFrom}, ${placementTierDef.gradientTo})` }} />
+                <SparkleEffect active={showResults && state.placementTier >= 3} />
+                <CardContent className="p-6 md:p-8 relative z-10">
+                  <div className="text-center">
+                    {/* Tier Icon */}
+                    <motion.div
+                      className="w-24 h-24 rounded-2xl mx-auto mb-4 flex items-center justify-center border-4"
+                      style={{
+                        backgroundColor: placementTierDef.bgColor,
+                        borderColor: placementTierDef.color,
+                        boxShadow: `0 0 50px ${placementTierDef.color}40`,
+                      }}
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={showResults ? { scale: 1, rotate: 0 } : {}}
+                      transition={{ duration: 0.6, delay: 0.3, type: 'spring' }}
+                    >
+                      <placementTierDef.icon className="w-12 h-12" style={{ color: placementTierDef.color }} />
+                    </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={showResults ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.5 }}
-            >
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Competency Breakdown</CardTitle>
-                  <CardDescription>Scores across all 14 dimensions</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                  {['knowledge', 'skills', 'behavior'].map((category) => {
-                    const catScores = dimensionScores.filter(d => d.category === category)
-                    const catLabel = category === 'knowledge' ? 'Knowledge' : category === 'skills' ? 'Skills' : 'Behavior'
-                    const catIcon = category === 'knowledge' ? Brain : category === 'skills' ? Zap : Heart
-                    return (
-                      <div key={category}>
-                        <div className="flex items-center gap-2 mb-2">
-                          {React.createElement(catIcon, { className: 'w-4 h-4 text-muted-foreground' })}
-                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{catLabel}</span>
-                          <Separator className="flex-1" />
+                    {/* Tier Badge */}
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={showResults ? { opacity: 1, y: 0 } : {}} transition={{ delay: 0.5 }}>
+                      <Badge className="mb-3 text-xs" style={{ backgroundColor: `${placementTierDef.color}15`, color: placementTierDef.color, borderColor: `${placementTierDef.color}30` }}>
+                        TIER {state.placementTier} OF 7
+                      </Badge>
+                    </motion.div>
+
+                    {/* Tier Name */}
+                    <motion.h2
+                      className="text-2xl md:text-3xl font-bold mb-1"
+                      style={{ color: placementTierDef.color }}
+                      initial={{ opacity: 0 }}
+                      animate={showResults ? { opacity: 1 } : {}}
+                      transition={{ delay: 0.6 }}
+                    >
+                      {placementTierDef.name}
+                    </motion.h2>
+                    <motion.p className="text-sm text-muted-foreground mb-4" initial={{ opacity: 0 }} animate={showResults ? { opacity: 1 } : {}} transition={{ delay: 0.7 }}>
+                      {placementTierDef.subtitle}
+                    </motion.p>
+
+                    {/* GenZ Message */}
+                    <motion.div
+                      className="bg-muted/50 rounded-2xl p-5 mb-5 max-w-lg mx-auto"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={showResults ? { opacity: 1, y: 0 } : {}}
+                      transition={{ delay: 0.8 }}
+                    >
+                      <div className="text-3xl mb-2">{genzMessage.emoji}</div>
+                      <p className="text-lg font-bold mb-2" style={{ color: placementTierDef.color }}>{genzMessage.message}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{genzMessage.subtext}</p>
+                    </motion.div>
+
+                    {/* Score Ring */}
+                    <motion.div
+                      className="flex items-center justify-center gap-6 mb-5"
+                      initial={{ opacity: 0 }}
+                      animate={showResults ? { opacity: 1 } : {}}
+                      transition={{ delay: 1 }}
+                    >
+                      <div className="relative w-24 h-24">
+                        <svg width={96} height={96} className="-rotate-90">
+                          <circle cx={48} cy={48} r={38} fill="none" stroke="#e5e7eb" strokeWidth={6} />
+                          <motion.circle
+                            cx={48} cy={48} r={38} fill="none" stroke={placementTierDef.color} strokeWidth={6}
+                            strokeLinecap="round"
+                            strokeDasharray={2 * Math.PI * 38}
+                            initial={{ strokeDashoffset: 2 * Math.PI * 38 }}
+                            animate={showResults ? { strokeDashoffset: 2 * Math.PI * 38 * (1 - overallScore / 100) } : {}}
+                            transition={{ duration: 1.5, ease: 'easeOut', delay: 1.2 }}
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-2xl font-bold" style={{ color: placementTierDef.color }}>{overallScore}</span>
+                          <span className="text-[8px] text-muted-foreground font-medium">OVERALL</span>
                         </div>
-                        {catScores.map((dim) => (
-                          <div key={dim.key} className="mb-2.5">
-                            <div className="flex items-center justify-between mb-1">
-                              <div className="flex items-center gap-1.5">
-                                <dim.icon className="w-3.5 h-3.5" style={{ color: dim.color }} />
-                                <span className="text-xs font-medium">{dim.name}</span>
-                              </div>
-                              <span className="text-xs font-bold" style={{ color: dim.score >= 70 ? '#059669' : dim.score >= 50 ? '#D4A843' : '#DC2626' }}>
-                                {dim.score}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                              <motion.div
-                                className="h-full rounded-full"
-                                style={{ backgroundColor: dim.color }}
-                                initial={{ width: 0 }}
-                                animate={showResults ? { width: `${dim.score}%` } : { width: 0 }}
-                                transition={{ duration: 0.8, delay: 0.6 + dimensionScores.indexOf(dim) * 0.05, ease: 'easeOut' }}
-                              />
-                            </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Stop Reason */}
+                    {state.stopReason && (
+                      <motion.div initial={{ opacity: 0 }} animate={showResults ? { opacity: 1 } : {}} transition={{ delay: 1.1 }}>
+                        <Badge variant="outline" className="text-xs gap-1">
+                          {state.stopReason === 'wrong-answers' && <><XCircle className="w-3 h-3 text-red-500" /> Stopped — 3 wrong answers in Tier {state.placementTier}</>}
+                          {state.stopReason === 'tier-failed' && <><AlertTriangle className="w-3 h-3 text-amber-500" /> Tier {state.placementTier} not passed</>}
+                          {state.stopReason === 'completed' && <><CheckCircle2 className="w-3 h-3 text-emerald-500" /> All 7 tiers completed!</>}
+                        </Badge>
+                      </motion.div>
+                    )}
+
+                    {/* Start Your Journey Button */}
+                    <motion.div
+                      className="mt-5"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={showResults ? { opacity: 1, y: 0 } : {}}
+                      transition={{ delay: 1.3 }}
+                    >
+                      <Button
+                        size="lg"
+                        className="font-semibold px-8 h-12 text-base"
+                        style={{ background: `linear-gradient(135deg, ${placementTierDef.gradientFrom}, ${placementTierDef.gradientTo})`, color: '#fff' }}
+                        onClick={() => navigate('training')}
+                      >
+                        <Rocket className="w-5 h-5 mr-2" /> Start Your Journey
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">Recommended: {recommendedCourse}</p>
+                    </motion.div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Tier Progress Map */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={showResults ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 1.4 }}
+            >
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Tier Progression</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-7 gap-2">
+                    {TIERS.map((tier) => {
+                      const reached = tier.id <= state.maxTierReached
+                      const score = state.tierScores[tier.id]
+                      return (
+                        <div
+                          key={tier.id}
+                          className={`flex flex-col items-center p-2 rounded-lg border transition-all ${reached ? 'border-current' : 'border-muted opacity-40'}`}
+                          style={reached ? { borderColor: `${tier.color}40`, backgroundColor: `${tier.color}08` } : {}}
+                        >
+                          <tier.icon className="w-5 h-5 mb-1" style={{ color: reached ? tier.color : '#94A3B8' }} />
+                          <span className="text-[10px] font-semibold text-center" style={{ color: reached ? tier.color : undefined }}>
+                            {tier.name.split(' ')[0]}
+                          </span>
+                          {score !== undefined && <span className="text-[9px] font-bold mt-0.5" style={{ color: tier.color }}>{score}%</span>}
+                          {reached && <CheckCircle2 className="w-3 h-3 mt-1" style={{ color: tier.color }} />}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Radar Chart + Skill Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <motion.div initial={{ opacity: 0, x: -30 }} animate={showResults ? { opacity: 1, x: 0 } : {}} transition={{ delay: 1.5 }}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Competency Radar</CardTitle>
+                    <CardDescription>Multi-dimension diplomatic skill profile</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="w-full aspect-square max-w-[400px] mx-auto">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={radarData}>
+                          <PolarGrid stroke="#e5e7eb" strokeOpacity={0.5} />
+                          <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#64748b' }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 8, fill: '#94a3b8' }} />
+                          <Radar name="Score" dataKey="value" stroke={placementTierDef.color} fill={placementTierDef.color} fillOpacity={0.15} strokeWidth={2} />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, x: 30 }} animate={showResults ? { opacity: 1, x: 0 } : {}} transition={{ delay: 1.6 }}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Competency Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                    {['knowledge', 'skills', 'behavior'].map((category) => {
+                      const catScores = dimensionScores.filter(d => d.category === category)
+                      const catLabel = category === 'knowledge' ? 'Knowledge' : category === 'skills' ? 'Skills' : 'Behavior'
+                      const catIcon = category === 'knowledge' ? Brain : category === 'skills' ? Zap : Heart
+                      return (
+                        <div key={category}>
+                          <div className="flex items-center gap-2 mb-2">
+                            {React.createElement(catIcon, { className: 'w-4 h-4 text-muted-foreground' })}
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{catLabel}</span>
+                            <Separator className="flex-1" />
                           </div>
-                        ))}
+                          {catScores.map((dim) => (
+                            <div key={dim.key} className="mb-2.5">
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-1.5">
+                                  <dim.icon className="w-3.5 h-3.5" style={{ color: dim.color }} />
+                                  <span className="text-xs font-medium">{dim.name}</span>
+                                </div>
+                                <span className="text-xs font-bold" style={{ color: dim.score >= 70 ? '#059669' : dim.score >= 50 ? '#D4A843' : '#DC2626' }}>
+                                  {dim.score}%
+                                </span>
+                              </div>
+                              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ backgroundColor: dim.color }}
+                                  initial={{ width: 0 }}
+                                  animate={showResults ? { width: `${dim.score}%` } : { width: 0 }}
+                                  transition={{ duration: 0.8, delay: 1.7 + dimensionScores.indexOf(dim) * 0.04, ease: 'easeOut' }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+
+            {/* Recommended Training */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={showResults ? { opacity: 1, y: 0 } : {}} transition={{ delay: 1.8 }}>
+              <Card className="border-[#0D7377]/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-[#0D7377]" />
+                    Recommended Training
+                  </CardTitle>
+                  <CardDescription>Your personalized learning path starting at Tier {state.placementTier}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {recommendedTraining.map((course, i) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-lg border hover:border-[#0D7377]/30 hover:bg-[#0D7377]/5 transition-all cursor-pointer">
+                        <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
+                          <BookOpen className="w-4 h-4 text-[#0D7377]" />
+                        </div>
+                        <span className="text-sm font-medium">{course}</span>
                       </div>
-                    )
-                  })}
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
-          </div>
 
-          {/* Strengths & Weaknesses */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Action Buttons */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={showResults ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.6 }}
+              transition={{ delay: 2 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2"
             >
-              <Card className="border-emerald-500/20">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-emerald-500" />
-                    Strengths
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {strengthsWeaknesses.strengths.map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={showResults ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.7 }}
-            >
-              <Card className="border-amber-500/20">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ArrowUpRight className="w-4 h-4 text-amber-500" />
-                    Areas for Development
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {strengthsWeaknesses.weaknesses.map((w, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                        <span>{w}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+              <Button
+                className="bg-[#0D7377] hover:bg-[#0D7377]/90 text-white font-semibold px-8 h-12"
+                onClick={() => navigate('training')}
+              >
+                <GraduationCap className="w-4 h-4 mr-2" /> Continue Your Training
+              </Button>
+              <Button variant="outline" className="px-6 h-12" onClick={handleRestart}>
+                <RotateCcw className="w-4 h-4 mr-2" /> Retake Assessment
+              </Button>
+              <Button variant="outline" className="px-6 h-12">
+                <Share2 className="w-4 h-4 mr-2" /> Share Report
+              </Button>
             </motion.div>
           </div>
-
-          {/* Recommended Training */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={showResults ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.8 }}
-          >
-            <Card className="border-[#0D7377]/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-[#0D7377]" />
-                  Recommended Training Modules
-                </CardTitle>
-                <CardDescription>Courses from the Academy that address your development areas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {recommendedTraining.map((course, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg border hover:border-[#0D7377]/30 hover:bg-[#0D7377]/5 transition-all cursor-pointer">
-                      <div className="w-8 h-8 rounded-lg bg-[#0D7377]/10 flex items-center justify-center shrink-0">
-                        <BookOpen className="w-4 h-4 text-[#0D7377]" />
-                      </div>
-                      <span className="text-sm font-medium">{course}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Development Plan */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={showResults ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.9 }}
-          >
-            <Card className="border-[#D4A843]/20">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-[#D4A843]" />
-                  Development Plan
-                </CardTitle>
-                <CardDescription>
-                  {nextTier
-                    ? `Your pathway from ${placementTier.name} to ${nextTier.name}`
-                    : 'Maintaining your mastery at the highest level'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {devSteps.map((step, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold" style={{ backgroundColor: `${placementTier.color}15`, color: placementTier.color }}>
-                        {i + 1}
-                      </div>
-                      <span className="text-sm leading-relaxed pt-0.5">{step}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={showResults ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 1 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2"
-          >
-            <Button
-              className="bg-[#0D7377] hover:bg-[#0D7377]/90 text-white font-semibold px-8 h-12"
-              onClick={() => navigate('training')}
-            >
-              <GraduationCap className="w-4 h-4 mr-2" /> Continue Your Training
-            </Button>
-            <Button variant="outline" className="px-6 h-12" onClick={handleRestart}>
-              <RotateCcw className="w-4 h-4 mr-2" /> Retake Assessment
-            </Button>
-            <Button variant="outline" className="px-6 h-12">
-              <Share2 className="w-4 h-4 mr-2" /> Share Report
-            </Button>
-          </motion.div>
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      </>
     )
   }
 
   // ──────────── QUIZ PHASE ────────────
   return (
     <div className="space-y-4">
-      {/* Top bar: Tier info + overall progress */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      {/* Top bar: Tier info + progress */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
-            <TierBadge tier={currentTierDef} size="sm" showProgress progress={state.tierScores[state.currentTier] ? Math.round(state.tierScores[state.currentTier]) : undefined} />
+            <TierBadge tier={currentTierDef} size="sm" />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-[#1B3A4B]">Tier {state.currentTier}: {currentTierDef.name}</h2>
@@ -2238,28 +2144,36 @@ export default function AssessmentQuiz() {
                   {currentTierDef.subtitle}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">{currentTierDef.description.slice(0, 80)}...</p>
+              <p className="text-xs text-muted-foreground">Question {state.currentQuestionIndex + 1} of {tierQuestions.length}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Failed checkpoints indicator */}
+          <div className="flex items-center gap-4">
+            {/* Score counter */}
+            <div className="text-right">
+              <div className="text-xs text-muted-foreground">Score</div>
+              <div className="text-sm font-bold" style={{ color: currentTierDef.color }}>
+                {currentTierCorrectCount}/{currentTierAnsweredCount}
+              </div>
+            </div>
+            {/* Wrong answer strikes */}
             <div className="flex items-center gap-1">
               {[1, 2, 3].map((strike) => (
-                <div
+                <motion.div
                   key={strike}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
-                    strike <= state.failedCheckpoints
+                  className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                    strike <= (state.tierWrongAnswers[state.currentTier] || 0)
                       ? 'bg-red-500 border-red-500 text-white'
                       : 'border-muted-foreground/30 text-muted-foreground/40'
                   }`}
+                  animate={strike === (state.tierWrongAnswers[state.currentTier] || 0) + 1 && feedbackShown && answeredCorrectly === false ? {
+                    scale: [1, 1.3, 1],
+                  } : {}}
+                  transition={{ duration: 0.3 }}
                 >
-                  <XCircle className="w-3 h-3" />
-                </div>
+                  <XCircle className="w-3.5 h-3.5" />
+                </motion.div>
               ))}
             </div>
-            <Badge variant="secondary" className="text-xs">
-              {state.currentQuestionIndex + 1} / {tierQuestions.length}
-            </Badge>
           </div>
         </div>
 
@@ -2273,18 +2187,18 @@ export default function AssessmentQuiz() {
           />
         </div>
 
-        {/* Tier ladder mini-map */}
+        {/* Tier ladder dots */}
         <div className="flex items-center gap-1 mt-2">
           {TIERS.map((tier) => {
-            const reached = tier.id <= state.maxTierReached
             const isCurrent = tier.id === state.currentTier
+            const isCompleted = state.tierScores[tier.id] !== undefined
             return (
               <div
                 key={tier.id}
-                className={`flex-1 h-1.5 rounded-full transition-all ${isCurrent ? 'ring-1 ring-offset-1' : ''}`}
+                className={`flex-1 h-2 rounded-full transition-all ${isCurrent ? 'ring-2 ring-offset-1' : ''}`}
                 style={{
-                  backgroundColor: isCurrent ? `${tier.color}60` : reached ? tier.color : '#e5e7eb',
-                  ringColor: isCurrent ? tier.color : 'transparent',
+                  backgroundColor: isCompleted ? tier.color : isCurrent ? `${tier.color}60` : '#e5e7eb',
+                  ...(isCurrent ? { boxShadow: `0 0 0 2px white, 0 0 0 4px ${tier.color}` } : {}),
                 }}
                 title={`Tier ${tier.id}: ${tier.name}${state.tierScores[tier.id] ? ` (${state.tierScores[tier.id]}%)` : ''}`}
               />
@@ -2298,19 +2212,25 @@ export default function AssessmentQuiz() {
         <AnimatePresence mode="wait">
           <motion.div
             key={currentQuestion.id}
-            initial={{ opacity: 0, x: animatingOut ? -40 : 40 }}
+            initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: animatingOut ? 40 : -40 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.25 }}
           >
             <Card className="overflow-hidden">
-              <div className="h-1.5" style={{ backgroundColor: currentTierDef.color }} />
+              {/* Timer bar at top */}
+              <TimerBar
+                timeLimit={currentQuestion.timeLimit}
+                onExpire={handleTimerExpire}
+                isActive={timerActive && !feedbackShown}
+              />
+
               <CardContent className="p-5 md:p-6">
                 {/* Question meta */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <QuestionTypeBadge type={currentQuestion.type} />
-                    {isCheckpoint && (
+                    {currentQuestion.checkpoint && (
                       <Badge className="text-[10px] bg-red-500/10 text-red-500 border-red-500/20 gap-1">
                         <AlertTriangle className="w-3 h-3" /> Checkpoint
                       </Badge>
@@ -2325,11 +2245,6 @@ export default function AssessmentQuiz() {
                       )
                     })}
                   </div>
-                  <QuestionTimer
-                    timeLimit={currentQuestion.timeLimit}
-                    onExpire={handleTimerExpire}
-                    isActive={true}
-                  />
                 </div>
 
                 {/* Question text */}
@@ -2340,61 +2255,110 @@ export default function AssessmentQuiz() {
                   </p>
                 )}
 
-                {/* Options */}
+                {/* Option Cards */}
                 <div className="grid grid-cols-1 gap-2.5 mt-4">
                   {currentQuestion.options.map((option, i) => {
                     const isSelected = selectedOption === option.score
+                    const isCorrectOption = option.score >= 3
+                    const isWrongOption = isWrongAnswer(option.score)
+                    const showCorrectHighlight = feedbackShown && isSelected && isCorrectOption
+                    const showWrongHighlight = feedbackShown && isSelected && isWrongOption
+                    const showThisCorrect = feedbackShown && !isSelected && isCorrectOption && answeredCorrectly === false
+
+                    let borderClass = 'border-muted hover:border-[#0D7377]/40'
+                    let bgClass = 'hover:bg-[#0D7377]/4'
+
+                    if (showCorrectHighlight) {
+                      borderClass = 'border-emerald-500'
+                      bgClass = 'bg-emerald-500/8'
+                    } else if (showWrongHighlight) {
+                      borderClass = 'border-red-500'
+                      bgClass = 'bg-red-500/8'
+                    } else if (showThisCorrect) {
+                      borderClass = 'border-emerald-500/50'
+                      bgClass = 'bg-emerald-500/4'
+                    } else if (isSelected && !feedbackShown) {
+                      borderClass = 'border-[#0D7377]'
+                      bgClass = 'bg-[#0D7377]/8'
+                    }
+
                     return (
                       <motion.button
                         key={i}
-                        onClick={() => handleSelectOption(option.score)}
-                        className={`w-full text-left p-3.5 rounded-xl border-2 transition-all duration-200 group ${
-                          isSelected
-                            ? 'border-[#0D7377] bg-[#0D7377]/8 shadow-sm'
-                            : 'border-muted hover:border-[#0D7377]/40 hover:bg-[#0D7377]/4'
-                        }`}
-                        whileHover={{ scale: 1.005 }}
-                        whileTap={{ scale: 0.995 }}
+                        onClick={() => handleSelectOption(option.score, i)}
+                        className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 group ${borderClass} ${bgClass} ${feedbackShown ? 'pointer-events-none' : ''}`}
+                        whileHover={!feedbackShown ? { scale: 1.005, y: -1 } : {}}
+                        whileTap={!feedbackShown ? { scale: 0.995 } : {}}
                       >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold transition-all ${
-                            isSelected
+                        <div className="flex items-start gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-semibold transition-all ${
+                            showCorrectHighlight
+                              ? 'bg-emerald-500 text-white'
+                              : showWrongHighlight
+                              ? 'bg-red-500 text-white'
+                              : isSelected && !feedbackShown
                               ? 'bg-[#0D7377] text-white'
                               : 'bg-muted text-muted-foreground group-hover:bg-[#0D7377]/10 group-hover:text-[#0D7377]'
                           }`}>
-                            {isSelected ? <CheckCircle2 className="w-4 h-4" /> : String.fromCharCode(65 + i)}
+                            {showCorrectHighlight ? <CheckCircle2 className="w-4 h-4" /> : showWrongHighlight ? <XCircle className="w-4 h-4" /> : String.fromCharCode(65 + i)}
                           </div>
-                          <span className={`text-sm leading-relaxed ${isSelected ? 'font-medium' : ''}`}>
-                            {option.text}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm leading-relaxed ${isSelected ? 'font-medium' : ''} ${showWrongHighlight ? 'text-red-600' : showCorrectHighlight ? 'text-emerald-700' : ''}`}>
+                              {option.text}
+                            </span>
+                            {option.feedback && feedbackShown && isSelected && (
+                              <motion.p
+                                className="text-xs text-muted-foreground mt-1 italic"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                              >
+                                {option.feedback}
+                              </motion.p>
+                            )}
+                          </div>
                         </div>
                       </motion.button>
                     )
                   })}
                 </div>
+
+                {/* Feedback indicator */}
+                <AnimatePresence>
+                  {feedbackShown && (
+                    <motion.div
+                      className="mt-4 flex items-center gap-2"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      {answeredCorrectly ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                          <span className="text-sm font-medium text-emerald-600">Correct!</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-5 h-5 text-red-500" />
+                          <span className="text-sm font-medium text-red-600">Not quite right</span>
+                          {(state.tierWrongAnswers[state.currentTier] || 0) + (isWrongAnswer(selectedOption ?? 0) ? 1 : 0) >= 3 && (
+                            <Badge className="text-[10px] bg-red-500/10 text-red-500 border-red-500/20 ml-2">
+                              3 strikes — assessment ending
+                            </Badge>
+                          )}
+                        </>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </CardContent>
             </Card>
           </motion.div>
         </AnimatePresence>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-1">
-        <div className="text-xs text-muted-foreground">
-          {Object.keys(state.answers).length} of {QUESTIONS.length} total questions answered
-        </div>
-        <Button
-          onClick={handleNext}
-          disabled={selectedOption === null}
-          className="gap-2 font-semibold"
-          style={{ backgroundColor: currentTierDef.color, color: '#fff' }}
-        >
-          {state.currentQuestionIndex >= tierQuestions.length - 1
-            ? (state.currentTier >= 7 ? 'Complete Assessment' : 'Complete Tier')
-            : 'Next Question'
-          }
-          <ChevronRight className="w-4 h-4" />
-        </Button>
+      {/* Bottom info */}
+      <div className="text-xs text-muted-foreground text-center">
+        {Object.keys(state.answers).length} questions answered across {Object.keys(state.tierScores).length + (state.tierScores[state.currentTier] === undefined ? 1 : 0)} tier{Object.keys(state.tierScores).length + (state.tierScores[state.currentTier] === undefined ? 1 : 0) !== 1 ? 's' : ''}
       </div>
     </div>
   )
