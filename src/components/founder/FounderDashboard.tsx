@@ -519,7 +519,7 @@ function UserManagement() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Password</Label>
-                <Input value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
+                <Input value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 8 characters, 1 uppercase, 1 number" type="password" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Role</Label>
@@ -682,7 +682,7 @@ function UserManagement() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-slate-300">New Password</Label>
-              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
+              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 8 characters, 1 uppercase, 1 number" type="password" />
             </div>
           </div>
           <DialogFooter>
@@ -905,7 +905,7 @@ function PasswordResetRequests() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-slate-300">New Password</Label>
-              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
+              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 8 characters, 1 uppercase, 1 number" type="password" />
             </div>
           </div>
           <DialogFooter>

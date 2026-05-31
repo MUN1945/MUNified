@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[ENSURE-ACCOUNTS] Error:", error)
     return NextResponse.json(
-      { error: "Failed to ensure accounts", details: String(error) },
+      { error: "Failed to ensure accounts. Please check server logs for details." },
       { status: 500 }
     )
   }

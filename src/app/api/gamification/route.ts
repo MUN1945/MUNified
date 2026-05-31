@@ -145,20 +145,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userId, xpAmount, badgeId, action } = body
 
-    // Users can only award to themselves unless they're admin/teacher
-    const targetUserId = userId || session.user.id
-    if (targetUserId !== session.user.id && session.user.role !== "ADMIN" && session.user.role !== "TEACHER") {
+    // SECURITY: Only admin/teacher roles can award XP to others
+    // Students can NEVER award XP — XP is server-earned only
+    const isAdminOrTeacher = ["MASTER_ADMIN", "FOUNDER", "SUPER_ADMIN", "ADMIN", "SCHOOL_ADMIN", "TEACHER"].includes(session.user.role)
+
+    if (!isAdminOrTeacher) {
       return NextResponse.json(
-        { success: false, error: "Insufficient permissions" },
+        { success: false, error: "Only administrators and teachers can award XP and badges" },
         { status: 403 }
       )
     }
 
+    const targetUserId = userId || session.user.id
+
     const results: { xpAwarded?: number; badgeAwarded?: string } = {}
 
-    // Award XP
+    // Award XP (only admin/teacher can do this)
     if (xpAmount && xpAmount > 0) {
-      const maxXP = 500 // Cap per request
+      const maxXP = 100 // Reduced cap per request to prevent abuse
       const awardXP = Math.min(xpAmount, maxXP)
 
       await db.delegateProfile.updateMany({

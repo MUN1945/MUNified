@@ -32,6 +32,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    if (!/[A-Z]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must contain at least one uppercase letter" },
+        { status: 400 }
+      )
+    }
+    if (!/[0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: "Password must contain at least one number" },
+        { status: 400 }
+      )
+    }
 
     const normalizedEmail = email.toLowerCase().trim()
 
@@ -155,9 +167,7 @@ export async function POST(request: NextRequest) {
         ])
         console.log(`[REGISTER] Verification + welcome emails sent to ${normalizedEmail}`)
       } catch (emailError) {
-        console.error("[REGISTER] Failed to send emails:", emailError)
-        // Log the verification URL so it can be used manually if email fails
-        console.log(`[REGISTER] Manual verification link for ${normalizedEmail}: ${verificationUrl}`)
+        console.error("[REGISTER] Failed to send verification email for ${normalizedEmail}. Admin can manually verify from Command Center.")
       }
     })()
 

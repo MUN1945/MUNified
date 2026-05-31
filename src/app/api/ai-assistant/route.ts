@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { isMasterAdmin, isTeacherOrAbove } from "@/lib/auth-helpers"
 import ZAI from "z-ai-web-dev-sdk"
 
 // ============================================================
@@ -188,6 +189,20 @@ export async function POST(request: NextRequest) {
         { success: false, error: "Message cannot exceed 2000 characters" },
         { status: 400 }
       )
+    }
+
+    // Subscription enforcement: AI assistant requires active subscription
+    // MASTER_ADMIN and teachers+ bypass this check
+    if (!isMasterAdmin(session.user.role) && !isTeacherOrAbove(session.user.role)) {
+      const subscription = await db.subscription.findUnique({
+        where: { userId: session.user.id },
+      })
+      if (!subscription || subscription.status === "EXPIRED" || subscription.status === "CANCELLED") {
+        return NextResponse.json(
+          { success: false, error: "Your trial has expired. Please upgrade to use the AI assistant.", code: "SUBSCRIPTION_EXPIRED" },
+          { status: 403 }
+        )
+      }
     }
 
     // Verify channel exists

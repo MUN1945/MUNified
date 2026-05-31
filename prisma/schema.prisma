@@ -261,7 +261,6 @@ model User {
 
   @@index([schoolId])
   @@index([role])
-  @@index([email])
   @@index([isActive])
 }
 
@@ -323,7 +322,7 @@ model SchoolVerificationRequest {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  school School @relation(fields: [schoolId], references: [id])
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
   @@index([status])
@@ -367,7 +366,7 @@ model SchoolSubscription {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  school School @relation(fields: [schoolId], references: [id])
+  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@index([schoolId])
   @@index([status])
@@ -412,7 +411,7 @@ model Committee {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  conference    Conference             @relation(fields: [conferenceId], references: [id])
+  conference    Conference             @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
   chair         User?                  @relation(fields: [chairId], references: [id], onDelete: SetNull)
   registrations ConferenceRegistration[]
 
@@ -494,7 +493,7 @@ model AssessmentResponse {
   createdAt    DateTime @default(now())
 
   assessment Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  question   AssessmentQuestion @relation(fields: [questionId], references: [id])
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([assessmentId])
   @@index([questionId])
@@ -535,7 +534,7 @@ model Lesson {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  course Course @relation(fields: [courseId], references: [id])
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId])
   @@index([order])
@@ -565,7 +564,7 @@ model UserBadge {
   earnedAt  DateTime @default(now())
 
   user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge Badge @relation(fields: [badgeId], references: [id])
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
   @@index([userId])
@@ -609,12 +608,13 @@ model ConferenceRegistration {
   updatedAt    DateTime @updatedAt
 
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conference Conference @relation(fields: [conferenceId], references: [id])
-  committee  Committee? @relation(fields: [committeeId], references: [id])
+  conference Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  committee  Committee? @relation(fields: [committeeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, conferenceId])
   @@index([userId])
   @@index([conferenceId])
+  @@index([committeeId])
   @@index([status])
 }
 
@@ -629,7 +629,7 @@ model CourseEnrollment {
   updatedAt   DateTime  @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id])
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@index([userId])
@@ -663,12 +663,13 @@ model Message {
   userId    String
   createdAt DateTime @default(now())
 
-  channel Channel @relation(fields: [channelId], references: [id])
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([channelId])
   @@index([userId])
   @@index([createdAt])
+  @@index([channelId, createdAt])
 }
 
 model ResearchTask {

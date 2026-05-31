@@ -45,6 +45,7 @@ const subscriptionRequiredRoutes = [
   "/api/research",
   "/api/research/evaluate",
   "/api/messages",
+  "/api/ai-assistant",
 ]
 
 // API routes that require a paid subscription (not available on free/trial)

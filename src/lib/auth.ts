@@ -25,8 +25,11 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
+        // Normalize email to prevent case-sensitivity login failures
+        const normalizedEmail = credentials.email.toLowerCase().trim()
+
         const user = await db.user.findUnique({
-          where: { email: credentials.email },
+          where: { email: normalizedEmail },
           include: { subscription: true, delegateProfile: true, school: true },
         })
 
@@ -166,7 +169,28 @@ export const authOptions: NextAuthOptions = {
         token.schoolId = user.schoolId
         token.subscriptionTier = user.subscriptionTier
         token.subscriptionStatus = user.subscriptionStatus
+        token.subscriptionRefreshedAt = Date.now()
       }
+
+      // Refresh subscription data from DB every 5 minutes to prevent stale JWT claims
+      // This ensures expired trials are caught within minutes, not 30 days
+      const lastRefresh = token.subscriptionRefreshedAt as number || 0
+      if (Date.now() - lastRefresh > 5 * 60 * 1000) {
+        try {
+          const freshUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            include: { subscription: true },
+          })
+          if (freshUser?.subscription) {
+            token.subscriptionTier = freshUser.subscription.tier
+            token.subscriptionStatus = freshUser.subscription.status
+            token.subscriptionRefreshedAt = Date.now()
+          }
+        } catch {
+          // If DB lookup fails, keep existing token data
+        }
+      }
+
       return token
     },
     async session({ session, token }) {

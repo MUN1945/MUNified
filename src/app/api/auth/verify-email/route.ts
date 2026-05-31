@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         console.error("[VERIFY EMAIL] Failed to send verification email:", emailError)
       }
 
-      console.log(`[VERIFY EMAIL] Verification link for ${email}: ${verificationUrl}`)
+      console.log(`[VERIFY EMAIL] Verification link sent for ${email}`)
 
       return NextResponse.json({
         message: "If an account exists with this email, a verification link has been sent.",
