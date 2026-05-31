@@ -245,13 +245,17 @@ model User {
   assessments             Assessment[]
   badges                  UserBadge[]
   courseEnrollments       CourseEnrollment[]
+  lessonCompletions       LessonCompletion[]
   messages                Message[]
   activities              Activity[]
   auditLogs               AuditLog[]
+  sentAdminMessages       AdminMessage[]     @relation("SentByAdmin")
+  receivedAdminMessages   AdminMessage[]     @relation("ReceivedByUser")
   researchTasks           ResearchTask[]
   researchAssignments     ResearchTask[]              @relation("AssignedTasks")
   chairedCommittees       Committee[]
   sentNotifications       Notification[]              @relation("SentTo")
+  sentNotificationsAsSender Notification[]            @relation("SentNotification")
   paymentRecords          Payment[]
   invoices                Invoice[]
   researchPapers          ResearchPaper[]
@@ -534,7 +538,8 @@ model Lesson {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course     Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  completions LessonCompletion[]
 
   @@index([courseId])
   @@index([order])
@@ -628,13 +633,32 @@ model CourseEnrollment {
   completedAt DateTime?
   updatedAt   DateTime  @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonCompletions LessonCompletion[]
 
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
   @@index([completed])
+}
+
+model LessonCompletion {
+  id            String   @id @default(cuid())
+  userId        String
+  lessonId      String
+  enrollmentId  String
+  completedAt   DateTime @default(now())
+
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson     Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  enrollment CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@index([enrollmentId])
+  @@index([completedAt])
 }
 
 model Channel {
@@ -719,13 +743,16 @@ model Notification {
   type        String   @default("info")
   isRead      Boolean  @default(false)
   link        String?
+  senderId    String?  // Admin who sent the notification (for admin messages)
   createdAt   DateTime @default(now())
 
-  user User @relation("SentTo", fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation("SentTo", fields: [userId], references: [id], onDelete: Cascade)
+  sender User?  @relation("SentNotification", fields: [senderId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+  @@index([senderId])
 }
 
 model Payment {
@@ -1021,4 +1048,28 @@ model EmailVerificationToken {
   @@index([email])
   @@index([token])
   @@index([expiresAt])
+}
+
+// ============================
+// ADMIN-TO-CLIENT MESSAGING
+// ============================
+
+model AdminMessage {
+  id          String   @id @default(cuid())
+  senderId    String   // Admin who sent the message
+  recipientId String   // User who receives the message
+  subject     String
+  content     String
+  category    String   @default("general")  // general, password_reset, subscription, account, system, support
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender   User @relation("SentByAdmin", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("ReceivedByUser", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([category])
 }

@@ -99,6 +99,30 @@ export async function POST(
       },
     })
 
+    // Auto-notify the user via AdminMessage + Notification
+    await db.$transaction(async (tx) => {
+      const adminMessage = await tx.adminMessage.create({
+        data: {
+          senderId: session.user.id,
+          recipientId: id,
+          subject: "Password Reset Notification",
+          content: `Your password has been reset by a platform administrator. If you did not request this change, please contact support immediately. You will need to log in with your new password.`,
+          category: "password_reset",
+        },
+      })
+
+      await tx.notification.create({
+        data: {
+          userId: id,
+          title: "Password Reset",
+          message: "Your account password has been reset by an administrator. Please check your messages for details.",
+          type: "admin_message",
+          senderId: session.user.id,
+          link: "/messages/inbox",
+        },
+      })
+    })
+
     return NextResponse.json({
       success: true,
       message: `Password reset successfully for ${user.email}`,

@@ -473,6 +473,7 @@ export default function TrainingHub() {
           const raw = await enrollmentsRes.value.json()
           const data = raw.data || (Array.isArray(raw) ? raw : raw.enrollments || [])
           const enrollmentMap: Record<string, EnrollmentData> = {}
+          const completedMapFromServer: Record<string, boolean> = {}
 
           for (const e of data as Record<string, unknown>[]) {
             const courseId = String(e.courseId || (e.course as Record<string, unknown>)?.id || '')
@@ -483,9 +484,24 @@ export default function TrainingHub() {
             if (courseId) {
               enrollmentMap[courseId] = { id: enrollmentId, courseId, progress, completed }
             }
+
+            // Extract actual lesson completions from server data (authoritative source)
+            const completions = e.lessonCompletions as Array<Record<string, unknown>> | undefined
+            if (Array.isArray(completions)) {
+              for (const c of completions) {
+                const lessonId = String(c.lessonId || '')
+                if (lessonId) {
+                  completedMapFromServer[lessonId] = true
+                }
+              }
+            }
           }
 
           setApiEnrollments(enrollmentMap)
+          // Use server-provided lesson completions as the source of truth
+          if (Object.keys(completedMapFromServer).length > 0) {
+            setCompletedLessons(completedMapFromServer)
+          }
         }
 
         if (gamificationRes.status === 'fulfilled' && gamificationRes.value.ok) {
@@ -506,25 +522,10 @@ export default function TrainingHub() {
     fetchData()
   }, [])
 
-  // After both courses and enrollments are loaded, derive completed lessons
-  useEffect(() => {
-    const completedMap: Record<string, boolean> = {}
-    for (const course of apiCourses) {
-      const enrollment = apiEnrollments[course.id]
-      if (enrollment) {
-        const totalLessons = course.lessons.length
-        if (totalLessons > 0 && enrollment.progress > 0) {
-          const completedCount = Math.round((enrollment.progress / 100) * totalLessons)
-          for (let i = 0; i < completedCount && i < totalLessons; i++) {
-            completedMap[course.lessons[i].id] = true
-          }
-        }
-      }
-    }
-    if (Object.keys(completedMap).length > 0) {
-      setCompletedLessons(prev => ({ ...prev, ...completedMap }))
-    }
-  }, [apiCourses, apiEnrollments])
+  // Note: Completed lessons are now derived from the server-provided lessonCompletions
+  // data in the enrollment response, not from progress percentages. This prevents
+  // the old bug where progress-based derivation could mark wrong lessons as complete
+  // or create inaccurate progress counts.
 
   const courses = apiCourses
   const selectedCourse = useMemo(() => courses.find(c => c.id === selectedCourseId) || null, [selectedCourseId, courses])
@@ -576,84 +577,81 @@ export default function TrainingHub() {
     setView('detail')
   }, [])
 
+  // Track in-flight completions to prevent double-clicks
+  const [completingLessons, setCompletingLessons] = useState<Set<string>>(new Set())
+
   const handleMarkComplete = useCallback(async (lessonId: string, xpReward: number) => {
+    // Prevent double-clicks and duplicate completions
+    if (completingLessons.has(lessonId) || completedLessons[lessonId]) return
+    setCompletingLessons(prev => new Set(prev).add(lessonId))
+
+    // Optimistically mark as complete in local state
     setCompletedLessons(prev => ({ ...prev, [lessonId]: true }))
     setXpNotification({ xp: xpReward, visible: true })
     setTimeout(() => setXpNotification(prev => ({ ...prev, visible: false })), 3000)
 
     const course = courses.find(c => c.lessons.some(l => l.id === lessonId))
-    if (!course) return
-
-    const enrollment = apiEnrollments[course.id]
-    const totalLessons = course.lessons.length
-    const completedCount = course.lessons.filter(l =>
-      l.id === lessonId || completedLessons[l.id]
-    ).length + 1
-    const progress = Math.round((completedCount / totalLessons) * 100)
+    if (!course) {
+      setCompletingLessons(prev => { const n = new Set(prev); n.delete(lessonId); return n })
+      return
+    }
 
     try {
-      if (enrollment) {
-        await fetch('/api/enrollments', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            enrollmentId: enrollment.id,
-            progress,
-          }),
-        })
-        setApiEnrollments(prev => ({
-          ...prev,
-          [course.id]: {
-            ...prev[course.id],
-            progress,
-            completed: progress >= 100,
-          },
-        }))
-      } else {
-        const enrollRes = await fetch('/api/enrollments', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ courseId: course.id }),
-        })
-        if (enrollRes.ok) {
-          const enrollData = await enrollRes.json()
-          const newEnrollmentId = enrollData.data?.id
-          if (newEnrollmentId) {
-            await fetch('/api/enrollments', {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                enrollmentId: newEnrollmentId,
-                progress,
-              }),
-            })
-            setApiEnrollments(prev => ({
-              ...prev,
-              [course.id]: { id: newEnrollmentId, courseId: course.id, progress, completed: progress >= 100 },
-            }))
-          }
-        }
-      }
+      // Use the new server-side lesson completion endpoint
+      // This prevents the old +1 double-count bug because the server
+      // recalculates progress from actual LessonCompletion records
+      const res = await fetch('/api/enrollments/complete-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lessonId }),
+      })
 
-      if (progress >= 100) {
-        try {
-          const gamRes = await fetch('/api/gamification')
-          if (gamRes.ok) {
-            const gamData = await gamRes.json()
-            if (gamData.data) {
-              setUserXp(Number(gamData.data.xp || 0))
-              setStreak(Number(gamData.data.streak || 0))
-              setUserLevel(String(gamData.data.level || 'Observer'))
+      if (res.ok) {
+        const data = await res.json()
+        const result = data.data
+
+        if (result) {
+          // Update enrollment with server-calculated progress (authoritative)
+          const newProgress = Math.min(100, Math.max(0, result.progress || 0))
+          setApiEnrollments(prev => ({
+            ...prev,
+            [course.id]: {
+              ...(prev[course.id] || { id: '', courseId: course.id, progress: 0, completed: false }),
+              progress: newProgress,
+              completed: result.courseCompleted || newProgress >= 100,
+            },
+          }))
+
+          // If course completed, refresh gamification data
+          if (result.courseCompleted) {
+            try {
+              const gamRes = await fetch('/api/gamification')
+              if (gamRes.ok) {
+                const gamData = await gamRes.json()
+                if (gamData.data) {
+                  setUserXp(Number(gamData.data.xp || 0))
+                  setStreak(Number(gamData.data.streak || 0))
+                  setUserLevel(String(gamData.data.level || 'Observer'))
+                }
+              }
+            } catch {
+              // Ignore gamification refresh errors
             }
           }
-        } catch {
-          // Ignore gamification refresh errors
         }
+      } else {
+        // API call failed — the server may have rejected the completion
+        // (e.g., already completed), but we keep optimistic local state since
+        // the server is the source of truth on next page load
+        const errorData = await res.json().catch(() => ({}))
+        console.error('Lesson completion failed:', errorData)
       }
     } catch {
-      // Progress persistence failed silently — local state is already updated
+      // Network error — optimistic local state persists; will sync on next load
+    } finally {
+      setCompletingLessons(prev => { const n = new Set(prev); n.delete(lessonId); return n })
     }
-  }, [courses, apiEnrollments, completedLessons])
+  }, [courses, completingLessons, completedLessons])
 
   const handleBackToGrid = useCallback(() => {
     setView('grid')
@@ -860,9 +858,10 @@ export default function TrainingHub() {
                         <Button
                           className="bg-gradient-to-r from-[#0D7377] to-[#059669] hover:from-[#0D7377]/90 hover:to-[#059669]/90 text-white shadow-md hover:shadow-lg transition-all duration-200"
                           onClick={() => handleMarkComplete(activeLesson.id, Math.round(selectedCourse.xpReward / selectedCourse.lessons.length))}
+                          disabled={completingLessons.has(activeLesson.id)}
                         >
                           <CheckCircle2 className="w-4 h-4 mr-2" />
-                          Mark as Complete
+                          {completingLessons.has(activeLesson.id) ? 'Completing...' : 'Mark as Complete'}
                         </Button>
                       )}
                     </div>

@@ -26,6 +26,9 @@ export async function GET() {
             },
           },
         },
+        lessonCompletions: {
+          select: { lessonId: true, completedAt: true },
+        },
       },
       orderBy: { enrolledAt: "desc" },
     })

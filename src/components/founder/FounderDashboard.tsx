@@ -10,7 +10,8 @@ import {
   XCircle, Star, RefreshCw, KeyRound,
   Filter, MoreHorizontal,
   Pin, AlertCircle, Globe, Crown, Lock, Unlock,
-  Plus, School, Mail, Clock, AlertTriangle
+  Plus, School, Mail, Clock, AlertTriangle,
+  Send, MessageSquare
 } from 'lucide-react'
 import {
   BarChart, Bar, PieChart, Pie, AreaChart, Area,
@@ -183,6 +184,12 @@ function StatusBadge({ status }: { status: string }) {
     completed: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
     expired: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
     APPROVED: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    active: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    trialing: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+    past_due: 'bg-red-500/20 text-red-300 border-red-500/40',
+    cancelled: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+    paused: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    unpaid: 'bg-red-500/20 text-red-300 border-red-500/40',
   }
   return (
     <Badge variant="outline" className={`text-xs px-2.5 py-0.5 font-semibold ${config[status] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'}`}>
@@ -1303,6 +1310,641 @@ function AuditLogs() {
 }
 
 // ============================================================
+// SECTION 7: SUBSCRIPTION MANAGEMENT
+// ============================================================
+
+interface SubscriptionDetail {
+  tier: string
+  status: string
+  trialStartsAt: string | null
+  trialEndsAt: string | null
+  currentPeriodStart: string | null
+  currentPeriodEnd: string | null
+  cancelAtPeriodEnd: boolean
+}
+
+interface SubUserData {
+  id: string
+  name: string
+  email: string
+  tier: string
+  status: string
+  trialStartsAt: string | null
+  trialEndsAt: string | null
+  currentPeriodEnd: string | null
+  cancelAtPeriodEnd: boolean
+}
+
+const SUBSCRIPTION_TIERS = ['FREE', 'BASIC', 'PRO', 'ENTERPRISE', 'SCHOOL']
+
+function SubscriptionManagement() {
+  const [users, setUsers] = useState<SubUserData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [search, setSearch] = useState('')
+
+  // Manage dialog
+  const [manageOpen, setManageOpen] = useState(false)
+  const [manageTarget, setManageTarget] = useState<SubUserData | null>(null)
+  const [subscriptionDetail, setSubscriptionDetail] = useState<SubscriptionDetail | null>(null)
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+
+  // Action states
+  const [selectedTier, setSelectedTier] = useState('')
+  const [trialDays, setTrialDays] = useState(7)
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ page: '1', limit: '100' })
+      if (search) params.set('search', search)
+      const res = await fetch(`/api/admin/users?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        const mapped: SubUserData[] = (data.data || []).map((u: UserData) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          tier: u.subscription?.tier || 'FREE',
+          status: u.subscription?.status || 'inactive',
+          trialStartsAt: null,
+          trialEndsAt: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+        }))
+        setUsers(mapped)
+      }
+    } catch (err) {
+      console.error('Failed to fetch subscription users:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [search])
+
+  useEffect(() => { fetchUsers() }, [fetchUsers])
+
+  const handleManage = async (user: SubUserData) => {
+    setManageTarget(user)
+    setManageOpen(true)
+    setIsLoadingDetail(true)
+    setSelectedTier('')
+    setTrialDays(7)
+    try {
+      const res = await fetch(`/api/admin/subscriptions/${user.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSubscriptionDetail(data.data || data.subscription || null)
+      } else {
+        setSubscriptionDetail({
+          tier: user.tier,
+          status: user.status,
+          trialStartsAt: null,
+          trialEndsAt: null,
+          currentPeriodStart: null,
+          currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
+        })
+      }
+    } catch {
+      setSubscriptionDetail({
+        tier: user.tier,
+        status: user.status,
+        trialStartsAt: null,
+        trialEndsAt: null,
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      })
+    } finally {
+      setIsLoadingDetail(false)
+    }
+  }
+
+  const handleAction = async (action: string, extra?: Record<string, unknown>) => {
+    if (!manageTarget) return
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/admin/subscriptions/${manageTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...extra }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(data.message || `Subscription ${action} succeeded`)
+        setManageOpen(false)
+        setManageTarget(null)
+        setSubscriptionDetail(null)
+        fetchUsers()
+      } else {
+        toast.error(data.error || `Failed to ${action} subscription`)
+      }
+    } catch {
+      toast.error(`Failed to ${action} subscription`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  return (
+    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <CreditCard className="w-5 h-5 text-[#0A7E8C]" /> Subscription Management
+        </h3>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 w-[200px] bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500 text-sm" />
+          </div>
+          <Button variant="outline" onClick={fetchUsers} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        </div>
+      </div>
+
+      <DarkCard>
+        <CardContent className="p-0">
+          <div className="overflow-auto max-h-[600px]">
+            <Table className="min-w-[1000px]">
+              <TableHeader>
+                <TableRow className="border-white/10 hover:bg-transparent bg-white/5 sticky top-0 z-10">
+                  <TableHead className="text-slate-200 font-semibold min-w-[140px]">Name</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[180px]">Email</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Tier</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[110px]">Status</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Trial End</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Period End</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[100px]">Cancel at End</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[80px] sticky right-0 bg-[#1B2A4A]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 8 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : users.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-slate-400 py-8">No users found</TableCell></TableRow>
+                ) : users.map((u) => (
+                  <TableRow key={u.id} className="border-white/5 hover:bg-white/8 transition-colors">
+                    <TableCell className="font-medium text-white whitespace-nowrap">{u.name}</TableCell>
+                    <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.email}</TableCell>
+                    <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.tier.replace(/_/g, ' ')}</TableCell>
+                    <TableCell><StatusBadge status={u.status} /></TableCell>
+                    <TableCell className="text-slate-300 text-sm whitespace-nowrap">{formatDate(u.trialEndsAt)}</TableCell>
+                    <TableCell className="text-slate-300 text-sm whitespace-nowrap">{formatDate(u.currentPeriodEnd)}</TableCell>
+                    <TableCell className="text-slate-300 text-sm">{u.cancelAtPeriodEnd ? <span className="text-amber-400">Yes</span> : <span className="text-slate-500">No</span>}</TableCell>
+                    <TableCell className="sticky right-0 bg-[#1B2A4A]">
+                      <Button variant="outline" size="sm" onClick={() => handleManage(u)} className="bg-[#0D7377]/20 border-[#0D7377]/40 text-[#0D7377] hover:bg-[#0D7377]/30 hover:text-[#0A7E8C] h-7 text-xs">
+                        Manage
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </DarkCard>
+
+      {/* Manage Subscription Dialog */}
+      <Dialog open={manageOpen} onOpenChange={(open) => { if (!open) { setManageOpen(false); setManageTarget(null); setSubscriptionDetail(null) } }}>
+        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0A7E8C]" /> Manage Subscription</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Manage subscription for {manageTarget?.email}
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingDetail ? (
+            <div className="space-y-3 py-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-8 bg-white/10 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              {/* Current Subscription Details */}
+              <div className="bg-[#0D1B2A] rounded-lg p-4 space-y-2">
+                <h4 className="text-sm font-semibold text-slate-300 mb-2">Current Subscription</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div><span className="text-slate-400">Tier:</span> <span className="text-white font-medium">{(subscriptionDetail?.tier || manageTarget?.tier || 'FREE').replace(/_/g, ' ')}</span></div>
+                  <div><span className="text-slate-400">Status:</span> <StatusBadge status={subscriptionDetail?.status || manageTarget?.status || 'inactive'} /></div>
+                  <div><span className="text-slate-400">Trial Start:</span> <span className="text-white">{formatDate(subscriptionDetail?.trialStartsAt)}</span></div>
+                  <div><span className="text-slate-400">Trial End:</span> <span className="text-white">{formatDate(subscriptionDetail?.trialEndsAt)}</span></div>
+                  <div><span className="text-slate-400">Period Start:</span> <span className="text-white">{formatDate(subscriptionDetail?.currentPeriodStart)}</span></div>
+                  <div><span className="text-slate-400">Period End:</span> <span className="text-white">{formatDate(subscriptionDetail?.currentPeriodEnd)}</span></div>
+                  <div className="col-span-2"><span className="text-slate-400">Cancel at Period End:</span> <span className={subscriptionDetail?.cancelAtPeriodEnd ? 'text-amber-400' : 'text-slate-300'}>{subscriptionDetail?.cancelAtPeriodEnd ? 'Yes' : 'No'}</span></div>
+                </div>
+              </div>
+
+              <Separator className="bg-white/10" />
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                {/* Upgrade */}
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-slate-300 text-xs">Upgrade Tier</Label>
+                    <Select value={selectedTier} onValueChange={setSelectedTier}>
+                      <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white h-9 text-sm">
+                        <SelectValue placeholder="Select tier" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                        {SUBSCRIPTION_TIERS.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button size="sm" disabled={actionLoading || !selectedTier} onClick={() => handleAction('upgrade', { tier: selectedTier })} className="bg-[#059669] hover:bg-[#047857] text-white h-9">
+                    <TrendingUp className="w-3.5 h-3.5 mr-1" /> Upgrade
+                  </Button>
+                </div>
+
+                {/* Downgrade */}
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-slate-300 text-xs">Downgrade Tier</Label>
+                    <Select value={selectedTier} onValueChange={setSelectedTier}>
+                      <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white h-9 text-sm">
+                        <SelectValue placeholder="Select tier" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                        {SUBSCRIPTION_TIERS.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button size="sm" disabled={actionLoading || !selectedTier} onClick={() => handleAction('downgrade', { tier: selectedTier })} className="bg-amber-600 hover:bg-amber-700 text-white h-9">
+                    <TrendingDown className="w-3.5 h-3.5 mr-1" /> Downgrade
+                  </Button>
+                </div>
+
+                {/* Extend Trial */}
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-slate-300 text-xs">Extend Trial (days)</Label>
+                    <Input type="number" min={1} max={365} value={trialDays} onChange={(e) => setTrialDays(Number(e.target.value))} className="bg-[#0D1B2A] border-white/10 text-white h-9 text-sm" />
+                  </div>
+                  <Button size="sm" disabled={actionLoading || trialDays < 1} onClick={() => handleAction('extend_trial', { days: trialDays })} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white h-9">
+                    <Clock className="w-3.5 h-3.5 mr-1" /> Extend
+                  </Button>
+                </div>
+
+                <Separator className="bg-white/10" />
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('activate')} className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Activate
+                  </Button>
+                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('suspend')} className="bg-amber-600 hover:bg-amber-700 text-white h-9 text-xs">
+                    <Ban className="w-3.5 h-3.5 mr-1" /> Suspend
+                  </Button>
+                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('cancel')} className="bg-red-600 hover:bg-red-700 text-white h-9 text-xs">
+                    <XCircle className="w-3.5 h-3.5 mr-1" /> Cancel
+                  </Button>
+                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('restore')} className="bg-sky-600 hover:bg-sky-700 text-white h-9 text-xs">
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> Restore
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setManageOpen(false); setManageTarget(null); setSubscriptionDetail(null) }} className="border-white/10 text-slate-300">Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </motion.div>
+  )
+}
+
+// ============================================================
+// SECTION 8: ADMIN MESSAGING
+// ============================================================
+
+interface MessageData {
+  id: string
+  recipientId: string
+  recipientName: string
+  recipientEmail: string
+  subject: string
+  content: string
+  category: string
+  isRead: boolean
+  createdAt: string
+}
+
+const MESSAGE_CATEGORIES = [
+  { value: 'general', label: 'General' },
+  { value: 'password_reset', label: 'Password Reset' },
+  { value: 'subscription', label: 'Subscription' },
+  { value: 'account', label: 'Account' },
+  { value: 'system', label: 'System' },
+  { value: 'support', label: 'Support' },
+]
+
+function AdminMessaging() {
+  const [messages, setMessages] = useState<MessageData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Compose dialog
+  const [composeOpen, setComposeOpen] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [composeData, setComposeData] = useState({
+    recipientId: '',
+    subject: '',
+    content: '',
+    category: 'general',
+  })
+
+  // User list for recipient search
+  const [userList, setUserList] = useState<UserData[]>([])
+  const [userSearch, setUserSearch] = useState('')
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+
+  // View message dialog
+  const [viewOpen, setViewOpen] = useState(false)
+  const [viewMessage, setViewMessage] = useState<MessageData | null>(null)
+
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/messages')
+      if (res.ok) {
+        const data = await res.json()
+        setMessages(data.data || data.messages || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch messages:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchMessages() }, [fetchMessages])
+
+  const fetchUsers = useCallback(async (searchTerm: string) => {
+    if (!searchTerm || searchTerm.length < 2) {
+      setUserList([])
+      return
+    }
+    setIsLoadingUsers(true)
+    try {
+      const params = new URLSearchParams({ page: '1', limit: '20', search: searchTerm })
+      const res = await fetch(`/api/admin/users?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setUserList(data.data || [])
+      }
+    } catch {
+      console.error('Failed to search users')
+    } finally {
+      setIsLoadingUsers(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchUsers(userSearch), 300)
+    return () => clearTimeout(timer)
+  }, [userSearch, fetchUsers])
+
+  const handleSend = async () => {
+    if (!composeData.recipientId || !composeData.subject || !composeData.content) {
+      toast.error('Recipient, subject, and content are required')
+      return
+    }
+    setIsSending(true)
+    try {
+      const res = await fetch('/api/admin/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(composeData),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Message sent successfully')
+        setComposeOpen(false)
+        setComposeData({ recipientId: '', subject: '', content: '', category: 'general' })
+        setUserSearch('')
+        fetchMessages()
+      } else {
+        toast.error(data.error || 'Failed to send message')
+      }
+    } catch {
+      toast.error('Failed to send message')
+    } finally {
+      setIsSending(false)
+    }
+  }
+
+  const getCategoryBadge = (category: string) => {
+    const config: Record<string, string> = {
+      general: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
+      password_reset: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      subscription: 'bg-[#0A7E8C]/20 text-[#0A7E8C] border-[#0A7E8C]/40',
+      account: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+      system: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+      support: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    }
+    return config[category] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'
+  }
+
+  return (
+    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+          <MessageSquare className="w-5 h-5 text-[#D4A843]" /> Admin Messaging
+        </h3>
+        <div className="flex items-center gap-2">
+          <Button className="bg-[#0D7377] hover:bg-[#0A5E62] text-white" onClick={() => setComposeOpen(true)}>
+            <Send className="w-4 h-4 mr-2" /> Compose Message
+          </Button>
+          <Button variant="outline" onClick={fetchMessages} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        </div>
+      </div>
+
+      <DarkCard>
+        <CardContent className="p-0">
+          <div className="overflow-auto max-h-[600px]">
+            <Table className="min-w-[900px]">
+              <TableHeader>
+                <TableRow className="border-white/10 hover:bg-transparent bg-white/5 sticky top-0 z-10">
+                  <TableHead className="text-slate-200 font-semibold min-w-[140px]">Recipient</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[200px]">Subject</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Category</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[140px]">Sent Date</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[80px]">Read</TableHead>
+                  <TableHead className="text-slate-200 font-semibold min-w-[80px] sticky right-0 bg-[#1B2A4A]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : messages.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-8">No messages sent yet</TableCell></TableRow>
+                ) : messages.map((msg) => (
+                  <TableRow key={msg.id} className="border-white/5 hover:bg-white/8 transition-colors">
+                    <TableCell className="text-slate-200 text-sm whitespace-nowrap">{msg.recipientName || msg.recipientEmail}</TableCell>
+                    <TableCell className="text-white text-sm font-medium whitespace-nowrap max-w-[250px] truncate">{msg.subject}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-semibold ${getCategoryBadge(msg.category)}`}>
+                        {msg.category.replace(/_/g, ' ')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-300 text-sm whitespace-nowrap">{formatDateTime(msg.createdAt)}</TableCell>
+                    <TableCell>
+                      {msg.isRead ? (
+                        <Badge variant="outline" className="text-[10px] bg-emerald-500/20 text-emerald-300 border-emerald-500/40 px-2 py-0.5">Read</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] bg-slate-500/20 text-slate-300 border-slate-500/40 px-2 py-0.5">Unread</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="sticky right-0 bg-[#1B2A4A]">
+                      <Button variant="outline" size="sm" onClick={() => { setViewMessage(msg); setViewOpen(true) }} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10 hover:text-white h-7 text-xs">
+                        <Eye className="w-3.5 h-3.5 mr-1" /> View
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </DarkCard>
+
+      {/* Compose Message Dialog */}
+      <Dialog open={composeOpen} onOpenChange={(open) => { if (!open) { setComposeOpen(false); setUserSearch('') } }}>
+        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Send className="w-5 h-5 text-[#D4A843]" /> Compose Message</DialogTitle>
+            <DialogDescription className="text-slate-400">Send a message to a user on the platform.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Recipient */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">Recipient</Label>
+              <div className="relative">
+                <Input
+                  placeholder="Search by name or email..."
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  className="bg-[#0D1B2A] border-white/10 text-white"
+                />
+                {isLoadingUsers && <div className="absolute right-3 top-1/2 -translate-y-1/2"><RefreshCw className="w-4 h-4 text-slate-400 animate-spin" /></div>}
+              </div>
+              {userList.length > 0 && userSearch.length >= 2 && (
+                <div className="max-h-[150px] overflow-y-auto bg-[#0D1B2A] border border-white/10 rounded-lg">
+                  {userList.map((u) => (
+                    <button
+                      key={u.id}
+                      className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors flex items-center gap-2 text-sm"
+                      onClick={() => {
+                        setComposeData({ ...composeData, recipientId: u.id })
+                        setUserSearch(`${u.name} (${u.email})`)
+                        setUserList([])
+                      }}
+                    >
+                      <span className="text-white">{u.name}</span>
+                      <span className="text-slate-400 text-xs">{u.email}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {composeData.recipientId && (
+                <div className="text-xs text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Recipient selected
+                </div>
+              )}
+            </div>
+
+            {/* Subject */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">Subject</Label>
+              <Input
+                value={composeData.subject}
+                onChange={(e) => setComposeData({ ...composeData, subject: e.target.value })}
+                className="bg-[#0D1B2A] border-white/10 text-white"
+                placeholder="Message subject"
+              />
+            </div>
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">Category</Label>
+              <Select value={composeData.category} onValueChange={(v) => setComposeData({ ...composeData, category: v })}>
+                <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                  {MESSAGE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-2">
+              <Label className="text-slate-300">Content</Label>
+              <Textarea
+                value={composeData.content}
+                onChange={(e) => setComposeData({ ...composeData, content: e.target.value })}
+                className="bg-[#0D1B2A] border-white/10 text-white min-h-[120px] resize-y"
+                placeholder="Write your message here..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setComposeOpen(false); setUserSearch('') }} className="border-white/10 text-slate-300">Cancel</Button>
+            <Button onClick={handleSend} disabled={isSending || !composeData.recipientId || !composeData.subject || !composeData.content} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+              {isSending ? 'Sending...' : <><Send className="w-4 h-4 mr-2" /> Send Message</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Message Dialog */}
+      <Dialog open={viewOpen} onOpenChange={(open) => { if (!open) { setViewOpen(false); setViewMessage(null) } }}>
+        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Mail className="w-5 h-5 text-[#D4A843]" /> Message Details</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              To: {viewMessage?.recipientName || viewMessage?.recipientEmail}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-4">
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><span className="text-slate-400">Subject:</span> <span className="text-white font-medium">{viewMessage?.subject}</span></div>
+              <div><span className="text-slate-400">Category:</span> <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-semibold ${getCategoryBadge(viewMessage?.category || '')}`}>{viewMessage?.category?.replace(/_/g, ' ')}</Badge></div>
+              <div><span className="text-slate-400">Sent:</span> <span className="text-white">{formatDateTime(viewMessage?.createdAt)}</span></div>
+              <div><span className="text-slate-400">Read:</span> <span className={viewMessage?.isRead ? 'text-emerald-400' : 'text-slate-400'}>{viewMessage?.isRead ? 'Yes' : 'No'}</span></div>
+            </div>
+            <Separator className="bg-white/10" />
+            <div className="bg-[#0D1B2A] rounded-lg p-4 text-sm text-slate-200 whitespace-pre-wrap max-h-[300px] overflow-y-auto">
+              {viewMessage?.content}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setViewOpen(false); setViewMessage(null) }} className="border-white/10 text-slate-300">Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </motion.div>
+  )
+}
+
+// ============================================================
 // MAIN COMPONENT: MASTER ADMIN COMMAND CENTER
 // ============================================================
 
@@ -1378,11 +2020,13 @@ export default function FounderDashboard() {
         <div className="overflow-x-auto pb-1">
           <TabsList className="bg-[#1B3A4B]/5 border border-[#1B3A4B]/10 w-full sm:w-auto inline-flex">
             <TabsTrigger value="overview" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Overview</TabsTrigger>
-            <TabsTrigger value="subscriptions" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Subscriptions</TabsTrigger>
+            <TabsTrigger value="sub-overview" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Sub Overview</TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Users</TabsTrigger>
             <TabsTrigger value="passwords" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">
               Password Resets
             </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Subscriptions</TabsTrigger>
+            <TabsTrigger value="messages" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Messages</TabsTrigger>
             <TabsTrigger value="schools" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Schools</TabsTrigger>
             <TabsTrigger value="audit" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Audit Logs</TabsTrigger>
           </TabsList>
@@ -1401,7 +2045,7 @@ export default function FounderDashboard() {
           </div>
         </TabsContent>
 
-        <TabsContent value="subscriptions" className="mt-6">
+        <TabsContent value="sub-overview" className="mt-6">
           <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
             <SubscriptionOverview breakdown={subscriptionBreakdown} />
           </div>
@@ -1416,6 +2060,18 @@ export default function FounderDashboard() {
         <TabsContent value="passwords" className="mt-6">
           <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
             <PasswordResetRequests />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="subscriptions" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+            <SubscriptionManagement />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="messages" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+            <AdminMessaging />
           </div>
         </TabsContent>
 
