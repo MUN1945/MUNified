@@ -84,6 +84,27 @@ export async function POST(request: NextRequest) {
         console.error("[PASSWORD RESET] Failed to send email:", emailError)
       }
       console.log(`[PASSWORD RESET] Reset link generated for ${normalizedEmail}: ${resetUrl}`)
+
+      // Also notify platform admins about the password reset request
+      try {
+        const admins = await db.user.findMany({
+          where: { role: { in: ['MASTER_ADMIN', 'FOUNDER', 'SUPER_ADMIN'] }, isActive: true },
+          select: { id: true },
+        })
+        for (const admin of admins) {
+          await db.notification.create({
+            data: {
+              userId: admin.id,
+              title: 'Password Reset Request',
+              message: `User ${normalizedEmail} has requested a password reset. Since email delivery may not work, you can reset their password manually from the Command Center → User Management.`,
+              type: 'admin_action',
+              link: '/dashboard',
+            },
+          })
+        }
+      } catch (notifError) {
+        console.error("[PASSWORD RESET] Failed to notify admins:", notifError)
+      }
     }
 
     // Update rate limiter

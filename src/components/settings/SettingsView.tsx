@@ -681,9 +681,32 @@ function LanguageSection() {
 // ============================================================
 
 function DangerZone() {
+  const { user, logout } = useAuthStore()
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleting, setDeleting] = useState(false)
-  const { logout } = useAuthStore()
+
+  // Master accounts cannot be deleted
+  const isMasterAccount = user?.role === 'FOUNDER' || user?.role === 'SUPER_ADMIN'
+  
+  if (isMasterAccount) {
+    return (
+      <Card className="border-[#E8DED0]/60">
+        <CardHeader>
+          <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
+            <Shield className="w-4 h-4 text-[#0D7377]" /> Account Protection
+          </CardTitle>
+          <CardDescription>Your master administrator account is protected</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 rounded-lg bg-[#0D7377]/5 border border-[#0D7377]/10">
+            <p className="text-sm text-[#1B3A4B]">
+              This is a master administrator account and cannot be deleted for security reasons. If you need to transfer ownership or close this account, please contact the platform owner.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== 'DELETE') return

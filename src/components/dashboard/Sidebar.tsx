@@ -58,16 +58,32 @@ const ADMIN_NAV: NavItem[] = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
+const MASTER_ADMIN_NAV: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'founder', label: 'Command Center', icon: Crown },
+  { id: 'assessment', label: 'Assessment', icon: ClipboardCheck },
+  { id: 'training', label: 'Training', icon: BookOpen },
+  { id: 'conferences', label: 'Conferences', icon: Building2 },
+  { id: 'schools', label: 'Schools', icon: Building2 },
+  { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'research', label: 'Research Lab', icon: FileSearch },
+  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'settings', label: 'Settings', icon: Settings },
+]
+
 const SUPER_ADMIN_NAV: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
   { id: 'founder', label: 'Command Center', icon: Shield },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'conferences', label: 'Conferences', icon: Building2 },
+  { id: 'schools', label: 'Schools', icon: Building2 },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
 function getNavItems(role: string): NavItem[] {
   switch (role) {
+    case 'MASTER_ADMIN': return MASTER_ADMIN_NAV
     case 'FOUNDER':
     case 'SUPER_ADMIN': return SUPER_ADMIN_NAV
     case 'TEACHER': return TEACHER_NAV
@@ -87,6 +103,7 @@ function SubscriptionBadge({ tier }: { tier: string }) {
     DELEGATE_PRO: { label: 'Pro', className: 'bg-[#0D7377]/20 text-[#0D7377]' },
     DIRECTOR_PRO: { label: 'Pro', className: 'bg-[#0D7377]/20 text-[#0D7377]' },
     SCHOOL_ENTERPRISE: { label: 'Enterprise', className: 'bg-[#D4A843]/20 text-[#D4A843]' },
+    MASTER_ADMIN: { label: 'Master', className: 'bg-[#D4A843]/20 text-[#D4A843]' },
   }
   const c = config[tier] || config.FREE
   return <Badge className={`text-[10px] px-2 py-0.5 border-0 ${c.className}`}>{c.label}</Badge>
@@ -137,9 +154,13 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
   }
 
   const handleLogout = async () => {
-    await logout()
-    navigate('landing')
-    window.location.href = '/'
+    try {
+      await logout()
+    } catch (e) {
+      console.error('Logout error:', e)
+    }
+    // Hard redirect to home - this ensures all state is cleared
+    window.location.href = '/auth/signin'
   }
 
   return (

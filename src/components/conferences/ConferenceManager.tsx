@@ -128,7 +128,7 @@ const staggerItem = {
 // ============================================================
 
 function StatusBadge({ status }: { status: ConferenceStatus }) {
-  const config = STATUS_CONFIG[status]
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.DRAFT
   return (
     <Badge variant="outline" className={`text-[11px] font-medium gap-1.5 ${config.className}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${config.dotColor}`} />
@@ -142,7 +142,7 @@ function StatusBadge({ status }: { status: ConferenceStatus }) {
 // ============================================================
 
 function CommitteeTypeIcon({ type, size = 16 }: { type: CommitteeType; size?: number }) {
-  const config = COMMITTEE_TYPE_CONFIG[type]
+  const config = COMMITTEE_TYPE_CONFIG[type] || COMMITTEE_TYPE_CONFIG.GENERAL_ASSEMBLY
   const Icon = config.icon
   return <Icon style={{ width: size, height: size, color: config.color }} />
 }
@@ -251,7 +251,7 @@ function ConferenceListView({
               <div
                 className="h-1.5"
                 style={{
-                  background: STATUS_CONFIG[conference.status].dotColor,
+                  background: (STATUS_CONFIG[conference.status] || STATUS_CONFIG.DRAFT).dotColor,
                   opacity: 0.8,
                 }}
               />
@@ -689,7 +689,7 @@ function ConferenceDetailView({
         </Button>
 
         <Card className="overflow-hidden">
-          <div className="h-2" style={{ background: STATUS_CONFIG[conference.status].dotColor }} />
+          <div className="h-2" style={{ background: (STATUS_CONFIG[conference.status] || STATUS_CONFIG.DRAFT).dotColor }} />
           <CardContent className="p-6">
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -802,7 +802,7 @@ function ConferenceDetailView({
         <TabsContent value="committees" className="mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {conference.committees.map((cm, i) => {
-              const typeConfig = COMMITTEE_TYPE_CONFIG[cm.type]
+              const typeConfig = COMMITTEE_TYPE_CONFIG[cm.type] || COMMITTEE_TYPE_CONFIG.GENERAL_ASSEMBLY
               const delegatesInCm = 0 // registration count is per-conference, not per-committee
               return (
                 <motion.div key={cm.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}>
@@ -956,7 +956,7 @@ function ParticipationCalculator() {
           <div className="space-y-2">
             <div className="text-xs font-medium text-[#1B3A4B]">Suggested Distribution</div>
             {committeeDist.map((d) => {
-              const config = COMMITTEE_TYPE_CONFIG[d.type]
+              const config = COMMITTEE_TYPE_CONFIG[d.type] || COMMITTEE_TYPE_CONFIG.GENERAL_ASSEMBLY
               return (
                 <div key={d.type} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
@@ -997,13 +997,35 @@ export default function ConferenceManager() {
         const res = await fetch('/api/conferences')
         if (res.ok) {
           const data = await res.json()
-          if (Array.isArray(data)) {
-            setConferences(data)
-          } else if (data.conferences && Array.isArray(data.conferences)) {
-            setConferences(data.conferences)
-          } else if (data.data && Array.isArray(data.data)) {
-            setConferences(data.data)
-          }
+          const rawConferences: any[] = Array.isArray(data)
+            ? data
+            : data.conferences && Array.isArray(data.conferences)
+              ? data.conferences
+              : data.data && Array.isArray(data.data)
+                ? data.data
+                : []
+
+          const mappedConferences: Conference[] = rawConferences.map((c: any) => ({
+            id: String(c.id),
+            name: String(c.name || ''),
+            description: String(c.description || ''),
+            startDate: c.startDate || new Date().toISOString(),
+            endDate: c.endDate || new Date().toISOString(),
+            location: String(c.location || ''),
+            status: (c.status as ConferenceStatus) || 'DRAFT',
+            theme: String(c.theme || ''),
+            committees: Array.isArray(c.committees) ? c.committees.map((cm: any) => ({
+              id: String(cm.id),
+              name: String(cm.name || ''),
+              type: (cm.type as CommitteeType) || 'GENERAL_ASSEMBLY',
+              topic: String(cm.topic || ''),
+              countryLimit: Number(cm.countryLimit || 50),
+              chair: cm.chair?.name || cm.chairId || undefined,
+            })) : [],
+            registrationCount: c._count?.registrations || c.registrationCount || 0,
+          }))
+
+          setConferences(mappedConferences)
         }
       } catch {
         // API not available, show empty state
@@ -1045,11 +1067,30 @@ export default function ConferenceManager() {
       })
       if (res.ok) {
         const result = await res.json()
-        const saved = result.data || conference
+        const raw = result.data || conference
+        const mappedSaved: Conference = {
+          id: String(raw.id),
+          name: String(raw.name || ''),
+          description: String(raw.description || ''),
+          startDate: raw.startDate || new Date().toISOString(),
+          endDate: raw.endDate || new Date().toISOString(),
+          location: String(raw.location || ''),
+          status: (raw.status as ConferenceStatus) || 'DRAFT',
+          theme: String(raw.theme || ''),
+          committees: Array.isArray(raw.committees) ? raw.committees.map((cm: any) => ({
+            id: String(cm.id),
+            name: String(cm.name || ''),
+            type: (cm.type as CommitteeType) || 'GENERAL_ASSEMBLY',
+            topic: String(cm.topic || ''),
+            countryLimit: Number(cm.countryLimit || 50),
+            chair: cm.chair?.name || cm.chairId || undefined,
+          })) : [],
+          registrationCount: raw._count?.registrations || raw.registrationCount || 0,
+        }
         if (isEdit) {
-          setConferences(conferences.map((c) => (c.id === conference.id ? { ...c, ...saved, registrationCount: saved._count?.registrations ?? c.registrationCount } : c)))
+          setConferences(conferences.map((c) => (c.id === conference.id ? mappedSaved : c)))
         } else {
-          setConferences([{ ...saved, registrationCount: saved._count?.registrations ?? 0 }, ...conferences])
+          setConferences([mappedSaved, ...conferences])
         }
       } else {
         // Fallback: update local state even if API fails

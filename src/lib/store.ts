@@ -25,7 +25,7 @@ export type ViewName =
   | 'founder'
   | 'schools'
 
-export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SCHOOL_ADMIN' | 'SUPER_ADMIN' | 'FOUNDER'
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SCHOOL_ADMIN' | 'SUPER_ADMIN' | 'FOUNDER' | 'MASTER_ADMIN'
 export type MUNRole = 'SECRETARY_GENERAL' | 'DIRECTOR_GENERAL' | 'CHAIR' | 'DELEGATE' | 'DELEGATE_ADVANCED' | 'SDG_AMBASSADOR' | 'RAPPORTEUR'
 export type SubscriptionTier = 'FREE' | 'DELEGATE_PRO' | 'DIRECTOR_PRO' | 'SCHOOL_STARTER' | 'SCHOOL_PROFESSIONAL' | 'SCHOOL_ENTERPRISE' | 'CONFERENCE_PACKAGE'
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED'

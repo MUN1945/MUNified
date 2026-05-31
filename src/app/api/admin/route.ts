@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { canAccessAdmin } from "@/lib/auth-helpers"
+import { canAccessAdmin, isMasterAdmin } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
 
 // GET /api/admin - Admin dashboard stats and audit logs

@@ -40,11 +40,11 @@ export async function requireAuth() {
 
 /**
  * Require a specific role - throws if user doesn't have the required role
- * FOUNDER and SUPER_ADMIN bypass all role checks
+ * MASTER_ADMIN bypasses all role checks
  */
 export async function requireRole(role: string) {
   const user = await requireAuth()
-  if (user.role === "FOUNDER" || user.role === "SUPER_ADMIN") return user
+  if (isMasterAdmin(user.role)) return user
   if (user.role !== role) {
     throw new Error(`Role '${role}' required. You have role '${user.role}'.`)
   }
@@ -53,11 +53,11 @@ export async function requireRole(role: string) {
 
 /**
  * Require one of several roles - throws if user doesn't have any of the required roles
- * FOUNDER and SUPER_ADMIN bypass all role checks
+ * MASTER_ADMIN bypasses all role checks
  */
 export async function requireAnyRole(roles: string[]) {
   const user = await requireAuth()
-  if (user.role === "FOUNDER" || user.role === "SUPER_ADMIN") return user
+  if (isMasterAdmin(user.role)) return user
   if (!roles.includes(user.role)) {
     throw new Error(
       `One of roles [${roles.join(", ")}] required. You have role '${user.role}'.`
@@ -68,31 +68,38 @@ export async function requireAnyRole(roles: string[]) {
 
 /**
  * Check if a user has admin-level privileges
- * FOUNDER > SUPER_ADMIN > ADMIN
+ * MASTER_ADMIN > FOUNDER > SUPER_ADMIN > ADMIN
  */
 export function isAdmin(role: string): boolean {
-  return ["FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)
+  return ["MASTER_ADMIN", "FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)
 }
 
 /**
- * Check if a user is the FOUNDER (highest authority)
+ * Check if a user is the MASTER_ADMIN (highest authority - sole platform owner)
  */
-export function isFounder(role: string): boolean {
-  return role === "FOUNDER"
+export function isMasterAdmin(role: string): boolean {
+  return role === "MASTER_ADMIN"
+}
+
+/**
+ * Check if a user is a FOUNDER or above
+ */
+export function isFounderOrAbove(role: string): boolean {
+  return ["MASTER_ADMIN", "FOUNDER"].includes(role)
 }
 
 /**
  * Check if a user is a SUPER_ADMIN or above
  */
 export function isSuperAdminOrAbove(role: string): boolean {
-  return ["FOUNDER", "SUPER_ADMIN"].includes(role)
+  return ["MASTER_ADMIN", "FOUNDER", "SUPER_ADMIN"].includes(role)
 }
 
 /**
  * Check if a user has teacher-level or above privileges
  */
 export function isTeacherOrAbove(role: string): boolean {
-  return ["TEACHER", "ADMIN", "SUPER_ADMIN", "FOUNDER", "SCHOOL_ADMIN"].includes(role)
+  return ["TEACHER", "ADMIN", "SUPER_ADMIN", "FOUNDER", "MASTER_ADMIN", "SCHOOL_ADMIN"].includes(role)
 }
 
 /**
@@ -124,8 +131,17 @@ export function canAccessFounderDashboard(role: string): boolean {
 }
 
 /**
+ * Check if a user has MASTER_ADMIN-level privileges
+ * Only MASTER_ADMIN can: create other MASTER_ADMIN accounts, change MASTER_ADMIN roles,
+ * delete MASTER_ADMIN accounts, access all platform settings
+ */
+export function canManageMasterAdmin(role: string): boolean {
+  return isMasterAdmin(role)
+}
+
+/**
  * Role hierarchy for comparison
- * FOUNDER > SUPER_ADMIN > ADMIN > SCHOOL_ADMIN > TEACHER > STUDENT
+ * MASTER_ADMIN > FOUNDER > SUPER_ADMIN > ADMIN > SCHOOL_ADMIN > TEACHER > STUDENT
  */
 const ROLE_HIERARCHY: Record<string, number> = {
   STUDENT: 1,
@@ -134,6 +150,7 @@ const ROLE_HIERARCHY: Record<string, number> = {
   ADMIN: 4,
   SUPER_ADMIN: 5,
   FOUNDER: 6,
+  MASTER_ADMIN: 7,
 }
 
 /**
@@ -143,4 +160,158 @@ export function hasMinRole(userRole: string, requiredRole: string): boolean {
   const userLevel = ROLE_HIERARCHY[userRole] || 0
   const requiredLevel = ROLE_HIERARCHY[requiredRole] || 0
   return userLevel >= requiredLevel
+}
+
+/**
+ * Permissions Matrix
+ * Defines what each role can do within the platform.
+ * MASTER_ADMIN has unrestricted access to everything.
+ */
+export const PERMISSIONS_MATRIX: Record<string, Record<string, boolean>> = {
+  MASTER_ADMIN: {
+    // User Management
+    createUsers: true,
+    editUsers: true,
+    deleteUsers: true,
+    suspendUsers: true,
+    changeUserPasswords: true,
+    forcePasswordResets: true,
+    viewUserActivity: true,
+    viewLoginHistory: true,
+    assignRoles: true,
+    modifyRoles: true,
+    manageMasterAdmin: true,
+    // Role & Subscription Management
+    upgradeSubscriptions: true,
+    downgradeSubscriptions: true,
+    overrideAccessRestrictions: true,
+    grantCustomPermissions: true,
+    manageAllTiers: true,
+    // Password Recovery & Notifications
+    receivePasswordResetNotifications: true,
+    manuallyResetPasswords: true,
+    internalPasswordRecovery: true,
+    // School & Organization Management
+    createSchools: true,
+    editSchools: true,
+    approveSchools: true,
+    suspendSchools: true,
+    removeSchools: true,
+    transferOwnership: true,
+    manageSchoolData: true,
+    // Platform Administration
+    accessAllDashboards: true,
+    accessAnalytics: true,
+    accessReports: true,
+    accessSettings: true,
+    accessSystemLogs: true,
+    managePlatformConfig: true,
+    controlFeatureFlags: true,
+    manageContent: true,
+    manageEvents: true,
+    manageRegistrations: true,
+    exportData: true,
+    viewAuditLogs: true,
+    manageWebhooks: true,
+    manageBilling: true,
+  },
+  FOUNDER: {
+    createUsers: true, editUsers: true, deleteUsers: true, suspendUsers: true,
+    changeUserPasswords: true, forcePasswordResets: true, viewUserActivity: true,
+    viewLoginHistory: true, assignRoles: true, modifyRoles: true, manageMasterAdmin: false,
+    upgradeSubscriptions: true, downgradeSubscriptions: true, overrideAccessRestrictions: true,
+    grantCustomPermissions: true, manageAllTiers: true,
+    receivePasswordResetNotifications: true, manuallyResetPasswords: true, internalPasswordRecovery: true,
+    createSchools: true, editSchools: true, approveSchools: true, suspendSchools: true,
+    removeSchools: true, transferOwnership: true, manageSchoolData: true,
+    accessAllDashboards: true, accessAnalytics: true, accessReports: true,
+    accessSettings: true, accessSystemLogs: true, managePlatformConfig: true,
+    controlFeatureFlags: true, manageContent: true, manageEvents: true,
+    manageRegistrations: true, exportData: true, viewAuditLogs: true,
+    manageWebhooks: true, manageBilling: true,
+  },
+  SUPER_ADMIN: {
+    createUsers: true, editUsers: true, deleteUsers: false, suspendUsers: true,
+    changeUserPasswords: true, forcePasswordResets: true, viewUserActivity: true,
+    viewLoginHistory: true, assignRoles: false, modifyRoles: true, manageMasterAdmin: false,
+    upgradeSubscriptions: true, downgradeSubscriptions: false, overrideAccessRestrictions: true,
+    grantCustomPermissions: false, manageAllTiers: true,
+    receivePasswordResetNotifications: true, manuallyResetPasswords: true, internalPasswordRecovery: true,
+    createSchools: true, editSchools: true, approveSchools: true, suspendSchools: true,
+    removeSchools: false, transferOwnership: false, manageSchoolData: true,
+    accessAllDashboards: true, accessAnalytics: true, accessReports: true,
+    accessSettings: true, accessSystemLogs: true, managePlatformConfig: true,
+    controlFeatureFlags: false, manageContent: true, manageEvents: true,
+    manageRegistrations: true, exportData: true, viewAuditLogs: true,
+    manageWebhooks: true, manageBilling: true,
+  },
+  ADMIN: {
+    createUsers: false, editUsers: true, deleteUsers: false, suspendUsers: false,
+    changeUserPasswords: false, forcePasswordResets: false, viewUserActivity: true,
+    viewLoginHistory: false, assignRoles: false, modifyRoles: false, manageMasterAdmin: false,
+    upgradeSubscriptions: false, downgradeSubscriptions: false, overrideAccessRestrictions: false,
+    grantCustomPermissions: false, manageAllTiers: false,
+    receivePasswordResetNotifications: false, manuallyResetPasswords: false, internalPasswordRecovery: false,
+    createSchools: false, editSchools: true, approveSchools: false, suspendSchools: false,
+    removeSchools: false, transferOwnership: false, manageSchoolData: true,
+    accessAllDashboards: true, accessAnalytics: true, accessReports: true,
+    accessSettings: true, accessSystemLogs: false, managePlatformConfig: false,
+    controlFeatureFlags: false, manageContent: true, manageEvents: true,
+    manageRegistrations: true, exportData: false, viewAuditLogs: false,
+    manageWebhooks: false, manageBilling: false,
+  },
+  SCHOOL_ADMIN: {
+    createUsers: false, editUsers: true, deleteUsers: false, suspendUsers: false,
+    changeUserPasswords: false, forcePasswordResets: false, viewUserActivity: false,
+    viewLoginHistory: false, assignRoles: false, modifyRoles: false, manageMasterAdmin: false,
+    upgradeSubscriptions: false, downgradeSubscriptions: false, overrideAccessRestrictions: false,
+    grantCustomPermissions: false, manageAllTiers: false,
+    receivePasswordResetNotifications: false, manuallyResetPasswords: false, internalPasswordRecovery: false,
+    createSchools: false, editSchools: true, approveSchools: false, suspendSchools: false,
+    removeSchools: false, transferOwnership: false, manageSchoolData: true,
+    accessAllDashboards: false, accessAnalytics: true, accessReports: true,
+    accessSettings: true, accessSystemLogs: false, managePlatformConfig: false,
+    controlFeatureFlags: false, manageContent: false, manageEvents: true,
+    manageRegistrations: true, exportData: false, viewAuditLogs: false,
+    manageWebhooks: false, manageBilling: false,
+  },
+  TEACHER: {
+    createUsers: false, editUsers: false, deleteUsers: false, suspendUsers: false,
+    changeUserPasswords: false, forcePasswordResets: false, viewUserActivity: false,
+    viewLoginHistory: false, assignRoles: false, modifyRoles: false, manageMasterAdmin: false,
+    upgradeSubscriptions: false, downgradeSubscriptions: false, overrideAccessRestrictions: false,
+    grantCustomPermissions: false, manageAllTiers: false,
+    receivePasswordResetNotifications: false, manuallyResetPasswords: false, internalPasswordRecovery: false,
+    createSchools: false, editSchools: false, approveSchools: false, suspendSchools: false,
+    removeSchools: false, transferOwnership: false, manageSchoolData: false,
+    accessAllDashboards: false, accessAnalytics: false, accessReports: true,
+    accessSettings: true, accessSystemLogs: false, managePlatformConfig: false,
+    controlFeatureFlags: false, manageContent: false, manageEvents: true,
+    manageRegistrations: true, exportData: false, viewAuditLogs: false,
+    manageWebhooks: false, manageBilling: false,
+  },
+  STUDENT: {
+    createUsers: false, editUsers: false, deleteUsers: false, suspendUsers: false,
+    changeUserPasswords: false, forcePasswordResets: false, viewUserActivity: false,
+    viewLoginHistory: false, assignRoles: false, modifyRoles: false, manageMasterAdmin: false,
+    upgradeSubscriptions: false, downgradeSubscriptions: false, overrideAccessRestrictions: false,
+    grantCustomPermissions: false, manageAllTiers: false,
+    receivePasswordResetNotifications: false, manuallyResetPasswords: false, internalPasswordRecovery: false,
+    createSchools: false, editSchools: false, approveSchools: false, suspendSchools: false,
+    removeSchools: false, transferOwnership: false, manageSchoolData: false,
+    accessAllDashboards: false, accessAnalytics: false, accessReports: false,
+    accessSettings: true, accessSystemLogs: false, managePlatformConfig: false,
+    controlFeatureFlags: false, manageContent: false, manageEvents: false,
+    manageRegistrations: false, exportData: false, viewAuditLogs: false,
+    manageWebhooks: false, manageBilling: false,
+  },
+}
+
+/**
+ * Check if a role has a specific permission
+ */
+export function hasPermission(role: string, permission: string): boolean {
+  // MASTER_ADMIN always has all permissions
+  if (isMasterAdmin(role)) return true
+  return PERMISSIONS_MATRIX[role]?.[permission] ?? false
 }

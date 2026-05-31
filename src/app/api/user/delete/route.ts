@@ -27,6 +27,15 @@ export async function DELETE(request: NextRequest) {
 
     const userId = session.user.id
 
+    // Prevent deletion of master admin accounts
+    const userRole = session.user.role
+    if (userRole === 'FOUNDER' || userRole === 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: "Master administrator accounts cannot be deleted. Please contact support if you need assistance." },
+        { status: 403 }
+      )
+    }
+
     // Verify the user exists
     const user = await db.user.findUnique({ where: { id: userId } })
     if (!user) {
@@ -112,8 +121,10 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     console.error("[ACCOUNT DELETE] Error deleting account:", error)
+    // Check if it's a Prisma constraint error
+    const errorMessage = error instanceof Error ? error.message : "Failed to delete account"
     return NextResponse.json(
-      { error: "Failed to delete account. Please try again." },
+      { error: "Failed to delete account. This may be because you have related records that need to be removed first. Please contact support for assistance." },
       { status: 500 }
     )
   }

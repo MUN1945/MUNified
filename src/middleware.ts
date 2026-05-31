@@ -107,7 +107,7 @@ export async function middleware(request: NextRequest) {
     // For admin-specific dashboard routes, check role
     if (pathname.includes("/admin") || pathname.includes("/founder")) {
       const role = token.role as string
-      if (!["FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)) {
+      if (!["MASTER_ADMIN", "FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)) {
         return NextResponse.redirect(new URL("/dashboard", request.url))
       }
     }
@@ -126,7 +126,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const role = token.role as string
-    if (!["FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)) {
+    if (!["MASTER_ADMIN", "FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)) {
       return NextResponse.json(
         { success: false, error: "Insufficient permissions" },
         { status: 403 }

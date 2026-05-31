@@ -63,7 +63,7 @@ function ViewRouter({ view }: { view: ViewName }) {
   const { user } = useAuthStore()
 
   const isStudent = user?.role === 'STUDENT'
-  const isFounderOrSuperAdmin = user?.role === 'FOUNDER' || user?.role === 'SUPER_ADMIN'
+  const isFounderOrSuperAdmin = user?.role === 'FOUNDER' || user?.role === 'SUPER_ADMIN' || user?.role === 'MASTER_ADMIN'
 
   switch (view) {
     case 'dashboard':
@@ -301,7 +301,10 @@ export default function AppShell() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-red-500 focus:text-red-500"
-                  onClick={async () => { await logout(); useNavStore.getState().navigate('landing'); window.location.href = '/' }}
+                  onClick={async () => { 
+                    try { await logout(); } catch(e) { console.error(e); }
+                    window.location.href = '/auth/signin';
+                  }}
                 >
                   Sign Out
                 </DropdownMenuItem>

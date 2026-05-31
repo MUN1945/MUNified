@@ -53,9 +53,9 @@ export async function PATCH(
   try {
     const { id } = await params
 
-    // Check school exists and is active
+    // Check school exists
     const existing = await db.school.findUnique({ where: { id } })
-    if (!existing || !existing.isActive) {
+    if (!existing) {
       return NextResponse.json({ error: 'School not found' }, { status: 404 })
     }
 
@@ -81,6 +81,9 @@ export async function PATCH(
       munProgramActive,
       munProgramSize,
       isFeatured,
+      isVerified,
+      verificationStatus,
+      isActive,
       latitude,
       longitude,
     } = body
@@ -107,6 +110,9 @@ export async function PATCH(
     if (munProgramActive !== undefined) updateData.munProgramActive = munProgramActive
     if (munProgramSize !== undefined) updateData.munProgramSize = munProgramSize
     if (isFeatured !== undefined) updateData.isFeatured = isFeatured
+    if (isVerified !== undefined) updateData.isVerified = isVerified
+    if (verificationStatus !== undefined) updateData.verificationStatus = verificationStatus
+    if (isActive !== undefined) updateData.isActive = isActive
     if (latitude !== undefined) updateData.latitude = latitude
     if (longitude !== undefined) updateData.longitude = longitude
 

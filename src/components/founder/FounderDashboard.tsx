@@ -1,25 +1,28 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 import {
   Building2, GraduationCap, Users, Activity, UserPlus, CreditCard,
   TrendingDown, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight,
-  Search, Shield, AlertTriangle, Eye, Edit, Trash2, Ban, CheckCircle2,
-  XCircle, Star, RefreshCw, KeyRound, FileWarning, Ticket, Clock,
-  MonitorSmartphone, ScrollText, Filter, ChevronDown, MoreHorizontal,
-  Merge, Pin, Unlock, Lock, AlertCircle, CheckCircle, X as XIcon, Globe
+  Search, Shield, Eye, Edit, Trash2, Ban, CheckCircle2,
+  XCircle, Star, RefreshCw, KeyRound,
+  Filter, MoreHorizontal,
+  Pin, AlertCircle, Globe, Crown, Lock, Unlock,
+  Plus, School, Mail, Clock, AlertTriangle
 } from 'lucide-react'
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, AreaChart, Area,
+  BarChart, Bar, PieChart, Pie, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, Cell, Legend
 } from 'recharts'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -33,21 +36,31 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle, DialogTrigger
+} from '@/components/ui/dialog'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogTrigger
+} from '@/components/ui/alert-dialog'
+import {
   ChartContainer, type ChartConfig
 } from '@/components/ui/chart'
+import { Textarea } from '@/components/ui/textarea'
 
 // ============================================================
 // TYPES
 // ============================================================
 
-interface MetricCardData {
-  title: string
-  value: string
-  change: number
-  icon: React.ElementType
-  iconBg: string
-  iconColor: string
-  sparkData: { v: number }[]
+interface OverviewData {
+  totalUsers: number
+  totalStudents: number
+  totalTeachers: number
+  totalSchools: number
+  totalConferences: number
+  activeSubscriptions: number
+  totalRevenue: number
 }
 
 interface UserData {
@@ -55,145 +68,66 @@ interface UserData {
   name: string
   email: string
   role: string
-  school: string
-  status: string
-  subscription: string
-  lastLogin: string
+  isActive: boolean
+  createdAt: string
+  lastLoginAt: string | null
+  schoolId: string | null
+  school: { name: string } | null
+  subscription: { tier: string; status: string } | null
+  delegateProfile: { xp: number; level: string } | null
 }
 
 interface SchoolData {
   id: string
   name: string
-  city: string
+  officialName?: string | null
+  city: string | null
   country: string
-  type: string
-  verified: boolean
-  students: number
-  teachers: number
-  status: string
-  featured: boolean
+  schoolType: string | null
+  isVerified: boolean
+  isActive: boolean
+  isFeatured: boolean
+  verificationStatus: string
+  studentCount: number
+  teacherCount: number
+  _count: { users: number }
 }
 
-interface TeacherData {
+interface PasswordResetRequest {
   id: string
-  name: string
   email: string
-  school: string
-  students: number
-  conferences: number
-  activityScore: number
-  status: string
-}
-
-interface StudentData {
-  id: string
-  name: string
-  email: string
-  school: string
-  xpLevel: string
-  tier: string
-  coursesCompleted: number
-  assessmentScore: number
+  token: string
+  expiresAt: string
+  used: boolean
+  createdAt: string
+  user: {
+    id: string
+    name: string
+    role: string
+    isActive: boolean
+  } | null
+  status: 'pending' | 'completed' | 'expired'
 }
 
 interface AuditLogEntry {
   id: string
   action: string
-  user: string
-  target: string
-  timestamp: string
-  ip: string
-  severity: string
-  priority: string
-  subject: string
+  resource: string
+  resourceId: string | null
+  details: string | null
   createdAt: string
-  status: string
-  type: string
-  location: string
-  device: string
+  user: { id: string; name: string; email: string; role: string } | null
 }
-
-interface SupportTicket {
-  id: string
-  type: string
-  subject: string
-  user: string
-  status: string
-  priority: string
-  createdAt: string
-}
-
-// ============================================================
-// INITIAL DATA — replaced by API when available
-// ============================================================
-
-const sparkData = (base: number, variance: number) =>
-  Array.from({ length: 12 }, (_, i) => ({
-    v: base + Math.round(Math.sin(i * 0.8) * variance + variance * 0.5)
-  }))
-
-const OVERVIEW_METRICS: MetricCardData[] = []
-
-const MRR_DATA: { month: string; mrr: number }[] = []
-
-const SUBSCRIPTION_BY_TIER: { tier: string; count: number }[] = []
-
-const REVENUE_FORECAST: { month: string; actual: number | null; forecast: number | null }[] = []
-
-const PL_DATA: { category: string; amount: number }[] = []
-
-const REVENUE_BY_PLAN: { plan: string; revenue: number }[] = []
-
-const INITIAL_USERS: UserData[] = []
-
-const INITIAL_SCHOOLS: SchoolData[] = []
-
-const INITIAL_TEACHERS: TeacherData[] = []
-
-const INITIAL_STUDENTS: StudentData[] = []
-
-const INITIAL_AUDIT_LOGS: AuditLogEntry[] = []
-
-const INITIAL_TICKETS: SupportTicket[] = []
-
-const RECENT_LOGINS: { user: string; ip: string; location: string; time: string; device: string }[] = []
 
 // ============================================================
 // CHART CONFIG
 // ============================================================
 
-const mrrChartConfig: ChartConfig = {
-  mrr: { label: 'MRR', color: '#0A7E8C' },
-}
-
 const tierChartConfig: ChartConfig = {
   count: { label: 'Users', color: '#0A7E8C' },
 }
 
-const forecastChartConfig: ChartConfig = {
-  actual: { label: 'Actual', color: '#0A7E8C' },
-  forecast: { label: 'Forecast', color: '#D4A843' },
-}
-
-const plChartConfig: ChartConfig = {
-  amount: { label: 'Amount', color: '#0A7E8C' },
-}
-
-const planRevenueChartConfig: ChartConfig = {
-  revenue: { label: 'Revenue', color: '#0A7E8C' },
-}
-
 const PIE_COLORS = ['#0A7E8C', '#D4A843', '#059669', '#8B5CF6', '#F59E0B', '#EF4444', '#EC4899']
-
-const plPieConfig: ChartConfig = {
-  Subscriptions: { label: 'Subscriptions', color: '#0A7E8C' },
-  Enterprise: { label: 'Enterprise', color: '#D4A843' },
-  'One-time': { label: 'One-time', color: '#059669' },
-  Infrastructure: { label: 'Infrastructure', color: '#EF4444' },
-  Salaries: { label: 'Salaries', color: '#EC4899' },
-  Marketing: { label: 'Marketing', color: '#F59E0B' },
-  Operations: { label: 'Operations', color: '#8B5CF6' },
-}
 
 // ============================================================
 // ANIMATION VARIANTS
@@ -223,76 +157,14 @@ function StatusBadge({ status }: { status: string }) {
     Unverified: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
     Pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
     Inactive: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-    Open: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    'In Progress': 'bg-[#0A7E8C]/20 text-[#0A7E8C] border-[#0A7E8C]/30',
-    Resolved: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    completed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    expired: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
   }
   return (
     <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-medium ${config[status] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
       {status}
     </Badge>
-  )
-}
-
-function PriorityBadge({ priority }: { priority: string }) {
-  const config: Record<string, string> = {
-    Critical: 'bg-red-500/20 text-red-400 border-red-500/30',
-    High: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-    Medium: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    Low: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-  }
-  return (
-    <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-medium ${config[priority] || config.Low}`}>
-      {priority}
-    </Badge>
-  )
-}
-
-function SeverityBadge({ severity }: { severity: string }) {
-  const config: Record<string, string> = {
-    critical: 'bg-red-500/20 text-red-400 border-red-500/30',
-    warning: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    info: 'bg-[#0A7E8C]/20 text-[#0A7E8C] border-[#0A7E8C]/30',
-  }
-  return (
-    <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-medium ${config[severity] || config.info}`}>
-      {severity}
-    </Badge>
-  )
-}
-
-function ActivityScoreBar({ score }: { score: number }) {
-  const color = score >= 80 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-red-500'
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${score}%` }} />
-      </div>
-      <span className="text-xs text-slate-400">{score}</span>
-    </div>
-  )
-}
-
-function MiniSparkline({ data, color }: { data: { v: number }[]; color: string }) {
-  return (
-    <ResponsiveContainer width={80} height={28}>
-      <AreaChart data={data}>
-        <defs>
-          <linearGradient id={`spark-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area
-          type="monotone"
-          dataKey="v"
-          stroke={color}
-          strokeWidth={1.5}
-          fill={`url(#spark-${color.replace('#', '')})`}
-          dot={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
   )
 }
 
@@ -304,51 +176,72 @@ function DarkCard({ children, className = '' }: { children: React.ReactNode; cla
   )
 }
 
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatDateTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+function timeAgo(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (minutes < 1) return 'Just now'
+  if (minutes < 60) return `${minutes}m ago`
+  if (hours < 24) return `${hours}h ago`
+  return `${days}d ago`
+}
+
 // ============================================================
 // SECTION 1: PLATFORM OVERVIEW
 // ============================================================
 
-function PlatformOverview({ overview }: { overview: Record<string, number | string> }) {
-  const metrics: MetricCardData[] = [
-    { title: 'Total Schools', value: String(overview.totalSchools ?? '—'), change: 0, icon: Building2, iconBg: 'bg-[#0D7377]/20', iconColor: 'text-[#0D7377]', sparkData: sparkData(Number(overview.totalSchools) || 0, 2) },
-    { title: 'Total Teachers', value: String(overview.totalTeachers ?? '—'), change: 0, icon: GraduationCap, iconBg: 'bg-[#D4A843]/20', iconColor: 'text-[#D4A843]', sparkData: sparkData(Number(overview.totalTeachers) || 0, 2) },
-    { title: 'Total Students', value: String(overview.totalStudents ?? '—'), change: 0, icon: Users, iconBg: 'bg-[#059669]/20', iconColor: 'text-[#059669]', sparkData: sparkData(Number(overview.totalStudents) || 0, 5) },
-    { title: 'Active Users', value: String(overview.totalUsers ?? '—'), change: 0, icon: Activity, iconBg: 'bg-[#8B5CF6]/20', iconColor: 'text-[#8B5CF6]', sparkData: sparkData(Number(overview.totalUsers) || 0, 5) },
-    { title: 'Subscriptions', value: String(overview.activeSubscriptions ?? '—'), change: 0, icon: CreditCard, iconBg: 'bg-[#0A7E8C]/20', iconColor: 'text-[#0A7E8C]', sparkData: sparkData(Number(overview.activeSubscriptions) || 0, 2) },
-    { title: 'Conferences', value: String(overview.totalConferences ?? '—'), change: 0, icon: Globe, iconBg: 'bg-[#D4A843]/20', iconColor: 'text-[#D4A843]', sparkData: sparkData(Number(overview.totalConferences) || 0, 1) },
-    { title: 'Revenue', value: overview.totalRevenue ? `$${Number(overview.totalRevenue).toLocaleString()}` : '—', change: 0, icon: DollarSign, iconBg: 'bg-[#059669]/20', iconColor: 'text-[#059669]', sparkData: sparkData(Number(overview.totalRevenue) || 0, 100) },
-    { title: 'Churn Rate', value: '—', change: 0, icon: TrendingDown, iconBg: 'bg-[#EF4444]/20', iconColor: 'text-[#EF4444]', sparkData: sparkData(0, 1) },
-  ]
+function PlatformOverview({ overview, isLoading }: { overview: OverviewData | null; isLoading: boolean }) {
+  const metrics = overview ? [
+    { title: 'Total Schools', value: String(overview.totalSchools), icon: Building2, iconBg: 'bg-[#0D7377]/20', iconColor: 'text-[#0D7377]' },
+    { title: 'Total Teachers', value: String(overview.totalTeachers), icon: GraduationCap, iconBg: 'bg-[#D4A843]/20', iconColor: 'text-[#D4A843]' },
+    { title: 'Total Students', value: String(overview.totalStudents), icon: Users, iconBg: 'bg-[#059669]/20', iconColor: 'text-[#059669]' },
+    { title: 'Active Users', value: String(overview.totalUsers), icon: Activity, iconBg: 'bg-[#8B5CF6]/20', iconColor: 'text-[#8B5CF6]' },
+    { title: 'Subscriptions', value: String(overview.activeSubscriptions), icon: CreditCard, iconBg: 'bg-[#0A7E8C]/20', iconColor: 'text-[#0A7E8C]' },
+    { title: 'Conferences', value: String(overview.totalConferences), icon: Globe, iconBg: 'bg-[#D4A843]/20', iconColor: 'text-[#D4A843]' },
+    { title: 'Revenue', value: overview.totalRevenue ? `$${overview.totalRevenue.toLocaleString()}` : '$0', icon: DollarSign, iconBg: 'bg-[#059669]/20', iconColor: 'text-[#059669]' },
+    { title: 'Churn Rate', value: '—', icon: TrendingDown, iconBg: 'bg-[#EF4444]/20', iconColor: 'text-[#EF4444]' },
+  ] : []
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <DarkCard key={i}>
+            <CardContent className="p-4">
+              <div className="h-4 bg-white/10 rounded animate-pulse w-16 mb-3" />
+              <div className="h-8 bg-white/10 rounded animate-pulse w-20" />
+            </CardContent>
+          </DarkCard>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       {metrics.map((m, i) => (
-        <motion.div
-          key={m.title}
-          custom={i}
-          variants={cardVariants}
-          initial="hidden"
-          animate="visible"
-        >
+        <motion.div key={m.title} custom={i} variants={cardVariants} initial="hidden" animate="visible">
           <DarkCard>
             <CardContent className="p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className={`w-9 h-9 rounded-lg ${m.iconBg} flex items-center justify-center`}>
                   <m.icon className={`w-4.5 h-4.5 ${m.iconColor}`} />
                 </div>
-                <MiniSparkline data={m.sparkData} color={m.iconColor.replace('text-', '#').replace('[', '').replace(']', '') || '#0A7E8C'} />
               </div>
               <div className="text-2xl font-bold tracking-tight">{m.value}</div>
-              <div className="flex items-center gap-1 mt-1">
-                {m.change >= 0 ? (
-                  <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />
-                )}
-                <span className={`text-xs font-medium ${m.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {Math.abs(m.change)}%
-                </span>
-                <span className="text-xs text-slate-500">vs last month</span>
-              </div>
               <div className="text-xs text-slate-500 mt-0.5">{m.title}</div>
             </CardContent>
           </DarkCard>
@@ -359,220 +252,59 @@ function PlatformOverview({ overview }: { overview: Record<string, number | stri
 }
 
 // ============================================================
-// SECTION 2: FINANCIAL DASHBOARD
+// SECTION 2: SUBSCRIPTIONS OVERVIEW
 // ============================================================
 
-function FinancialDashboard({ revenue, subscriptionBreakdown }: { revenue: number; subscriptionBreakdown: { tier: string; count: number }[] }) {
-  const tierData = subscriptionBreakdown.length > 0
-    ? subscriptionBreakdown.map(s => ({ tier: s.tier || 'Free', count: s.count }))
-    : []
+function SubscriptionOverview({ breakdown }: { breakdown: { tier: string; count: number }[] }) {
+  const tierData = breakdown.map(s => ({ tier: s.tier || 'Free', count: s.count }))
+
   return (
     <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
-      {/* Top Financial KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <DarkCard>
-          <CardContent className="p-4">
-            <div className="text-xs text-slate-400 mb-1">MRR</div>
-            <div className="text-2xl font-bold text-[#D4A843]">${revenue.toLocaleString()}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3 h-3 text-emerald-400" />
-              <span className="text-xs text-emerald-400">Revenue</span>
-            </div>
-          </CardContent>
-        </DarkCard>
-        <DarkCard>
-          <CardContent className="p-4">
-            <div className="text-xs text-slate-400 mb-1">ARR</div>
-            <div className="text-2xl font-bold text-[#D4A843]">${(revenue * 12).toLocaleString()}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <TrendingUp className="w-3 h-3 text-emerald-400" />
-              <span className="text-xs text-emerald-400">Projected</span>
-            </div>
-          </CardContent>
-        </DarkCard>
-        <DarkCard>
-          <CardContent className="p-4">
-            <div className="text-xs text-slate-400 mb-1">Active Subscriptions</div>
-            <div className="text-2xl font-bold text-[#0A7E8C]">{subscriptionBreakdown.reduce((sum, s) => sum + s.count, 0)}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <CreditCard className="w-3 h-3 text-emerald-400" />
-              <span className="text-xs text-slate-400">All tiers</span>
-            </div>
-          </CardContent>
-        </DarkCard>
-        <DarkCard>
-          <CardContent className="p-4">
-            <div className="text-xs text-slate-400 mb-1">Avg Revenue / Sub</div>
-            <div className="text-2xl font-bold text-[#0A7E8C]">
-              ${subscriptionBreakdown.reduce((sum, s) => sum + s.count, 0) > 0
-                ? Math.round(revenue / subscriptionBreakdown.reduce((sum, s) => sum + s.count, 0)).toLocaleString()
-                : '—'}
-            </div>
-          </CardContent>
-        </DarkCard>
-      </div>
-
-      {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* MRR Trend */}
-        <DarkCard>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Monthly Recurring Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={mrrChartConfig} className="h-[200px] w-full">
-              <AreaChart data={MRR_DATA}>
-                <defs>
-                  <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0A7E8C" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#0A7E8C" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="month" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
-                <RechartsTooltip
-                  contentStyle={{ background: '#1B2A4A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12 }}
-                  formatter={(v: number) => [`$${v.toLocaleString()}`, 'MRR']}
-                />
-                <Area type="monotone" dataKey="mrr" stroke="#0A7E8C" strokeWidth={2} fill="url(#mrrGrad)" dot={false} />
-              </AreaChart>
-            </ChartContainer>
-          </CardContent>
-        </DarkCard>
-
-        {/* Subscription by Tier */}
         <DarkCard>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-slate-300">Active Subscriptions by Tier</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={tierChartConfig} className="h-[200px] w-full">
-              <BarChart data={tierData.length > 0 ? tierData : []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="tier" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
-                <RechartsTooltip
-                  contentStyle={{ background: '#1B2A4A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12 }}
-                  formatter={(v: number) => [v.toLocaleString(), 'Users']}
-                />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {(tierData.length > 0 ? tierData : []).map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+            {tierData.length > 0 ? (
+              <ChartContainer config={tierChartConfig} className="h-[200px] w-full">
+                <BarChart data={tierData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="tier" tick={{ fill: '#94A3B8', fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <RechartsTooltip
+                    contentStyle={{ background: '#1B2A4A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12 }}
+                    formatter={(v: number) => [v.toLocaleString(), 'Users']}
+                  />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {tierData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[200px] text-slate-500 text-sm">No subscription data yet</div>
+            )}
           </CardContent>
         </DarkCard>
-      </div>
 
-      {/* Second Charts Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Revenue Forecast */}
         <DarkCard>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Revenue Forecast (6-Month)</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-300">Tier Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={forecastChartConfig} className="h-[200px] w-full">
-              <LineChart data={REVENUE_FORECAST}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="month" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
-                <RechartsTooltip
-                  contentStyle={{ background: '#1B2A4A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12 }}
-                  formatter={(v: number) => [`$${v.toLocaleString()}`, '']}
-                />
-                <Legend />
-                <Line type="monotone" dataKey="actual" stroke="#0A7E8C" strokeWidth={2} dot={{ r: 4, fill: '#0A7E8C' }} connectNulls={false} />
-                <Line type="monotone" dataKey="forecast" stroke="#D4A843" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: '#D4A843' }} connectNulls={false} />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </DarkCard>
-
-        {/* P&L Summary */}
-        <DarkCard>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Profit & Loss Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={plPieConfig} className="h-[200px] w-full">
-              <PieChart>
-                <Pie
-                  data={PL_DATA}
-                  dataKey="amount"
-                  nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={45}
-                  outerRadius={80}
-                  paddingAngle={2}
-                >
-                  {PL_DATA.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip
-                  contentStyle={{ background: '#1B2A4A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12 }}
-                  formatter={(v: number) => [`$${Math.abs(v).toLocaleString()}`, '']}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 10, color: '#94A3B8' }}
-                />
-              </PieChart>
-            </ChartContainer>
-          </CardContent>
-        </DarkCard>
-      </div>
-
-      {/* Revenue by Plan */}
-      <DarkCard>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-300">Revenue by Plan Type</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={planRevenueChartConfig} className="h-[180px] w-full">
-            <BarChart layout="vertical" data={REVENUE_BY_PLAN}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" horizontal={false} />
-              <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
-              <YAxis dataKey="plan" type="category" tick={{ fill: '#94A3B8', fontSize: 11 }} axisLine={false} tickLine={false} width={80} />
-              <RechartsTooltip
-                contentStyle={{ background: '#1B2A4A', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#fff', fontSize: 12 }}
-                formatter={(v: number) => [`$${v.toLocaleString()}`, 'Revenue']}
-              />
-              <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
-                {REVENUE_BY_PLAN.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </DarkCard>
-
-      {/* Refunds & Other Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <DarkCard>
-          <CardContent className="p-4 text-center">
-            <div className="text-xs text-slate-400 mb-1">Refunds (This Month)</div>
-            <div className="text-xl font-bold text-red-400">$0</div>
-            <div className="text-xs text-slate-500">No refunds</div>
-          </CardContent>
-        </DarkCard>
-        <DarkCard>
-          <CardContent className="p-4 text-center">
-            <div className="text-xs text-slate-400 mb-1">Net Revenue</div>
-            <div className="text-xl font-bold text-emerald-400">$0</div>
-            <div className="text-xs text-slate-500">After costs</div>
-          </CardContent>
-        </DarkCard>
-        <DarkCard>
-          <CardContent className="p-4 text-center">
-            <div className="text-xs text-slate-400 mb-1">ARPU</div>
-            <div className="text-xl font-bold text-[#0A7E8C]">—</div>
-            <div className="text-xs text-slate-500">No subscriptions yet</div>
+            <div className="space-y-3">
+              {tierData.length > 0 ? tierData.map((t, i) => (
+                <div key={t.tier} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                    <span className="text-sm text-slate-300">{t.tier.replace(/_/g, ' ')}</span>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-white/20 text-slate-300">{t.count}</Badge>
+                </div>
+              )) : (
+                <div className="text-slate-500 text-sm text-center py-8">No data</div>
+              )}
+            </div>
           </CardContent>
         </DarkCard>
       </div>
@@ -584,59 +316,266 @@ function FinancialDashboard({ revenue, subscriptionBreakdown }: { revenue: numbe
 // SECTION 3: USER MANAGEMENT
 // ============================================================
 
-function UserManagement({ users }: { users: UserData[] }) {
+function UserManagement() {
+  const [users, setUsers] = useState<UserData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [page, setPage] = useState(1)
 
-  const filtered = useMemo(() => {
-    return users.filter(u => {
-      const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())
-      const matchRole = roleFilter === 'all' || u.role === roleFilter
-      const matchStatus = statusFilter === 'all' || u.status === statusFilter
-      return matchSearch && matchRole && matchStatus
-    })
-  }, [search, roleFilter, statusFilter, users])
+  // Add User Dialog
+  const [addUserOpen, setAddUserOpen] = useState(false)
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'STUDENT' })
+  const [isCreating, setIsCreating] = useState(false)
+
+  // Reset Password Dialog
+  const [resetPwdOpen, setResetPwdOpen] = useState(false)
+  const [resetTarget, setResetTarget] = useState<UserData | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [isResetting, setIsResetting] = useState(false)
+
+  // Edit Role Dialog
+  const [editRoleOpen, setEditRoleOpen] = useState(false)
+  const [editTarget, setEditTarget] = useState<UserData | null>(null)
+  const [editRole, setEditRole] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+
+  // Delete confirm
+  const [deleteTarget, setDeleteTarget] = useState<UserData | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: '25' })
+      if (search) params.set('search', search)
+      if (roleFilter !== 'all') params.set('role', roleFilter)
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      const res = await fetch(`/api/admin/users?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data.data || [])
+        setTotalUsers(data.pagination?.total || 0)
+      }
+    } catch (err) {
+      console.error('Failed to fetch users:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [page, search, roleFilter, statusFilter])
+
+  useEffect(() => { fetchUsers() }, [fetchUsers])
+
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      toast.error('All fields are required')
+      return
+    }
+    setIsCreating(true)
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newUser),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`User ${newUser.email} created successfully`)
+        setAddUserOpen(false)
+        setNewUser({ name: '', email: '', password: '', role: 'STUDENT' })
+        fetchUsers()
+      } else {
+        toast.error(data.error || 'Failed to create user')
+      }
+    } catch {
+      toast.error('Failed to create user')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetTarget || !newPassword) return
+    setIsResetting(true)
+    try {
+      const res = await fetch(`/api/admin/users/${resetTarget.id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Password reset for ${resetTarget.email}`)
+        setResetPwdOpen(false)
+        setResetTarget(null)
+        setNewPassword('')
+      } else {
+        toast.error(data.error || 'Failed to reset password')
+      }
+    } catch {
+      toast.error('Failed to reset password')
+    } finally {
+      setIsResetting(false)
+    }
+  }
+
+  const handleEditRole = async () => {
+    if (!editTarget || !editRole) return
+    setIsUpdating(true)
+    try {
+      const res = await fetch(`/api/admin/users/${editTarget.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: editRole }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Role updated for ${editTarget.email}`)
+        setEditRoleOpen(false)
+        setEditTarget(null)
+        fetchUsers()
+      } else {
+        toast.error(data.error || 'Failed to update role')
+      }
+    } catch {
+      toast.error('Failed to update role')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handleToggleActive = async (user: UserData) => {
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !user.isActive }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`${user.email} ${user.isActive ? 'suspended' : 'activated'}`)
+        fetchUsers()
+      } else {
+        toast.error(data.error || 'Failed to update user')
+      }
+    } catch {
+      toast.error('Failed to update user')
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/admin/users/${deleteTarget.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`User ${deleteTarget.email} deleted`)
+        setDeleteTarget(null)
+        fetchUsers()
+      } else {
+        toast.error(data.error || 'Failed to delete user')
+      }
+    } catch {
+      toast.error('Failed to delete user')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const filtered = users
 
   return (
     <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
+      {/* Header with Add User Button */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white">User Management</h3>
+        <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+              <UserPlus className="w-4 h-4 mr-2" /> Add User
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-[#1B2A4A] border-white/10 text-white">
+            <DialogHeader>
+              <DialogTitle>Create New User</DialogTitle>
+              <DialogDescription className="text-slate-400">Add a user to the platform with a specific role and subscription.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Full Name</Label>
+                <Input value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Email</Label>
+                <Input value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="user@example.com" type="email" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Password</Label>
+                <Input value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Role</Label>
+                <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
+                  <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#1B2A4A] border-white/10">
+                    <SelectItem value="STUDENT">Student</SelectItem>
+                    <SelectItem value="TEACHER">Teacher</SelectItem>
+                    <SelectItem value="SCHOOL_ADMIN">School Admin</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                    <SelectItem value="FOUNDER">Founder</SelectItem>
+                    <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddUserOpen(false)} className="border-white/10 text-slate-300">Cancel</Button>
+              <Button onClick={handleAddUser} disabled={isCreating} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+                {isCreating ? 'Creating...' : 'Create User'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search users by name or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-[#0A7E8C]/30"
-          />
+          <Input placeholder="Search by name or email..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} className="pl-10 bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500" />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
+        <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1) }}>
           <SelectTrigger className="w-full sm:w-[160px] bg-[#1B2A4A] border-white/10 text-white">
-            <SelectValue placeholder="Filter by role" />
+            <SelectValue placeholder="Role" />
           </SelectTrigger>
           <SelectContent className="bg-[#1B2A4A] border-white/10">
             <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="STUDENT">Student</SelectItem>
             <SelectItem value="TEACHER">Teacher</SelectItem>
             <SelectItem value="SCHOOL_ADMIN">School Admin</SelectItem>
+            <SelectItem value="ADMIN">Admin</SelectItem>
             <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+            <SelectItem value="FOUNDER">Founder</SelectItem>
+            <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
           <SelectTrigger className="w-full sm:w-[160px] bg-[#1B2A4A] border-white/10 text-white">
-            <SelectValue placeholder="Filter by status" />
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent className="bg-[#1B2A4A] border-white/10">
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Suspended">Suspended</SelectItem>
-            <SelectItem value="Unverified">Unverified</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-[#264B5E] hover:text-white">
-          <Filter className="w-4 h-4 mr-2" />
-          Bulk Actions
+        <Button variant="outline" onClick={fetchUsers} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-[#264B5E]">
+          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
         </Button>
       </div>
 
@@ -653,24 +592,33 @@ function UserManagement({ users }: { users: UserData[] }) {
                   <TableHead className="text-slate-400 hidden md:table-cell">School</TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                   <TableHead className="text-slate-400 hidden lg:table-cell">Subscription</TableHead>
-                  <TableHead className="text-slate-400 hidden lg:table-cell">Last Login</TableHead>
                   <TableHead className="text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((u) => (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 7 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">No users found</TableCell></TableRow>
+                ) : filtered.map((u) => (
                   <TableRow key={u.id} className="border-white/5 hover:bg-white/5">
                     <TableCell className="font-medium text-white">{u.name}</TableCell>
-                    <TableCell className="text-slate-400">{u.email}</TableCell>
+                    <TableCell className="text-slate-400 text-sm">{u.email}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="text-[10px] border-white/20 text-slate-300">
-                        {u.role.replace('_', ' ')}
+                      <Badge variant="outline" className={`text-[10px] border-white/20 ${u.role === 'MASTER_ADMIN' ? 'text-[#D4A843] border-[#D4A843]/30' : 'text-slate-300'}`}>
+                        {u.role === 'MASTER_ADMIN' && <Crown className="w-3 h-3 mr-1" />}
+                        {u.role.replace(/_/g, ' ')}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">{u.school}</TableCell>
-                    <TableCell><StatusBadge status={u.status} /></TableCell>
-                    <TableCell className="text-slate-400 hidden lg:table-cell">{u.subscription}</TableCell>
-                    <TableCell className="text-slate-500 text-xs hidden lg:table-cell">{u.lastLogin}</TableCell>
+                    <TableCell className="text-slate-400 hidden md:table-cell text-sm">{u.school?.name || '—'}</TableCell>
+                    <TableCell><StatusBadge status={u.isActive ? 'Active' : 'Suspended'} /></TableCell>
+                    <TableCell className="text-slate-400 hidden lg:table-cell text-xs">{u.subscription ? `${u.subscription.tier} (${u.subscription.status})` : 'Free'}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -681,19 +629,21 @@ function UserManagement({ users }: { users: UserData[] }) {
                         <DropdownMenuContent className="bg-[#1B2A4A] border-white/10">
                           <DropdownMenuLabel className="text-slate-400">Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator className="bg-white/10" />
-                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
-                            <Eye className="w-4 h-4 mr-2" /> View
+                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10"
+                            onClick={() => { setEditTarget(u); setEditRole(u.role); setEditRoleOpen(true) }}>
+                            <Edit className="w-4 h-4 mr-2" /> Change Role
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
-                            <Edit className="w-4 h-4 mr-2" /> Edit
+                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10"
+                            onClick={() => { setResetTarget(u); setResetPwdOpen(true) }}>
+                            <KeyRound className="w-4 h-4 mr-2" /> Reset Password
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
-                            <CheckCircle2 className="w-4 h-4 mr-2" /> Verify
+                          <DropdownMenuItem className={u.isActive ? "text-amber-400 focus:text-amber-300 focus:bg-white/10" : "text-emerald-400 focus:text-emerald-300 focus:bg-white/10"}
+                            onClick={() => handleToggleActive(u)}>
+                            {u.isActive ? <><Ban className="w-4 h-4 mr-2" /> Suspend</> : <><CheckCircle2 className="w-4 h-4 mr-2" /> Activate</>}
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-amber-400 focus:text-amber-300 focus:bg-white/10">
-                            <Ban className="w-4 h-4 mr-2" /> Suspend
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-white/10">
+                          <DropdownMenuSeparator className="bg-white/10" />
+                          <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-white/10"
+                            onClick={() => setDeleteTarget(u)}>
                             <Trash2 className="w-4 h-4 mr-2" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -706,26 +656,439 @@ function UserManagement({ users }: { users: UserData[] }) {
           </ScrollArea>
         </CardContent>
       </DarkCard>
-      <div className="text-xs text-slate-500 text-right">Showing {filtered.length} of {users.length} users</div>
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <span>Showing {filtered.length} of {totalUsers} users</span>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="bg-[#1B2A4A] border-white/10 text-slate-300 h-7 text-xs">Previous</Button>
+          <Button variant="outline" size="sm" disabled={filtered.length < 25} onClick={() => setPage(p => p + 1)} className="bg-[#1B2A4A] border-white/10 text-slate-300 h-7 text-xs">Next</Button>
+        </div>
+      </div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPwdOpen} onOpenChange={setResetPwdOpen}>
+        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-[#D4A843]" /> Reset Password</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Set a new password for {resetTarget?.email}. The user will be logged out of all active sessions.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">New Password</Label>
+              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPwdOpen(false)} className="border-white/10 text-slate-300">Cancel</Button>
+            <Button onClick={handleResetPassword} disabled={isResetting || !newPassword} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+              {isResetting ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={editRoleOpen} onOpenChange={setEditRoleOpen}>
+        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle>Change Role</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Change role for {editTarget?.email}. Current role: {editTarget?.role}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">New Role</Label>
+              <Select value={editRole} onValueChange={setEditRole}>
+                <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-[#1B2A4A] border-white/10">
+                  <SelectItem value="STUDENT">Student</SelectItem>
+                  <SelectItem value="TEACHER">Teacher</SelectItem>
+                  <SelectItem value="SCHOOL_ADMIN">School Admin</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
+                  <SelectItem value="FOUNDER">Founder</SelectItem>
+                  <SelectItem value="MASTER_ADMIN">Master Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditRoleOpen(false)} className="border-white/10 text-slate-300">Cancel</Button>
+            <Button onClick={handleEditRole} disabled={isUpdating} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+              {isUpdating ? 'Updating...' : 'Update Role'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent className="bg-[#1B2A4A] border-white/10 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-400">
+              Are you sure you want to permanently delete {deleteTarget?.email}? This action cannot be undone. All associated data will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-white/10 text-slate-300 bg-[#0D1B2A]">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white">
+              {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   )
 }
 
 // ============================================================
-// SECTION 4: SCHOOL MANAGEMENT
+// SECTION 4: PASSWORD RESET REQUESTS
 // ============================================================
 
-function SchoolManagement({ schools }: { schools: SchoolData[] }) {
-  const [search, setSearch] = useState('')
-  const pendingSchools = schools.filter(s => s.status === 'Pending')
+function PasswordResetRequests() {
+  const [requests, setRequests] = useState<PasswordResetRequest[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState('pending')
 
-  const filtered = schools.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.city.toLowerCase().includes(search.toLowerCase())
-  )
+  // Reset Password Dialog
+  const [resetPwdOpen, setResetPwdOpen] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetUserId, setResetUserId] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [isResetting, setIsResetting] = useState(false)
+
+  const fetchRequests = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ limit: '50' })
+      if (statusFilter) params.set('status', statusFilter)
+      const res = await fetch(`/api/admin/password-resets?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setRequests(data.data || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch password resets:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [statusFilter])
+
+  useEffect(() => { fetchRequests() }, [fetchRequests])
+
+  const pendingCount = requests.filter(r => r.status === 'pending').length
+
+  const handleResetFromRequest = (req: PasswordResetRequest) => {
+    setResetEmail(req.email)
+    setResetUserId(req.user?.id || '')
+    setResetPwdOpen(true)
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetUserId || !newPassword) return
+    setIsResetting(true)
+    try {
+      const res = await fetch(`/api/admin/users/${resetUserId}/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Password reset for ${resetEmail}`)
+        setResetPwdOpen(false)
+        setNewPassword('')
+        fetchRequests()
+      } else {
+        toast.error(data.error || 'Failed to reset password')
+      }
+    } catch {
+      toast.error('Failed to reset password')
+    } finally {
+      setIsResetting(false)
+    }
+  }
 
   return (
     <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-white">Password Reset Requests</h3>
+          {pendingCount > 0 && (
+            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse">
+              {pendingCount} pending
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px] bg-[#1B2A4A] border-white/10 text-white text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1B2A4A] border-white/10">
+              <SelectItem value="">All</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={fetchRequests} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-[#264B5E]">
+            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+          </Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-16 bg-[#1B2A4A] rounded-lg animate-pulse border border-white/5" />
+          ))}
+        </div>
+      ) : requests.length === 0 ? (
+        <DarkCard>
+          <CardContent className="py-12 text-center">
+            <Lock className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+            <div className="text-slate-400">No password reset requests</div>
+            <div className="text-xs text-slate-500 mt-1">When users request a password reset, it will appear here</div>
+          </CardContent>
+        </DarkCard>
+      ) : (
+        <div className="space-y-2">
+          {requests.map((req) => (
+            <div key={req.id} className={`flex items-center justify-between p-4 rounded-lg border ${req.status === 'pending' ? 'bg-[#1B2A4A] border-amber-500/30' : 'bg-[#1B2A4A] border-white/5'}`}>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-white">{req.email}</span>
+                  {req.user && <Badge variant="outline" className="text-[10px] border-white/20 text-slate-400">{req.user.name}</Badge>}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> {timeAgo(req.createdAt)}
+                  </span>
+                  {req.status === 'pending' && new Date(req.expiresAt) < new Date() && (
+                    <span className="text-xs text-red-400 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> Expired
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <StatusBadge status={req.status} />
+                {req.status === 'pending' && req.user && (
+                  <Button size="sm" className="h-7 bg-[#0D7377] hover:bg-[#0A5E62] text-white text-xs"
+                    onClick={() => handleResetFromRequest(req)}>
+                    <KeyRound className="w-3.5 h-3.5 mr-1" /> Reset Password
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPwdOpen} onOpenChange={setResetPwdOpen}>
+        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-[#D4A843]" /> Reset Password</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Set a new password for {resetEmail}. Since email delivery may not be available, please share the new password with the user through a secure channel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">New Password</Label>
+              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPwdOpen(false)} className="border-white/10 text-slate-300">Cancel</Button>
+            <Button onClick={handleResetPassword} disabled={isResetting || !newPassword} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+              {isResetting ? 'Resetting...' : 'Reset Password'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </motion.div>
+  )
+}
+
+// ============================================================
+// SECTION 5: SCHOOL MANAGEMENT
+// ============================================================
+
+function SchoolManagement() {
+  const [schools, setSchools] = useState<SchoolData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [search, setSearch] = useState('')
+
+  // Add School Dialog
+  const [addSchoolOpen, setAddSchoolOpen] = useState(false)
+  const [newSchool, setNewSchool] = useState({
+    name: '', officialName: '', city: 'Dubai', country: 'UAE', emirate: 'Dubai',
+    schoolType: 'INTERNATIONAL', curriculum: 'IB', contactEmail: '', contactPerson: '',
+  })
+  const [isCreating, setIsCreating] = useState(false)
+
+  const fetchSchools = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ limit: '100' })
+      if (search) params.set('q', search)
+      const res = await fetch(`/api/schools?${params}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSchools(data.schools || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch schools:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [search])
+
+  useEffect(() => { fetchSchools() }, [fetchSchools])
+
+  const pendingSchools = schools.filter(s => s.verificationStatus === 'PENDING')
+
+  const handleAddSchool = async () => {
+    if (!newSchool.name || !newSchool.city) {
+      toast.error('School name and city are required')
+      return
+    }
+    setIsCreating(true)
+    try {
+      const res = await fetch('/api/schools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newSchool, source: 'ADMIN_CREATED' }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`School "${newSchool.name}" created successfully`)
+        setAddSchoolOpen(false)
+        setNewSchool({ name: '', officialName: '', city: 'Dubai', country: 'UAE', emirate: 'Dubai', schoolType: 'INTERNATIONAL', curriculum: 'IB', contactEmail: '', contactPerson: '' })
+        fetchSchools()
+      } else {
+        toast.error(data.error || 'Failed to create school')
+      }
+    } catch {
+      toast.error('Failed to create school')
+    } finally {
+      setIsCreating(false)
+    }
+  }
+
+  const handleApproveSchool = async (schoolId: string, schoolName: string) => {
+    try {
+      const res = await fetch(`/api/schools/${schoolId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isVerified: true, verificationStatus: 'APPROVED', isActive: true }),
+      })
+      if (res.ok) {
+        toast.success(`School "${schoolName}" approved`)
+        fetchSchools()
+      } else {
+        toast.error('Failed to approve school')
+      }
+    } catch {
+      toast.error('Failed to approve school')
+    }
+  }
+
+  return (
+    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white">School Management</h3>
+        <Dialog open={addSchoolOpen} onOpenChange={setAddSchoolOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+              <Plus className="w-4 h-4 mr-2" /> Add School
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="bg-[#1B2A4A] border-white/10 text-white max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Add School</DialogTitle>
+              <DialogDescription className="text-slate-400">Register a new school in the platform directory.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-slate-300">School Name *</Label>
+                  <Input value={newSchool.name} onChange={(e) => setNewSchool({ ...newSchool, name: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Official Name</Label>
+                  <Input value={newSchool.officialName} onChange={(e) => setNewSchool({ ...newSchool, officialName: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-slate-300">City *</Label>
+                  <Input value={newSchool.city} onChange={(e) => setNewSchool({ ...newSchool, city: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Emirate</Label>
+                  <Select value={newSchool.emirate} onValueChange={(v) => setNewSchool({ ...newSchool, emirate: v })}>
+                    <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-[#1B2A4A] border-white/10">
+                      <SelectItem value="Abu Dhabi">Abu Dhabi</SelectItem>
+                      <SelectItem value="Dubai">Dubai</SelectItem>
+                      <SelectItem value="Sharjah">Sharjah</SelectItem>
+                      <SelectItem value="Ajman">Ajman</SelectItem>
+                      <SelectItem value="Umm Al Quwain">Umm Al Quwain</SelectItem>
+                      <SelectItem value="Ras Al Khaimah">Ras Al Khaimah</SelectItem>
+                      <SelectItem value="Fujairah">Fujairah</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-slate-300">School Type</Label>
+                  <Select value={newSchool.schoolType} onValueChange={(v) => setNewSchool({ ...newSchool, schoolType: v })}>
+                    <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-[#1B2A4A] border-white/10">
+                      <SelectItem value="PUBLIC">Public</SelectItem>
+                      <SelectItem value="PRIVATE">Private</SelectItem>
+                      <SelectItem value="INTERNATIONAL">International</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-300">Curriculum</Label>
+                  <Select value={newSchool.curriculum} onValueChange={(v) => setNewSchool({ ...newSchool, curriculum: v })}>
+                    <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
+                    <SelectContent className="bg-[#1B2A4A] border-white/10">
+                      <SelectItem value="AMERICAN">American</SelectItem>
+                      <SelectItem value="BRITISH">British</SelectItem>
+                      <SelectItem value="IB">IB</SelectItem>
+                      <SelectItem value="CBSE">CBSE</SelectItem>
+                      <SelectItem value="NATIONAL">National</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Contact Email</Label>
+                <Input value={newSchool.contactEmail} onChange={(e) => setNewSchool({ ...newSchool, contactEmail: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" type="email" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Contact Person</Label>
+                <Input value={newSchool.contactPerson} onChange={(e) => setNewSchool({ ...newSchool, contactPerson: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddSchoolOpen(false)} className="border-white/10 text-slate-300">Cancel</Button>
+              <Button onClick={handleAddSchool} disabled={isCreating} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
+                {isCreating ? 'Creating...' : 'Add School'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       {/* Verification Queue */}
       {pendingSchools.length > 0 && (
         <DarkCard className="border-amber-500/30">
@@ -741,14 +1104,12 @@ function SchoolManagement({ schools }: { schools: SchoolData[] }) {
                 <div key={s.id} className="flex items-center justify-between p-3 bg-[#0D1B2A] rounded-lg border border-white/5">
                   <div>
                     <div className="text-sm font-medium text-white">{s.name}</div>
-                    <div className="text-xs text-slate-400">{s.city}, {s.country} &middot; {s.type}</div>
+                    <div className="text-xs text-slate-400">{s.city}, {s.country}</div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs">
+                    <Button size="sm" className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                      onClick={() => handleApproveSchool(s.id, s.name)}>
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Approve
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-8 border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs">
-                      <XCircle className="w-3.5 h-3.5 mr-1" /> Reject
                     </Button>
                   </div>
                 </div>
@@ -761,12 +1122,7 @@ function SchoolManagement({ schools }: { schools: SchoolData[] }) {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Search schools..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-[#0A7E8C]/30"
-        />
+        <Input placeholder="Search schools..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500" />
       </div>
 
       {/* Table */}
@@ -778,65 +1134,38 @@ function SchoolManagement({ schools }: { schools: SchoolData[] }) {
                 <TableRow className="border-white/10 hover:bg-transparent">
                   <TableHead className="text-slate-400">Name</TableHead>
                   <TableHead className="text-slate-400 hidden md:table-cell">City</TableHead>
-                  <TableHead className="text-slate-400 hidden sm:table-cell">Country</TableHead>
                   <TableHead className="text-slate-400">Type</TableHead>
                   <TableHead className="text-slate-400">Verified</TableHead>
-                  <TableHead className="text-slate-400 hidden lg:table-cell">Students</TableHead>
-                  <TableHead className="text-slate-400 hidden lg:table-cell">Teachers</TableHead>
+                  <TableHead className="text-slate-400 hidden lg:table-cell">Users</TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
-                  <TableHead className="text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(s => (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : schools.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">No schools found</TableCell></TableRow>
+                ) : schools.map(s => (
                   <TableRow key={s.id} className="border-white/5 hover:bg-white/5">
                     <TableCell className="font-medium text-white">
                       <div className="flex items-center gap-2">
-                        {s.featured && <Star className="w-3.5 h-3.5 text-[#D4A843] fill-[#D4A843]" />}
+                        {s.isFeatured && <Star className="w-3.5 h-3.5 text-[#D4A843] fill-[#D4A843]" />}
                         {s.name}
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">{s.city}</TableCell>
-                    <TableCell className="text-slate-400 hidden sm:table-cell">{s.country}</TableCell>
-                    <TableCell className="text-slate-400">{s.type}</TableCell>
+                    <TableCell className="text-slate-400 hidden md:table-cell">{s.city || '—'}</TableCell>
+                    <TableCell className="text-slate-400">{s.schoolType || '—'}</TableCell>
                     <TableCell>
-                      {s.verified ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-red-400" />
-                      )}
+                      {s.isVerified ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden lg:table-cell">{s.students.toLocaleString()}</TableCell>
-                    <TableCell className="text-slate-400 hidden lg:table-cell">{s.teachers}</TableCell>
-                    <TableCell><StatusBadge status={s.status} /></TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-[#1B2A4A] border-white/10">
-                          <DropdownMenuLabel className="text-slate-400">Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator className="bg-white/10" />
-                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
-                            <Eye className="w-4 h-4 mr-2" /> View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
-                            <Edit className="w-4 h-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
-                            <Merge className="w-4 h-4 mr-2" /> Merge
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
-                            <Pin className="w-4 h-4 mr-2" /> {s.featured ? 'Unfeature' : 'Feature'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-white/10">
-                            <Trash2 className="w-4 h-4 mr-2" /> Remove
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+                    <TableCell className="text-slate-400 hidden lg:table-cell">{s._count?.users || 0}</TableCell>
+                    <TableCell><StatusBadge status={s.verificationStatus} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -849,56 +1178,66 @@ function SchoolManagement({ schools }: { schools: SchoolData[] }) {
 }
 
 // ============================================================
-// SECTION 5: TEACHER MANAGEMENT
+// SECTION 6: AUDIT LOGS
 // ============================================================
 
-function TeacherManagement({ teachers }: { teachers: TeacherData[] }) {
-  const [search, setSearch] = useState('')
+function AuditLogs() {
+  const [logs, setLogs] = useState<AuditLogEntry[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const filtered = useMemo(() => {
-    return teachers.filter(t =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.school.toLowerCase().includes(search.toLowerCase())
-    )
-  }, [search, teachers])
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const res = await fetch('/api/admin?action=audit-logs&limit=50')
+        if (res.ok) {
+          const data = await res.json()
+          setLogs(data.data || [])
+        }
+      } catch (err) {
+        console.error('Failed to fetch audit logs:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchLogs()
+  }, [])
 
   return (
     <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Search teachers..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-[#0A7E8C]/30"
-        />
-      </div>
-
+      <h3 className="text-lg font-semibold text-white">Audit Logs</h3>
       <DarkCard>
         <CardContent className="p-0">
           <ScrollArea className="max-h-[500px]">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-transparent">
-                  <TableHead className="text-slate-400">Name</TableHead>
-                  <TableHead className="text-slate-400 hidden md:table-cell">Email</TableHead>
-                  <TableHead className="text-slate-400">School</TableHead>
-                  <TableHead className="text-slate-400 hidden sm:table-cell">Students</TableHead>
-                  <TableHead className="text-slate-400 hidden sm:table-cell">Conferences</TableHead>
-                  <TableHead className="text-slate-400">Activity</TableHead>
-                  <TableHead className="text-slate-400">Status</TableHead>
+                  <TableHead className="text-slate-400">Action</TableHead>
+                  <TableHead className="text-slate-400">User</TableHead>
+                  <TableHead className="text-slate-400">Resource</TableHead>
+                  <TableHead className="text-slate-400 hidden md:table-cell">Details</TableHead>
+                  <TableHead className="text-slate-400">Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map(t => (
-                  <TableRow key={t.id} className="border-white/5 hover:bg-white/5">
-                    <TableCell className="font-medium text-white">{t.name}</TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">{t.email}</TableCell>
-                    <TableCell className="text-slate-400">{t.school}</TableCell>
-                    <TableCell className="text-slate-400 hidden sm:table-cell">{t.students}</TableCell>
-                    <TableCell className="text-slate-400 hidden sm:table-cell">{t.conferences}</TableCell>
-                    <TableCell><ActivityScoreBar score={t.activityScore} /></TableCell>
-                    <TableCell><StatusBadge status={t.status} /></TableCell>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : logs.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-8">No audit logs yet</TableCell></TableRow>
+                ) : logs.map(log => (
+                  <TableRow key={log.id} className="border-white/5 hover:bg-white/5">
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] border-white/20 text-slate-300">{log.action}</Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-400 text-sm">{log.user?.name || 'System'}</TableCell>
+                    <TableCell className="text-slate-300 text-sm">{log.resource}</TableCell>
+                    <TableCell className="text-slate-500 text-xs hidden md:table-cell max-w-[200px] truncate">{log.details || '—'}</TableCell>
+                    <TableCell className="text-slate-500 text-xs">{formatDateTime(log.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -911,680 +1250,97 @@ function TeacherManagement({ teachers }: { teachers: TeacherData[] }) {
 }
 
 // ============================================================
-// SECTION 6: STUDENT MANAGEMENT
-// ============================================================
-
-function StudentManagement({ students }: { students: StudentData[] }) {
-  const [search, setSearch] = useState('')
-
-  const filtered = useMemo(() => {
-    return students.filter(s =>
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.school.toLowerCase().includes(search.toLowerCase())
-    )
-  }, [search, students])
-
-  return (
-    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input
-          placeholder="Search students..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500 focus-visible:ring-[#0A7E8C]/30"
-        />
-      </div>
-
-      <DarkCard>
-        <CardContent className="p-0">
-          <ScrollArea className="max-h-[500px]">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10 hover:bg-transparent">
-                  <TableHead className="text-slate-400">Name</TableHead>
-                  <TableHead className="text-slate-400 hidden md:table-cell">Email</TableHead>
-                  <TableHead className="text-slate-400 hidden sm:table-cell">School</TableHead>
-                  <TableHead className="text-slate-400">XP Level</TableHead>
-                  <TableHead className="text-slate-400 hidden sm:table-cell">Tier</TableHead>
-                  <TableHead className="text-slate-400 hidden lg:table-cell">Courses</TableHead>
-                  <TableHead className="text-slate-400">Assessment</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(s => (
-                  <TableRow key={s.id} className="border-white/5 hover:bg-white/5">
-                    <TableCell className="font-medium text-white">{s.name}</TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">{s.email}</TableCell>
-                    <TableCell className="text-slate-400 hidden sm:table-cell">{s.school}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px] border-[#D4A843]/40 text-[#D4A843]">
-                        {s.xpLevel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-slate-400 hidden sm:table-cell">{s.tier}</TableCell>
-                    <TableCell className="text-slate-400 hidden lg:table-cell">{s.coursesCompleted}</TableCell>
-                    <TableCell>
-                      <span className={`text-sm font-medium ${s.assessmentScore >= 80 ? 'text-emerald-400' : s.assessmentScore >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
-                        {s.assessmentScore}%
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </CardContent>
-      </DarkCard>
-    </motion.div>
-  )
-}
-
-// ============================================================
-// SECTION 7: SUPPORT & RECOVERY
-// ============================================================
-
-function SupportRecovery({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
-  const passwordResets = auditLogs.filter(t => t.action === 'PASSWORD_RESET')
-  const verifications = auditLogs.filter(t => t.action === 'SCHOOL_APPROVED' || t.action === 'VERIFY')
-  const incidents = auditLogs.filter(t => t.severity === 'critical')
-
-  return (
-    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Password Resets */}
-        <DarkCard>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-amber-400" />
-              Password Resets
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {passwordResets.length > 0 ? passwordResets.map(t => (
-              <div key={t.id} className="p-2.5 bg-[#0D1B2A] rounded-lg border border-white/5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-white">{t.user}</span>
-                  <PriorityBadge priority={t.priority} />
-                </div>
-                <div className="text-xs text-slate-400 mt-1">{t.subject}</div>
-                <div className="text-[10px] text-slate-500 mt-1">{t.createdAt}</div>
-                <Button size="sm" className="mt-2 h-7 text-xs bg-[#0A7E8C] hover:bg-[#0A7E8C]/80">
-                  <RefreshCw className="w-3 h-3 mr-1" /> Reset Password
-                </Button>
-              </div>
-            )) : (
-              <div className="text-xs text-slate-500 text-center py-4">No pending resets</div>
-            )}
-          </CardContent>
-        </DarkCard>
-
-        {/* Verification Queue */}
-        <DarkCard>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[#0A7E8C]" />
-              Verification Queue
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {verifications.length > 0 ? verifications.map(t => (
-              <div key={t.id} className="p-2.5 bg-[#0D1B2A] rounded-lg border border-white/5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-white">{t.user}</span>
-                  <StatusBadge status={t.status} />
-                </div>
-                <div className="text-xs text-slate-400 mt-1">{t.subject}</div>
-                <div className="text-[10px] text-slate-500 mt-1">{t.createdAt}</div>
-                <div className="flex gap-2 mt-2">
-                  <Button size="sm" className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
-                    <CheckCircle2 className="w-3 h-3 mr-1" /> Verify
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7 text-xs border-white/10 text-slate-300 hover:bg-white/10">
-                    <XCircle className="w-3 h-3 mr-1" /> Reject
-                  </Button>
-                </div>
-              </div>
-            )) : (
-              <div className="text-xs text-slate-500 text-center py-4">No pending verifications</div>
-            )}
-          </CardContent>
-        </DarkCard>
-
-        {/* Incident Reports */}
-        <DarkCard>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-400" />
-              Incident Reports
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {incidents.length > 0 ? incidents.map(t => (
-              <div key={t.id} className="p-2.5 bg-[#0D1B2A] rounded-lg border border-red-500/20">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-white">{t.user}</span>
-                  <StatusBadge status={t.status} />
-                </div>
-                <div className="text-xs text-slate-400 mt-1">{t.subject}</div>
-                <div className="text-[10px] text-slate-500 mt-1">{t.createdAt}</div>
-              </div>
-            )) : (
-              <div className="text-xs text-slate-500 text-center py-4">No incidents</div>
-            )}
-          </CardContent>
-        </DarkCard>
-      </div>
-
-      {/* Support Tickets Table */}
-      <DarkCard>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-            <Ticket className="w-4 h-4 text-[#D4A843]" />
-            All Support Tickets
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="text-slate-400">ID</TableHead>
-                <TableHead className="text-slate-400">Type</TableHead>
-                <TableHead className="text-slate-400">Subject</TableHead>
-                <TableHead className="text-slate-400 hidden md:table-cell">User</TableHead>
-                <TableHead className="text-slate-400">Priority</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400 hidden lg:table-cell">Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {auditLogs.map(t => (
-                <TableRow key={t.id} className="border-white/5 hover:bg-white/5">
-                  <TableCell className="text-slate-400 font-mono text-xs">{t.id}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px] border-white/20 text-slate-300">
-                      {t.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-white text-sm">{t.subject}</TableCell>
-                  <TableCell className="text-slate-400 hidden md:table-cell">{t.user}</TableCell>
-                  <TableCell><PriorityBadge priority={t.priority} /></TableCell>
-                  <TableCell><StatusBadge status={t.status} /></TableCell>
-                  <TableCell className="text-slate-500 text-xs hidden lg:table-cell">{t.createdAt}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </DarkCard>
-    </motion.div>
-  )
-}
-
-// ============================================================
-// SECTION 8: SECURITY CENTER
-// ============================================================
-
-function SecurityCenter({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
-  const [auditFilter, setAuditFilter] = useState('all')
-
-  const filteredLogs = useMemo(() => {
-    if (auditFilter === 'all') return auditLogs
-    return auditLogs.filter(l => l.severity === auditFilter)
-  }, [auditFilter, auditLogs])
-
-  const suspiciousAlerts = auditLogs.filter(l => l.severity === 'critical')
-
-  return (
-    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
-      {/* Alert Banner */}
-      {suspiciousAlerts.length > 0 && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-red-400 font-medium text-sm mb-2">
-            <AlertTriangle className="w-4 h-4" />
-            {suspiciousAlerts.length} Security Alert{suspiciousAlerts.length > 1 ? 's' : ''}
-          </div>
-          <div className="space-y-1.5">
-            {suspiciousAlerts.map(a => (
-              <div key={a.id} className="text-xs text-red-300/80 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse shrink-0" />
-                <span className="font-medium">{a.action}</span> — {a.target} from {a.ip} ({a.timestamp})
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Recent Logins */}
-        <DarkCard>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <MonitorSmartphone className="w-4 h-4 text-[#0A7E8C]" />
-              Recent Logins
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {auditLogs.slice(0, 5).map((login, i) => (
-              <div key={i} className="flex items-center justify-between p-2.5 bg-[#0D1B2A] rounded-lg border border-white/5">
-                <div>
-                  <div className="text-sm text-white flex items-center gap-2">
-                    {login.user}
-                    {login.location === 'Unknown' && (
-                      <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                    )}
-                  </div>
-                  <div className="text-[10px] text-slate-500">{login.device}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-slate-400">{login.ip}</div>
-                  <div className="text-[10px] text-slate-500">{login.timestamp}</div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </DarkCard>
-
-        {/* Access Summary */}
-        <DarkCard>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <Lock className="w-4 h-4 text-[#D4A843]" />
-              Access Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Successful Logins (24h)</span>
-                <span className="text-sm font-medium text-emerald-400">1,247</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Failed Attempts (24h)</span>
-                <span className="text-sm font-medium text-red-400">23</span>
-              </div>
-              <Separator className="bg-white/10" />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Active Sessions</span>
-                <span className="text-sm font-medium text-[#0A7E8C]">342</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Suspended Accounts</span>
-                <span className="text-sm font-medium text-amber-400">5</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Locked Accounts</span>
-                <span className="text-sm font-medium text-red-400">2</span>
-              </div>
-              <Separator className="bg-white/10" />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">2FA Enabled</span>
-                <span className="text-sm font-medium text-emerald-400">68%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Admin Actions (24h)</span>
-                <span className="text-sm font-medium text-[#D4A843]">14</span>
-              </div>
-            </div>
-          </CardContent>
-        </DarkCard>
-      </div>
-
-      {/* Audit Logs */}
-      <DarkCard>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-              <ScrollText className="w-4 h-4 text-[#0A7E8C]" />
-              Audit Logs
-            </CardTitle>
-            <Select value={auditFilter} onValueChange={setAuditFilter}>
-              <SelectTrigger className="w-[140px] h-8 text-xs bg-[#0D1B2A] border-white/10 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-[#1B2A4A] border-white/10">
-                <SelectItem value="all">All Severity</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-                <SelectItem value="warning">Warning</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/10 hover:bg-transparent">
-                <TableHead className="text-slate-400">Action</TableHead>
-                <TableHead className="text-slate-400">User</TableHead>
-                <TableHead className="text-slate-400 hidden md:table-cell">Target</TableHead>
-                <TableHead className="text-slate-400">Severity</TableHead>
-                <TableHead className="text-slate-400 hidden lg:table-cell">IP</TableHead>
-                <TableHead className="text-slate-400 hidden sm:table-cell">Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLogs.map(l => (
-                <TableRow key={l.id} className="border-white/5 hover:bg-white/5">
-                  <TableCell className="font-medium text-white text-sm">{l.action}</TableCell>
-                  <TableCell className="text-slate-400">{l.user}</TableCell>
-                  <TableCell className="text-slate-400 hidden md:table-cell">{l.target}</TableCell>
-                  <TableCell><SeverityBadge severity={l.severity} /></TableCell>
-                  <TableCell className="text-slate-500 text-xs font-mono hidden lg:table-cell">{l.ip}</TableCell>
-                  <TableCell className="text-slate-500 text-xs hidden sm:table-cell">{l.timestamp}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </DarkCard>
-
-      {/* Administrative Actions History */}
-      <DarkCard>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#D4A843]" />
-            Administrative Actions History
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {auditLogs.filter(l => l.user !== 'System' && l.user !== 'Unknown').map(a => (
-              <div key={a.id} className="flex items-center gap-3 p-2.5 bg-[#0D1B2A] rounded-lg border border-white/5">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${
-                  a.severity === 'critical' ? 'bg-red-400' :
-                  a.severity === 'warning' ? 'bg-amber-400' : 'bg-[#0A7E8C]'
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white">
-                    <span className="font-medium">{a.user}</span>
-                    <span className="text-slate-400"> performed </span>
-                    <span className="text-[#D4A843]">{a.action}</span>
-                    <span className="text-slate-400"> on </span>
-                    <span className="text-slate-300">{a.target}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-500">{a.timestamp}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </DarkCard>
-    </motion.div>
-  )
-}
-
-// ============================================================
-// MAIN FOUNDER DASHBOARD
+// MAIN COMPONENT: MASTER ADMIN COMMAND CENTER
 // ============================================================
 
 export default function FounderDashboard() {
+  const [overview, setOverview] = useState<OverviewData | null>(null)
+  const [subscriptionBreakdown, setSubscriptionBreakdown] = useState<{ tier: string; count: number }[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [apiUsers, setApiUsers] = useState<UserData[]>([])
-  const [apiSchools, setApiSchools] = useState<SchoolData[]>([])
-  const [apiTeachers, setApiTeachers] = useState<TeacherData[]>([])
-  const [apiStudents, setApiStudents] = useState<StudentData[]>([])
-  const [apiAuditLogs, setApiAuditLogs] = useState<AuditLogEntry[]>([])
-  const [apiOverview, setApiOverview] = useState<Record<string, number | string>>({})
-  const [apiSubscriptionBreakdown, setApiSubscriptionBreakdown] = useState<{ tier: string; count: number }[]>([])
-  const [apiRevenue, setApiRevenue] = useState<number>(0)
-
-  const fetchData = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [adminRes, schoolsRes, auditRes] = await Promise.allSettled([
-        fetch('/api/admin'),
-        fetch('/api/schools?limit=100'),
-        fetch('/api/admin?action=audit-logs&limit=20'),
-      ])
-
-      if (adminRes.status === 'fulfilled' && adminRes.value.ok) {
-        const raw = await adminRes.value.json()
-        const data = raw.data || raw
-        const overview = data.overview || {}
-        setApiOverview({
-          totalSchools: overview.totalSchools || 0,
-          totalTeachers: overview.totalTeachers || 0,
-          totalStudents: overview.totalStudents || 0,
-          totalUsers: overview.totalUsers || 0,
-          activeSubscriptions: overview.activeSubscriptions || 0,
-          totalRevenue: overview.totalRevenue || 0,
-          totalConferences: overview.totalConferences || 0,
-        })
-        setApiRevenue(overview.totalRevenue || 0)
-
-        // Map recent signups as users list
-        const signups = data.recentSignups || []
-        if (signups.length > 0) {
-          setApiUsers(signups.map((u: Record<string, unknown>) => ({
-            id: String(u.id || ''),
-            name: String(u.name || ''),
-            email: String(u.email || ''),
-            role: String(u.role || 'STUDENT'),
-            school: u.school?.name || String(u.schoolName || ''),
-            status: 'Active',
-            subscription: 'Free',
-            lastLogin: u.createdAt ? new Date(u.createdAt as string).toLocaleDateString() : 'Unknown',
-          })))
-        }
-
-        // Subscription breakdown
-        setApiSubscriptionBreakdown(data.subscriptionBreakdown || [])
-      }
-
-      if (schoolsRes.status === 'fulfilled' && schoolsRes.value.ok) {
-        const raw = await schoolsRes.value.json()
-        const schoolList = raw.schools || (Array.isArray(raw) ? raw : raw.schools || [])
-        if (schoolList.length > 0) {
-          setApiSchools(schoolList.map((s: Record<string, unknown>) => ({
-            id: String(s.id || ''),
-            name: String(s.name || ''),
-            city: String(s.city || ''),
-            country: String(s.country || ''),
-            type: String(s.schoolType || 'International'),
-            verified: Boolean(s.isVerified),
-            students: Number(s.studentCount || (s._count?.users) || 0),
-            teachers: 0,
-            status: s.isVerified ? 'Active' : (s.verificationStatus === 'PENDING' ? 'Pending' : 'Active'),
-            featured: Boolean(s.isFeatured),
-          })))
-        }
-      }
-
-      if (auditRes.status === 'fulfilled' && auditRes.value.ok) {
-        const raw = await auditRes.value.json()
-        const logs = raw.data || (Array.isArray(raw) ? raw : [])
-        setApiAuditLogs(logs.map((l: Record<string, unknown>) => ({
-          id: String(l.id || ''),
-          action: String(l.action || ''),
-          user: l.user?.name || String(l.user || ''),
-          target: String(l.resourceId || l.details || ''),
-          timestamp: l.createdAt ? new Date(l.createdAt as string).toLocaleString() : '',
-          ip: String(l.ipAddress || 'N/A'),
-          severity: l.action?.toString().includes('DELETE') || l.action?.toString().includes('SUSPEND') ? 'warning' :
-                    l.action?.toString().includes('LOGIN_FAILED') ? 'critical' : 'info',
-        })))
-      }
-
-      // Fetch teachers from analytics
-      try {
-        const analyticsRes = await fetch('/api/analytics')
-        if (analyticsRes.ok) {
-          const raw = await analyticsRes.json()
-          const data = raw.data || raw
-          // Map top performers as student data
-          if (data.topPerformers && Array.isArray(data.topPerformers)) {
-            setApiStudents(data.topPerformers.map((p: Record<string, unknown>) => ({
-              id: String(p.user?.id || p.id || ''),
-              name: String(p.user?.name || p.name || ''),
-              email: String(p.user?.email || ''),
-              school: String(p.user?.school || ''),
-              xpLevel: String(p.level || 'Delegate'),
-              tier: 'Free',
-              coursesCompleted: 0,
-              assessmentScore: 0,
-            })))
-          }
-          // Recent activities can indicate teachers
-          if (data.recentActivities) {
-            const teacherActivities = (data.recentActivities as Record<string, unknown>[]).filter((a: Record<string, unknown>) => a.type === 'COURSE_COMPLETED' || a.type === 'XP_EARNED')
-            if (teacherActivities.length > 0) {
-              setApiTeachers(teacherActivities.slice(0, 10).map((a: Record<string, unknown>, i: number) => ({
-                id: String(a.userId || i),
-                name: String(a.user?.name || 'Teacher'),
-                email: String(a.user?.email || ''),
-                school: String(a.user?.school || ''),
-                students: 0,
-                conferences: 0,
-                activityScore: Math.min(100, (i + 1) * 15),
-                status: 'Active',
-              })))
-            }
-          }
-        }
-      } catch {
-        // analytics non-critical
-      }
-    } catch {
-      setError('Failed to load admin data.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   useEffect(() => {
-    fetchData()
+    const fetchAdminData = async () => {
+      try {
+        const res = await fetch('/api/admin')
+        if (res.ok) {
+          const data = await res.json()
+          setOverview(data.data?.overview || null)
+          setSubscriptionBreakdown(data.data?.subscriptionBreakdown || [])
+        }
+      } catch (err) {
+        console.error('Failed to fetch admin data:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchAdminData()
   }, [])
 
-  const users = apiUsers
-  const schools = apiSchools
-
   return (
-    <div className="min-h-screen bg-[#0D1B2A] -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8">
-      {/* Admin Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-xl bg-[#D4A843]/20 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-[#D4A843]" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Command Center</h1>
-                <p className="text-xs text-slate-400">DiplomatiQ Platform Administration</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {error && <span className="text-xs text-amber-400">{error}</span>}
-            <Badge className="text-xs px-3 py-1 bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
-              {loading ? 'Loading...' : 'Live Data'}
-            </Badge>
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1B3A4B] flex items-center gap-2">
+            <Crown className="w-6 h-6 text-[#D4A843]" />
+            Command Center
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">Master Administrator — Full platform control</p>
         </div>
-      </motion.div>
+        <Button variant="outline" onClick={() => window.location.reload()} className="text-[#1B3A4B] border-[#1B3A4B]/20">
+          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+        </Button>
+      </div>
 
-      {/* Tabs Navigation */}
+      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-[#1B2A4A] border border-white/10 h-auto p-1 flex-wrap">
-          <TabsTrigger
-            value="overview"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <Activity className="w-3.5 h-3.5 mr-1.5" />
-            Overview
+        <TabsList className="bg-[#1B3A4B]/5 border border-[#1B3A4B]/10">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Overview</TabsTrigger>
+          <TabsTrigger value="subscriptions" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Subscriptions</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Users</TabsTrigger>
+          <TabsTrigger value="passwords" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">
+            Password Resets
           </TabsTrigger>
-          <TabsTrigger
-            value="financial"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <DollarSign className="w-3.5 h-3.5 mr-1.5" />
-            Financial
-          </TabsTrigger>
-          <TabsTrigger
-            value="users"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <Users className="w-3.5 h-3.5 mr-1.5" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger
-            value="schools"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <Building2 className="w-3.5 h-3.5 mr-1.5" />
-            Schools
-          </TabsTrigger>
-          <TabsTrigger
-            value="teachers"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <GraduationCap className="w-3.5 h-3.5 mr-1.5" />
-            Teachers
-          </TabsTrigger>
-          <TabsTrigger
-            value="students"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <Users className="w-3.5 h-3.5 mr-1.5" />
-            Students
-          </TabsTrigger>
-          <TabsTrigger
-            value="support"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <FileWarning className="w-3.5 h-3.5 mr-1.5" />
-            Support
-          </TabsTrigger>
-          <TabsTrigger
-            value="security"
-            className="data-[state=active]:bg-[#0A7E8C] data-[state=active]:text-white text-slate-400 text-xs px-3 py-1.5"
-          >
-            <Shield className="w-3.5 h-3.5 mr-1.5" />
-            Security
-          </TabsTrigger>
+          <TabsTrigger value="schools" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Schools</TabsTrigger>
+          <TabsTrigger value="audit" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Audit Logs</TabsTrigger>
         </TabsList>
 
-        <div className="mt-4">
-          <TabsContent value="overview">
-            <PlatformOverview overview={apiOverview} />
-          </TabsContent>
+        <TabsContent value="overview" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
+            <PlatformOverview overview={overview} isLoading={isLoading} />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="financial">
-            <FinancialDashboard revenue={apiRevenue} subscriptionBreakdown={apiSubscriptionBreakdown} />
-          </TabsContent>
+        <TabsContent value="subscriptions" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
+            <SubscriptionOverview breakdown={subscriptionBreakdown} />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="users">
-            <UserManagement users={users} />
-          </TabsContent>
+        <TabsContent value="users" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
+            <UserManagement />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="schools">
-            <SchoolManagement schools={schools} />
-          </TabsContent>
+        <TabsContent value="passwords" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
+            <PasswordResetRequests />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="teachers">
-            <TeacherManagement teachers={apiTeachers} />
-          </TabsContent>
+        <TabsContent value="schools" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
+            <SchoolManagement />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="students">
-            <StudentManagement students={apiStudents} />
-          </TabsContent>
-
-          <TabsContent value="support">
-            <SupportRecovery auditLogs={apiAuditLogs} />
-          </TabsContent>
-
-          <TabsContent value="security">
-            <SecurityCenter auditLogs={apiAuditLogs} />
-          </TabsContent>
-        </div>
+        <TabsContent value="audit" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
+            <AuditLogs />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   )
