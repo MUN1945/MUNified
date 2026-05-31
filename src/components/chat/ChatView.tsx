@@ -323,7 +323,7 @@ function MessageBubble({ message, showHeader }: { message: ChatMessage; showHead
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-center py-2"
       >
-        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-[#F5F0EB] px-3 py-1.5 rounded-full">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-[#F0EDEA] px-3 py-1.5 rounded-full">
           <span className="w-1.5 h-1.5 rounded-full bg-[#0D7377]" />
           {message.content}
         </div>
@@ -337,7 +337,7 @@ function MessageBubble({ message, showHeader }: { message: ChatMessage; showHead
     <motion.div
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`group flex items-start gap-3 px-4 py-1 hover:bg-[#F5F0EB]/50 transition-colors ${showHeader ? 'mt-3' : ''} ${isBot ? 'bg-[#0D7377]/[0.03]' : ''}`}
+      className={`group flex items-start gap-3 px-4 py-1 hover:bg-[#F0EDEA]/50 transition-colors ${showHeader ? 'mt-3' : ''} ${isBot ? 'bg-[#0D7377]/[0.03]' : ''}`}
     >
       {showHeader ? (
         <Avatar className="w-9 h-9 mt-0.5 shrink-0">
@@ -383,7 +383,7 @@ function MessageBubble({ message, showHeader }: { message: ChatMessage; showHead
       </div>
       {/* Hover actions */}
       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 self-center">
-        <button className="p-1 rounded hover:bg-[#E8DED0] text-muted-foreground"><MoreHorizontal className="w-3.5 h-3.5" /></button>
+        <button className="p-1 rounded hover:bg-[#E8E4E0] text-muted-foreground"><MoreHorizontal className="w-3.5 h-3.5" /></button>
       </div>
     </motion.div>
   )
@@ -425,7 +425,7 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
   const students = users.filter((u) => u.role === 'STUDENT' && !u.isBot)
 
   const UserRow = ({ user }: { user: ChatUser }) => (
-    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/50 transition-colors group">
+    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/60 transition-colors group">
       <div className="relative shrink-0">
         <Avatar className="w-7 h-7">
           <AvatarFallback
@@ -441,7 +441,7 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
         </Avatar>
         {!user.isBot && (
           <span
-            className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#FFF8F0]"
+            className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#F8F6F3]"
             style={{ backgroundColor: STATUS_COLORS[user.status] }}
           />
         )}
@@ -461,8 +461,8 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
   )
 
   return (
-    <div className="flex flex-col h-full bg-[#FFF8F0] border-l border-[#E8DED0]">
-      <div className="px-4 py-3 border-b border-[#E8DED0] flex items-center justify-between">
+    <div className="flex flex-col h-full bg-[#F8F6F3] border-l border-[#1B3A4B]/10">
+      <div className="px-4 py-3 border-b border-[#1B3A4B]/10 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-[#1B3A4B]">Members</h3>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Users className="w-3.5 h-3.5" />
@@ -613,7 +613,7 @@ function MessageInput({
   const hasAIMention = message.toLowerCase().includes('@diplomatiq guru') || message.toLowerCase().includes('@diplomatiq')
 
   return (
-    <div className="border-t border-[#E8DED0] bg-white p-3">
+    <div className="border-t border-[#1B3A4B]/10 bg-[#F8F6F3] p-3">
       {/* AI Assistant Ask Button (committee channels only) */}
       {isCommitteeChannel && (
         <div className="mb-2">
@@ -623,7 +623,7 @@ function MessageInput({
             className={`w-full gap-2 text-xs transition-all ${
               hasAIMention
                 ? 'border-[#0D7377] bg-[#0D7377]/5 text-[#0D7377]'
-                : 'border-[#E8DED0] text-muted-foreground hover:border-[#0D7377]/40 hover:text-[#0D7377]'
+                : 'border-[#1B3A4B]/15 text-muted-foreground hover:border-[#0D7377]/40 hover:text-[#0D7377]'
             }`}
             onClick={handleAskAI}
             disabled={!message.trim() || isAILoading}
@@ -691,7 +691,7 @@ function MessageInput({
           onKeyDown={handleKeyDown}
           placeholder={`Message #${channelName}${isCommitteeChannel ? ' (type @DiplomatiQ Guru to ask AI)' : ''}...`}
           rows={1}
-          className="w-full resize-none rounded-lg border border-[#E8DED0] bg-[#FFF8F0] px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D7377]/40 focus:ring-2 focus:ring-[#0D7377]/10 placeholder:text-muted-foreground/50 min-h-[42px] max-h-[120px]"
+          className="w-full resize-none rounded-lg border border-[#1B3A4B]/15 bg-white px-4 py-2.5 text-sm focus:outline-none focus:border-[#0D7377]/40 focus:ring-2 focus:ring-[#0D7377]/10 placeholder:text-muted-foreground/50 min-h-[42px] max-h-[120px]"
           style={{ overflow: 'auto' }}
         />
         <div className="flex items-center justify-between mt-1.5">
@@ -970,7 +970,7 @@ export default function ChatView() {
   if (!currentChannel) {
     if (loading) {
       return (
-        <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
+        <div className="flex items-center justify-center h-full bg-[#F8F6F3]">
           <div className="text-center py-20 px-6">
             <div className="w-16 h-16 rounded-2xl bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
               <MessageSquare className="w-8 h-8 text-[#0D7377]" />
@@ -984,7 +984,7 @@ export default function ChatView() {
       )
     }
     return (
-      <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
+      <div className="flex items-center justify-center h-full bg-[#F8F6F3]">
         <div className="text-center py-20 px-6">
           <div className="w-16 h-16 rounded-2xl bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-4">
             <MessageSquare className="w-8 h-8 text-[#0D7377]" />
@@ -999,7 +999,7 @@ export default function ChatView() {
   }
 
   return (
-    <div className="flex h-full rounded-xl overflow-hidden border border-[#E8DED0] shadow-sm">
+    <div className="flex h-full overflow-hidden">
       {/* Desktop Channel Sidebar */}
       {!isMobile && (
         <div className="w-60 shrink-0">{channelSidebarContent}</div>
@@ -1018,9 +1018,9 @@ export default function ChatView() {
       )}
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#FAFAF8]">
         {/* Channel Header */}
-        <div className="h-12 border-b border-[#E8DED0] flex items-center justify-between px-4 shrink-0 bg-white">
+        <div className="h-12 border-b border-[#1B3A4B]/10 flex items-center justify-between px-4 shrink-0 bg-[#F8F6F3]">
           <div className="flex items-center gap-2 min-w-0">
             {isMobile && (
               <Button
@@ -1105,7 +1105,7 @@ export default function ChatView() {
         <ScrollArea className="flex-1">
           <div className="py-4">
             {/* Channel Welcome */}
-            <div className="px-4 py-6 text-center border-b border-[#E8DED0]/50 mb-4">
+            <div className="px-4 py-6 text-center border-b border-[#1B3A4B]/10 mb-4">
               <div className="w-14 h-14 rounded-full bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-3">
                 <ChannelIcon type={currentChannel.type} className="w-7 h-7 text-[#0D7377]" />
               </div>
@@ -1124,11 +1124,11 @@ export default function ChatView() {
               <React.Fragment key={message.id}>
                 {shouldShowDateSeparator(channelMessages, channelMessages.indexOf(message)) && (
                   <div className="flex items-center gap-4 px-4 my-4">
-                    <div className="flex-1 h-px bg-[#E8DED0]" />
+                    <div className="flex-1 h-px bg-[#1B3A4B]/10" />
                     <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                       {formatDateSeparator(message.timestamp)}
                     </span>
-                    <div className="flex-1 h-px bg-[#E8DED0]" />
+                    <div className="flex-1 h-px bg-[#1B3A4B]/10" />
                   </div>
                 )}
                 <MessageBubble message={message} showHeader={showHeader} />
