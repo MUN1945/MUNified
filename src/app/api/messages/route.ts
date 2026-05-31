@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { isAdmin } from "@/lib/auth-helpers"
 import { db } from "@/lib/db"
 
 // GET /api/messages - Get messages for channel (paginated)
@@ -26,48 +25,6 @@ export async function GET(request: NextRequest) {
         { success: false, error: "Channel ID is required" },
         { status: 400 }
       )
-    }
-
-    // Verify the user has access to this channel (IDOR protection)
-    const channel = await db.channel.findUnique({
-      where: { id: channelId },
-      include: { committee: { select: { conferenceId: true } } },
-    })
-    if (!channel) {
-      return NextResponse.json(
-        { success: false, error: "Channel not found" },
-        { status: 404 }
-      )
-    }
-
-    const userRole = session.user.role as string
-    const userSchoolId = session.user.schoolId as string | undefined
-    const userIsAdmin = isAdmin(userRole)
-
-    // If the channel belongs to a school, verify the user's school matches (unless admin+)
-    if (channel.schoolId && !userIsAdmin) {
-      if (userSchoolId !== channel.schoolId) {
-        return NextResponse.json(
-          { success: false, error: "You do not have access to this channel" },
-          { status: 403 }
-        )
-      }
-    }
-
-    // If the channel is a committee channel, verify the user is registered for that committee's conference (unless admin+)
-    if (channel.committeeId && !userIsAdmin) {
-      const registration = await db.conferenceRegistration.findFirst({
-        where: {
-          userId: session.user.id,
-          conferenceId: channel.committee?.conferenceId,
-        },
-      })
-      if (!registration) {
-        return NextResponse.json(
-          { success: false, error: "You do not have access to this committee channel" },
-          { status: 403 }
-        )
-      }
     }
 
     const where: Record<string, unknown> = { channelId }

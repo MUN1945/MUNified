@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getUserSubscriptionAccess, canAccessCourse } from "@/lib/subscription"
 
 // GET /api/enrollments - Get user enrollments
 export async function GET() {
@@ -25,9 +24,6 @@ export async function GET() {
               orderBy: { order: "asc" },
             },
           },
-        },
-        lessonCompletions: {
-          select: { lessonId: true, completedAt: true },
         },
       },
       orderBy: { enrolledAt: "desc" },
@@ -73,22 +69,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Course not found or not available" },
         { status: 404 }
-      )
-    }
-
-    // Check subscription access for this course
-    const access = await getUserSubscriptionAccess(session.user.id)
-    const courseOrder = course.order ?? 0
-    const courseAccess = canAccessCourse(access, courseOrder)
-
-    if (!courseAccess.allowed) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: courseAccess.reason || "This course requires a paid subscription",
-          code: "SUBSCRIPTION_REQUIRED",
-        },
-        { status: 403 }
       )
     }
 

@@ -32,18 +32,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    if (!/[A-Z]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one uppercase letter" },
-        { status: 400 }
-      )
-    }
-    if (!/[0-9]/.test(password)) {
-      return NextResponse.json(
-        { error: "Password must contain at least one number" },
-        { status: 400 }
-      )
-    }
 
     const normalizedEmail = email.toLowerCase().trim()
 
@@ -125,13 +113,13 @@ export async function POST(request: NextRequest) {
             speechesDelivered: 0,
           },
         },
-        // Create trial subscription — teachers get DIRECTOR_PRO trial, students get FREE trial
+        // Create trial subscription
         subscription: {
           create: {
-            tier: userRole === "TEACHER" ? "DIRECTOR_PRO" : "FREE",
+            tier: "FREE",
             status: "TRIAL",
             trialStartsAt: new Date(),
-            trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24-hour trial
+            trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24-hour trial with restricted access (basic courses, limited assessments only)
           },
         },
       },
@@ -167,7 +155,9 @@ export async function POST(request: NextRequest) {
         ])
         console.log(`[REGISTER] Verification + welcome emails sent to ${normalizedEmail}`)
       } catch (emailError) {
-        console.error("[REGISTER] Failed to send verification email for ${normalizedEmail}. Admin can manually verify from Command Center.")
+        console.error("[REGISTER] Failed to send emails:", emailError)
+        // Log the verification URL so it can be used manually if email fails
+        console.log(`[REGISTER] Manual verification link for ${normalizedEmail}: ${verificationUrl}`)
       }
     })()
 

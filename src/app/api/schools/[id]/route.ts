@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { isAdmin, isSuperAdminOrAbove } from '@/lib/auth-helpers'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 
@@ -54,15 +51,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Require at least ADMIN role
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-    if (!isAdmin(session.user.role as string)) {
-      return NextResponse.json({ error: 'Insufficient permissions. Admin role required.' }, { status: 403 })
-    }
-
     const { id } = await params
 
     // Check school exists
@@ -171,15 +159,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Require at least SUPER_ADMIN role
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-    if (!isSuperAdminOrAbove(session.user.role as string)) {
-      return NextResponse.json({ error: 'Insufficient permissions. Super Admin role required.' }, { status: 403 })
-    }
-
     const { id } = await params
 
     // Check school exists

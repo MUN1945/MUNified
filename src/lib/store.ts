@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { signOut } from 'next-auth/react'
-import { XP_LEVELS as CANONICAL_XP_LEVELS } from '@/lib/xp-levels'
 
 // ============================================================
 // TYPES
@@ -151,25 +150,17 @@ export interface LeaderboardEntry {
 }
 
 // ============================================================
-// XP LEVELS CONFIG — Thresholds from canonical source, colors added for UI
+// XP LEVELS CONFIG
 // ============================================================
 
-const XP_LEVEL_COLORS: Record<string, string> = {
-  OBSERVER: '#94A3B8',
-  DELEGATE: '#0D7377',
-  AMBASSADOR: '#D4A843',
-  DIPLOMAT: '#059669',
-  ENVOY: '#A78BFA',
-  SECRETARY_GENERAL: '#F59E0B',
-}
-
-export const XP_LEVELS: { name: XPLevel; minXP: number; color: string }[] = Object.entries(CANONICAL_XP_LEVELS).map(
-  ([name, minXP]) => ({
-    name: name as XPLevel,
-    minXP,
-    color: XP_LEVEL_COLORS[name] || '#94A3B8',
-  })
-)
+export const XP_LEVELS: { name: XPLevel; minXP: number; color: string }[] = [
+  { name: 'OBSERVER', minXP: 0, color: '#94A3B8' },
+  { name: 'DELEGATE', minXP: 500, color: '#0D7377' },
+  { name: 'AMBASSADOR', minXP: 2000, color: '#D4A843' },
+  { name: 'DIPLOMAT', minXP: 5000, color: '#059669' },
+  { name: 'ENVOY', minXP: 10000, color: '#A78BFA' },
+  { name: 'SECRETARY_GENERAL', minXP: 20000, color: '#F59E0B' },
+]
 
 export function getCurrentLevel(xp: number): { name: XPLevel; minXP: number; color: string } {
   let level = XP_LEVELS[0]

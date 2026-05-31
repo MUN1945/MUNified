@@ -29,7 +29,7 @@ export async function DELETE(request: NextRequest) {
 
     // Prevent deletion of master admin accounts
     const userRole = session.user.role
-    if (userRole === 'MASTER_ADMIN' || userRole === 'FOUNDER' || userRole === 'SUPER_ADMIN') {
+    if (userRole === 'FOUNDER' || userRole === 'SUPER_ADMIN') {
       return NextResponse.json(
         { error: "Master administrator accounts cannot be deleted. Please contact support if you need assistance." },
         { status: 403 }

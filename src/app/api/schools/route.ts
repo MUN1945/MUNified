@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { isAdmin } from '@/lib/auth-helpers'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
 
@@ -116,15 +113,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Require at least ADMIN role for school creation
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
-    }
-    if (!isAdmin(session.user.role as string)) {
-      return NextResponse.json({ error: 'Insufficient permissions. Admin role required.' }, { status: 403 })
-    }
-
     const body = await request.json()
     const {
       name,

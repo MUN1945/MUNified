@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       } catch (emailError) {
         console.error("[PASSWORD RESET] Failed to send email:", emailError)
       }
-      console.log(`[PASSWORD RESET] Reset link generated for ${normalizedEmail}`)
+      console.log(`[PASSWORD RESET] Reset link generated for ${normalizedEmail}: ${resetUrl}`)
 
       // Also notify platform admins about the password reset request
       try {

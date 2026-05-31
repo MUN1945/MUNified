@@ -14,38 +14,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { useAuthStore, getCurrentLevel, getNextLevel, getXPProgress, type XPLevel } from '@/lib/store'
-import { XP_LEVELS as CANONICAL_XP_LEVELS } from '@/lib/xp-levels'
 
 // ============================================================
-// XP LEVEL CONFIG (thresholds from canonical source, colors & icons for UI)
+// XP LEVEL CONFIG (matching task spec thresholds)
 // ============================================================
 
-const LEVEL_COLORS: Record<string, string> = {
-  OBSERVER: '#94A3B8',
-  DELEGATE: '#0D7377',
-  AMBASSADOR: '#D4A843',
-  DIPLOMAT: '#059669',
-  ENVOY: '#A78BFA',
-  SECRETARY_GENERAL: '#F59E0B',
-}
-
-const LEVEL_ICONS: Record<string, React.ElementType> = {
-  OBSERVER: Users,
-  DELEGATE: Shield,
-  AMBASSADOR: Crown,
-  DIPLOMAT: Medal,
-  ENVOY: Globe,
-  SECRETARY_GENERAL: Trophy,
-}
-
-const LEVEL_CONFIG: { name: XPLevel; minXP: number; color: string; icon: React.ElementType }[] = Object.entries(CANONICAL_XP_LEVELS).map(
-  ([name, minXP]) => ({
-    name: name as XPLevel,
-    minXP,
-    color: LEVEL_COLORS[name] || '#94A3B8',
-    icon: LEVEL_ICONS[name] || Users,
-  })
-)
+const LEVEL_CONFIG: { name: XPLevel; minXP: number; color: string; icon: React.ElementType }[] = [
+  { name: 'OBSERVER', minXP: 0, color: '#94A3B8', icon: Users },
+  { name: 'DELEGATE', minXP: 100, color: '#0D7377', icon: Shield },
+  { name: 'AMBASSADOR', minXP: 500, color: '#D4A843', icon: Crown },
+  { name: 'DIPLOMAT', minXP: 1000, color: '#059669', icon: Medal },
+  { name: 'ENVOY', minXP: 2500, color: '#A78BFA', icon: Globe },
+  { name: 'SECRETARY_GENERAL', minXP: 5000, color: '#F59E0B', icon: Trophy },
+]
 
 function getLevelForXP(xp: number) {
   let level = LEVEL_CONFIG[0]

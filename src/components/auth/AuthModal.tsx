@@ -47,8 +47,8 @@ export default function AuthModal() {
       setLocalError('Please fill in all required fields')
       return
     }
-    if (password.length < 8) {
-      setLocalError('Password must be at least 8 characters')
+    if (password.length < 6) {
+      setLocalError('Password must be at least 6 characters')
       return
     }
     await register({ name, email, password, role: selectedRole, school, country })
@@ -216,7 +216,7 @@ export default function AuthModal() {
                       <div className="relative">
                         <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                         <Input
-                          placeholder="Min. 8 characters"
+                          placeholder="Min. 6 characters"
                           type={showPassword ? 'text' : 'password'}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}

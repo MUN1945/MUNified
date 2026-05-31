@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileSearch, Upload, FileText, AlertTriangle, CheckCircle2, XCircle,
@@ -395,9 +395,12 @@ function StudentView() {
   const [showFullReport, setShowFullReport] = useState(false)
   const [isDragOver, setIsDragOver] = useState(false)
 
+  const [evalError, setEvalError] = useState<string | null>(null)
+
   const handleEvaluate = async () => {
     if (!paperText.trim()) return
     setIsEvaluating(true)
+    setEvalError(null)
     try {
       const res = await fetch('/api/research/evaluate', {
         method: 'POST',
@@ -408,12 +411,11 @@ function StudentView() {
         const data = await res.json()
         setEvaluation(data.evaluation)
       } else {
-        // Fallback to default evaluation
-        setEvaluation(DEFAULT_EVALUATION)
+        const errData = await res.json().catch(() => null)
+        setEvalError(errData?.error || `Evaluation failed (status ${res.status}). Please try again.`)
       }
     } catch {
-      // Fallback to default evaluation on error
-      setEvaluation(DEFAULT_EVALUATION)
+      setEvalError('Network error — please check your connection and try again.')
     }
     setIsEvaluating(false)
   }
@@ -878,6 +880,17 @@ function StudentView() {
                 </div>
               </div>
 
+              {/* Error Message */}
+              {evalError && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
+                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium text-red-800">Evaluation Failed</div>
+                    <div className="text-xs text-red-600/80 mt-0.5">{evalError}</div>
+                  </div>
+                </div>
+              )}
+
               {/* Submit Button */}
               <Button
                 onClick={handleEvaluate}
@@ -939,15 +952,70 @@ function StudentView() {
 // ============================================================
 
 function TeacherView() {
-  const [submissions] = useState<Submission[]>(INITIAL_SUBMISSIONS)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(true)
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null)
   const [teacherComment, setTeacherComment] = useState('')
   const [teacherRating, setTeacherRating] = useState(0)
   const [activeTab, setActiveTab] = useState('queue')
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Fetch real papers from the API
+  useEffect(() => {
+    const fetchPapers = async () => {
+      try {
+        const res = await fetch('/api/research?type=paper')
+        if (res.ok) {
+          const data = await res.json()
+          const rawPapers = Array.isArray(data) ? data : (data.data || [])
+          const mapped: Submission[] = rawPapers.map((p: Record<string, unknown>) => {
+            const evalData = p.evaluation as Record<string, unknown> | undefined
+            const aiDet = evalData?.aiDetection as { aiContentPercentage?: number; confidence?: number; flaggedSections?: string[] } | undefined
+            return {
+              id: String(p.id || ''),
+              studentName: String((p.student as Record<string, unknown>)?.name || 'Unknown'),
+              studentInitials: String((p.student as Record<string, unknown>)?.name || 'U').split(' ').map((n: string) => n[0]).join(''),
+              paperTitle: String(p.title || 'Untitled'),
+              score: Number(evalData?.overallScore || 0),
+              aiPercentage: Number(aiDet?.aiContentPercentage || 0),
+              status: (p.status === 'EVALUATED' ? 'reviewed' : p.status === 'RETURNED' ? 'returned' : 'pending') as Submission['status'],
+              date: String(p.evaluatedAt || p.submittedAt || p.createdAt || new Date().toISOString()).split('T')[0],
+              evaluation: evalData ? {
+                overallScore: Number(evalData.overallScore || 0),
+                strengths: Array.isArray(evalData.strengths) ? evalData.strengths as string[] : [],
+                weaknesses: Array.isArray(evalData.weaknesses) ? evalData.weaknesses as string[] : [],
+                recommendations: Array.isArray(evalData.recommendations) ? evalData.recommendations as string[] : [],
+                citationQuality: (evalData.citationQuality || { score: 0, analysis: '' }) as EvaluationResult['citationQuality'],
+                researchDepth: (evalData.researchDepth || { score: 0, analysis: '' }) as EvaluationResult['researchDepth'],
+                writingQuality: (evalData.writingQuality || { score: 0, analysis: '' }) as EvaluationResult['writingQuality'],
+                diplomacyRelevance: (evalData.diplomacyRelevance || { score: 0, analysis: '' }) as EvaluationResult['diplomacyRelevance'],
+                argumentQuality: (evalData.argumentQuality || { score: 0, analysis: '' }) as EvaluationResult['argumentQuality'],
+                analyticalThinking: (evalData.analyticalThinking || { score: 0, analysis: '' }) as EvaluationResult['analyticalThinking'],
+                aiDetection: (evalData.aiDetection || { aiContentPercentage: 0, confidence: 0, flaggedSections: [] }) as EvaluationResult['aiDetection'],
+                originalityScore: Number(evalData.originalityScore || 0),
+                authenticityScore: Number(evalData.authenticityScore || 0),
+                improvementRoadmap: (evalData.improvementRoadmap || { shortTerm: [], mediumTerm: [], longTerm: [] }) as EvaluationResult['improvementRoadmap'],
+              } : DEFAULT_EVALUATION,
+            }
+          })
+          setSubmissions(mapped.length > 0 ? mapped : INITIAL_SUBMISSIONS)
+        } else {
+          // API not available, use mock data as fallback
+          setSubmissions(INITIAL_SUBMISSIONS)
+        }
+      } catch {
+        // Network error, use mock data
+        setSubmissions(INITIAL_SUBMISSIONS)
+      } finally {
+        setIsLoadingSubmissions(false)
+      }
+    }
+    fetchPapers()
+  }, [])
 
   // Class Overview Stats
-  const avgScore = Math.round(submissions.reduce((a, s) => a + s.score, 0) / submissions.length)
-  const avgAI = Math.round(submissions.reduce((a, s) => a + s.aiPercentage, 0) / submissions.length)
+  const avgScore = submissions.length > 0 ? Math.round(submissions.reduce((a, s) => a + s.score, 0) / submissions.length) : 0
+  const avgAI = submissions.length > 0 ? Math.round(submissions.reduce((a, s) => a + s.aiPercentage, 0) / submissions.length) : 0
   const studentsNeedingAttention = submissions.filter(s => s.score < 50 || s.aiPercentage > AI_THRESHOLD)
 
   const scoreDistribution = [
@@ -973,6 +1041,22 @@ function TeacherView() {
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {isLoadingSubmissions && (
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center gap-3 text-[#0D7377]">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              className="w-5 h-5 border-2 border-[#0D7377]/30 border-t-[#0D7377] rounded-full"
+            />
+            <span className="text-sm font-medium">Loading submissions...</span>
+          </div>
+        </div>
+      )}
+
+      {!isLoadingSubmissions && (
+        <>
       {/* Section label */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -1383,21 +1467,77 @@ function TeacherView() {
                 <Button
                   variant="outline"
                   className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                  onClick={() => setSelectedSubmission(null)}
+                  disabled={isSaving}
+                  onClick={async () => {
+                    if (!selectedSubmission) return
+                    setIsSaving(true)
+                    try {
+                      // Save teacher feedback to the database
+                      await fetch('/api/research', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          type: 'paper',
+                          id: selectedSubmission.id,
+                          status: 'RETURNED',
+                          teacherComment,
+                          teacherRating,
+                        }),
+                      })
+                      // Update local state
+                      setSubmissions(prev => prev.map(s =>
+                        s.id === selectedSubmission.id
+                          ? { ...s, status: 'returned' as const, teacherComment, teacherRating }
+                          : s
+                      ))
+                    } catch {
+                      // silently fail
+                    }
+                    setIsSaving(false)
+                    setSelectedSubmission(null)
+                  }}
                 >
-                  <RotateCcw className="w-4 h-4 mr-2" /> Return to Student
+                  <RotateCcw className="w-4 h-4 mr-2" /> {isSaving ? 'Saving...' : 'Return to Student'}
                 </Button>
                 <Button
                   className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white"
-                  onClick={() => setSelectedSubmission(null)}
+                  disabled={isSaving}
+                  onClick={async () => {
+                    if (!selectedSubmission) return
+                    setIsSaving(true)
+                    try {
+                      await fetch('/api/research', {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          type: 'paper',
+                          id: selectedSubmission.id,
+                          status: 'EVALUATED',
+                          teacherComment,
+                          teacherRating,
+                        }),
+                      })
+                      setSubmissions(prev => prev.map(s =>
+                        s.id === selectedSubmission.id
+                          ? { ...s, status: 'reviewed' as const, teacherComment, teacherRating }
+                          : s
+                      ))
+                    } catch {
+                      // silently fail
+                    }
+                    setIsSaving(false)
+                    setSelectedSubmission(null)
+                  }}
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" /> Approve
+                  <CheckCircle2 className="w-4 h-4 mr-2" /> {isSaving ? 'Saving...' : 'Approve'}
                 </Button>
               </DialogFooter>
             </>
           )}
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   )
 }
@@ -1408,7 +1548,7 @@ function TeacherView() {
 
 export default function ResearchPaperEvaluation() {
   const { user } = useAuthStore()
-  const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN' || user?.role === 'SCHOOL_ADMIN'
+  const isTeacher = user?.role ? ['TEACHER', 'ADMIN', 'SCHOOL_ADMIN', 'SUPER_ADMIN', 'FOUNDER', 'MASTER_ADMIN'].includes(user.role) : false
 
   return isTeacher ? <TeacherView /> : <StudentView />
 }

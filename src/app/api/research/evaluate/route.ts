@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getUserSubscriptionAccess } from '@/lib/subscription'
+import { db } from '@/lib/db'
 import ZAI from 'z-ai-web-dev-sdk'
 
 export async function POST(request: NextRequest) {
@@ -10,17 +10,8 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Authentication required.' },
+        { error: 'Authentication required' },
         { status: 401 }
-      )
-    }
-
-    // Check subscription access for AI evaluation
-    const access = await getUserSubscriptionAccess(session.user.id)
-    if (!access.features.canUseAIEvaluation) {
-      return NextResponse.json(
-        { error: 'AI evaluation requires a paid subscription. Please upgrade to access this feature.' },
-        { status: 403 }
       )
     }
 
@@ -30,6 +21,13 @@ export async function POST(request: NextRequest) {
     if (!content || typeof content !== 'string' || content.trim().length < 50) {
       return NextResponse.json(
         { error: 'Paper content must be at least 50 characters long.' },
+        { status: 400 }
+      )
+    }
+
+    if (content.length > 50000) {
+      return NextResponse.json(
+        { error: 'Paper content cannot exceed 50,000 characters.' },
         { status: 400 }
       )
     }
@@ -77,6 +75,7 @@ Return ONLY valid JSON, no markdown or extra text.`,
         },
       ],
       temperature: 0.3,
+      max_tokens: 2000,
     })
 
     // Extract the JSON from the response
@@ -92,7 +91,7 @@ Return ONLY valid JSON, no markdown or extra text.`,
     } catch {
       // If parsing fails, return a structured error
       return NextResponse.json(
-        { error: 'Failed to parse AI evaluation response.' },
+        { error: 'Failed to parse AI evaluation response. Please try again.' },
         { status: 500 }
       )
     }
@@ -109,6 +108,43 @@ Return ONLY valid JSON, no markdown or extra text.`,
         { error: `AI evaluation missing fields: ${missingFields.join(', ')}` },
         { status: 500 }
       )
+    }
+
+    // Save the paper and evaluation to the database
+    try {
+      const paper = await db.researchPaper.create({
+        data: {
+          studentId: session.user.id,
+          title: title || 'Untitled Research Paper',
+          content: content,
+          status: 'EVALUATED',
+          submittedAt: new Date(),
+          evaluatedAt: new Date(),
+        },
+      })
+
+      await db.paperEvaluation.create({
+        data: {
+          paperId: paper.id,
+          overallScore: evaluation.overallScore,
+          strengths: evaluation.strengths,
+          weaknesses: evaluation.weaknesses,
+          recommendations: evaluation.recommendations,
+          citationQuality: evaluation.citationQuality,
+          researchDepth: evaluation.researchDepth,
+          writingQuality: evaluation.writingQuality,
+          diplomacyRelevance: evaluation.diplomacyRelevance,
+          argumentQuality: evaluation.argumentQuality,
+          analyticalThinking: evaluation.analyticalThinking,
+          aiDetection: evaluation.aiDetection,
+          originalityScore: evaluation.originalityScore,
+          authenticityScore: evaluation.authenticityScore,
+          improvementRoadmap: evaluation.improvementRoadmap,
+        },
+      })
+    } catch (dbError) {
+      console.error('Failed to save evaluation to database:', dbError)
+      // Don't fail the request — the evaluation is still valid even if DB save fails
     }
 
     return NextResponse.json({ evaluation })

@@ -6,10 +6,6 @@ import { compare, hash } from "bcryptjs"
 import { db } from "@/lib/db"
 import { randomUUID } from "crypto"
 
-// Determine if we're in a local development environment
-// This affects cookie security settings — Secure cookies won't work over HTTP
-const isLocalDev = process.env.NODE_ENV === "development"
-
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -29,55 +25,31 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        // Normalize email to prevent case-sensitivity login failures
-        const normalizedEmail = credentials.email.toLowerCase().trim()
+        const user = await db.user.findUnique({
+          where: { email: credentials.email },
+          include: { subscription: true, delegateProfile: true, school: true },
+        })
 
-        try {
-          const user = await db.user.findUnique({
-            where: { email: normalizedEmail },
-            include: { subscription: true, delegateProfile: true, school: true },
-          })
+        if (!user || !user.isActive) return null
 
-          if (!user) {
-            console.warn(`[AUTH] Login failed: no user found for email "${normalizedEmail}"`)
-            return null
-          }
+        const isValid = await compare(credentials.password, user.password)
+        if (!isValid) return null
 
-          if (!user.isActive) {
-            console.warn(`[AUTH] Login failed: account is deactivated for email "${normalizedEmail}" (role: ${user.role})`)
-            return null
-          }
+        await db.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        })
 
-          const isValid = await compare(credentials.password, user.password)
-          if (!isValid) {
-            console.warn(`[AUTH] Login failed: incorrect password for email "${normalizedEmail}" (role: ${user.role})`)
-            return null
-          }
-
-          console.log(`[AUTH] Login successful for ${user.email} (${user.role})`)
-
-          // Update last login timestamp (non-blocking — don't await to avoid delaying the response)
-          db.user.update({
-            where: { id: user.id },
-            data: { lastLoginAt: new Date() },
-          }).catch((err) => {
-            console.error("[AUTH] Failed to update lastLoginAt:", err)
-          })
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            munRole: user.munRole ?? undefined,
-            avatar: user.avatar ?? undefined,
-            schoolId: user.schoolId ?? undefined,
-            subscriptionTier: user.subscription?.tier || "FREE",
-            subscriptionStatus: user.subscription?.status || "TRIAL",
-          }
-        } catch (error) {
-          console.error("[AUTH] Unexpected error during authorization:", error)
-          return null
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          munRole: user.munRole ?? undefined,
+          avatar: user.avatar ?? undefined,
+          schoolId: user.schoolId ?? undefined,
+          subscriptionTier: user.subscription?.tier || "FREE",
+          subscriptionStatus: user.subscription?.status || "TRIAL",
         }
       },
     }),
@@ -194,28 +166,7 @@ export const authOptions: NextAuthOptions = {
         token.schoolId = user.schoolId
         token.subscriptionTier = user.subscriptionTier
         token.subscriptionStatus = user.subscriptionStatus
-        token.subscriptionRefreshedAt = Date.now()
       }
-
-      // Refresh subscription data from DB every 5 minutes to prevent stale JWT claims
-      // This ensures expired trials are caught within minutes, not 30 days
-      const lastRefresh = token.subscriptionRefreshedAt as number || 0
-      if (Date.now() - lastRefresh > 5 * 60 * 1000) {
-        try {
-          const freshUser = await db.user.findUnique({
-            where: { id: token.id as string },
-            include: { subscription: true },
-          })
-          if (freshUser?.subscription) {
-            token.subscriptionTier = freshUser.subscription.tier
-            token.subscriptionStatus = freshUser.subscription.status
-            token.subscriptionRefreshedAt = Date.now()
-          }
-        } catch {
-          // If DB lookup fails, keep existing token data
-        }
-      }
-
       return token
     },
     async session({ session, token }) {
@@ -245,42 +196,4 @@ export const authOptions: NextAuthOptions = {
   },
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   secret: process.env.NEXTAUTH_SECRET,
-  // In local development (HTTP), we must disable the Secure flag on cookies
-  // because browsers won't send Secure cookies over plain HTTP connections.
-  // This was the root cause of the "Invalid email or password" login failure —
-  // the CSRF cookie was set with Secure but never sent back on HTTP, causing
-  // NextAuth to reject the request before authorize() was even called.
-  ...(isLocalDev
-    ? {
-        cookies: {
-          csrfToken: {
-            name: "next-auth.csrf-token",
-            options: {
-              httpOnly: true,
-              sameSite: "lax",
-              path: "/",
-              secure: false,
-            },
-          },
-          callbackUrl: {
-            name: "next-auth.callback-url",
-            options: {
-              httpOnly: true,
-              sameSite: "lax",
-              path: "/",
-              secure: false,
-            },
-          },
-          sessionToken: {
-            name: "next-auth.session-token",
-            options: {
-              httpOnly: true,
-              sameSite: "lax",
-              path: "/",
-              secure: false,
-            },
-          },
-        },
-      }
-    : {}),
 }

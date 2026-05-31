@@ -245,17 +245,13 @@ model User {
   assessments             Assessment[]
   badges                  UserBadge[]
   courseEnrollments       CourseEnrollment[]
-  lessonCompletions       LessonCompletion[]
   messages                Message[]
   activities              Activity[]
   auditLogs               AuditLog[]
-  sentAdminMessages       AdminMessage[]     @relation("SentByAdmin")
-  receivedAdminMessages   AdminMessage[]     @relation("ReceivedByUser")
   researchTasks           ResearchTask[]
   researchAssignments     ResearchTask[]              @relation("AssignedTasks")
   chairedCommittees       Committee[]
   sentNotifications       Notification[]              @relation("SentTo")
-  sentNotificationsAsSender Notification[]            @relation("SentNotification")
   paymentRecords          Payment[]
   invoices                Invoice[]
   researchPapers          ResearchPaper[]
@@ -265,6 +261,7 @@ model User {
 
   @@index([schoolId])
   @@index([role])
+  @@index([email])
   @@index([isActive])
 }
 
@@ -326,7 +323,7 @@ model SchoolVerificationRequest {
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id])
 
   @@index([schoolId])
   @@index([status])
@@ -370,7 +367,7 @@ model SchoolSubscription {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  school School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  school School @relation(fields: [schoolId], references: [id])
 
   @@index([schoolId])
   @@index([status])
@@ -415,7 +412,7 @@ model Committee {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  conference    Conference             @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
+  conference    Conference             @relation(fields: [conferenceId], references: [id])
   chair         User?                  @relation(fields: [chairId], references: [id], onDelete: SetNull)
   registrations ConferenceRegistration[]
 
@@ -497,7 +494,7 @@ model AssessmentResponse {
   createdAt    DateTime @default(now())
 
   assessment Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  question   AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id])
 
   @@index([assessmentId])
   @@index([questionId])
@@ -538,8 +535,7 @@ model Lesson {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  course     Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  completions LessonCompletion[]
+  course Course @relation(fields: [courseId], references: [id])
 
   @@index([courseId])
   @@index([order])
@@ -569,7 +565,7 @@ model UserBadge {
   earnedAt  DateTime @default(now())
 
   user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id])
 
   @@unique([userId, badgeId])
   @@index([userId])
@@ -613,13 +609,12 @@ model ConferenceRegistration {
   updatedAt    DateTime @updatedAt
 
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conference Conference @relation(fields: [conferenceId], references: [id], onDelete: Cascade)
-  committee  Committee? @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  conference Conference @relation(fields: [conferenceId], references: [id])
+  committee  Committee? @relation(fields: [committeeId], references: [id])
 
   @@unique([userId, conferenceId])
   @@index([userId])
   @@index([conferenceId])
-  @@index([committeeId])
   @@index([status])
 }
 
@@ -633,32 +628,13 @@ model CourseEnrollment {
   completedAt DateTime?
   updatedAt   DateTime  @updatedAt
 
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course           Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessonCompletions LessonCompletion[]
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id])
 
   @@unique([userId, courseId])
   @@index([userId])
   @@index([courseId])
   @@index([completed])
-}
-
-model LessonCompletion {
-  id            String   @id @default(cuid())
-  userId        String
-  lessonId      String
-  enrollmentId  String
-  completedAt   DateTime @default(now())
-
-  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson     Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  enrollment CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@index([userId])
-  @@index([lessonId])
-  @@index([enrollmentId])
-  @@index([completedAt])
 }
 
 model Channel {
@@ -687,13 +663,12 @@ model Message {
   userId    String
   createdAt DateTime @default(now())
 
-  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channel Channel @relation(fields: [channelId], references: [id])
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([channelId])
   @@index([userId])
   @@index([createdAt])
-  @@index([channelId, createdAt])
 }
 
 model ResearchTask {
@@ -743,16 +718,13 @@ model Notification {
   type        String   @default("info")
   isRead      Boolean  @default(false)
   link        String?
-  senderId    String?  // Admin who sent the notification (for admin messages)
   createdAt   DateTime @default(now())
 
-  user   User   @relation("SentTo", fields: [userId], references: [id], onDelete: Cascade)
-  sender User?  @relation("SentNotification", fields: [senderId], references: [id], onDelete: SetNull)
+  user User @relation("SentTo", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
-  @@index([senderId])
 }
 
 model Payment {
@@ -1048,28 +1020,4 @@ model EmailVerificationToken {
   @@index([email])
   @@index([token])
   @@index([expiresAt])
-}
-
-// ============================
-// ADMIN-TO-CLIENT MESSAGING
-// ============================
-
-model AdminMessage {
-  id          String   @id @default(cuid())
-  senderId    String   // Admin who sent the message
-  recipientId String   // User who receives the message
-  subject     String
-  content     String
-  category    String   @default("general")  // general, password_reset, subscription, account, system, support
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  sender   User @relation("SentByAdmin", fields: [senderId], references: [id], onDelete: Cascade)
-  recipient User @relation("ReceivedByUser", fields: [recipientId], references: [id], onDelete: Cascade)
-
-  @@index([senderId])
-  @@index([recipientId])
-  @@index([isRead])
-  @@index([createdAt])
-  @@index([category])
 }

@@ -315,4 +315,3 @@ export function hasPermission(role: string, permission: string): boolean {
   if (isMasterAdmin(role)) return true
   return PERMISSIONS_MATRIX[role]?.[permission] ?? false
 }
-

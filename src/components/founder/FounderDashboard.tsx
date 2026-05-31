@@ -10,8 +10,7 @@ import {
   XCircle, Star, RefreshCw, KeyRound,
   Filter, MoreHorizontal,
   Pin, AlertCircle, Globe, Crown, Lock, Unlock,
-  Plus, School, Mail, Clock, AlertTriangle,
-  Send, MessageSquare
+  Plus, School, Mail, Clock, AlertTriangle
 } from 'lucide-react'
 import {
   BarChart, Bar, PieChart, Pie, AreaChart, Area,
@@ -49,28 +48,6 @@ import {
   ChartContainer, type ChartConfig
 } from '@/components/ui/chart'
 import { Textarea } from '@/components/ui/textarea'
-
-// Proper React Error Boundary - catches render errors in children
-class TabErrorBoundaryClass extends React.Component<
-  { children: React.ReactNode; fallback: (error: Error, reset: () => void) => React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode; fallback: (error: Error, reset: () => void) => React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false, error: null }
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error }
-  }
-
-  render() {
-    if (this.state.hasError && this.state.error) {
-      return this.props.fallback(this.state.error, () => this.setState({ hasError: false, error: null }))
-    }
-    return this.props.children
-  }
-}
 
 // ============================================================
 // TYPES
@@ -175,43 +152,18 @@ const sectionVariants = {
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, string> = {
-    Active: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    Suspended: 'bg-red-500/20 text-red-300 border-red-500/40',
-    Unverified: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    Pending: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    Inactive: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
-    pending: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    completed: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    expired: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
-    APPROVED: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    active: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    trialing: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
-    past_due: 'bg-red-500/20 text-red-300 border-red-500/40',
-    cancelled: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
-    paused: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    unpaid: 'bg-red-500/20 text-red-300 border-red-500/40',
+    Active: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    Suspended: 'bg-red-500/20 text-red-400 border-red-500/30',
+    Unverified: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    Pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    Inactive: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+    pending: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+    completed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    expired: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
   }
   return (
-    <Badge variant="outline" className={`text-xs px-2.5 py-0.5 font-semibold ${config[status] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'}`}>
+    <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-medium ${config[status] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'}`}>
       {status}
-    </Badge>
-  )
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const config: Record<string, string> = {
-    MASTER_ADMIN: 'bg-[#D4A843]/20 text-[#D4A843] border-[#D4A843]/40',
-    FOUNDER: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-    SUPER_ADMIN: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-    ADMIN: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
-    SCHOOL_ADMIN: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
-    TEACHER: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
-    STUDENT: 'bg-slate-400/20 text-slate-300 border-slate-400/40',
-  }
-  return (
-    <Badge variant="outline" className={`text-xs px-2.5 py-0.5 font-semibold whitespace-nowrap ${config[role] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'}`}>
-      {role === 'MASTER_ADMIN' && <Crown className="w-3 h-3 mr-1 inline" />}
-      {role.replace(/_/g, ' ')}
     </Badge>
   )
 }
@@ -420,10 +372,6 @@ function UserManagement() {
       toast.error('All fields are required')
       return
     }
-    if (newUser.password.length < 8) {
-      toast.error('Password must be at least 8 characters')
-      return
-    }
     setIsCreating(true)
     try {
       const res = await fetch('/api/admin/users', {
@@ -438,12 +386,10 @@ function UserManagement() {
         setNewUser({ name: '', email: '', password: '', role: 'STUDENT' })
         fetchUsers()
       } else {
-        // Show the specific error from the API
         toast.error(data.error || 'Failed to create user')
       }
-    } catch (err) {
-      console.error('Add user error:', err)
-      toast.error('Network error — please check your connection and try again')
+    } catch {
+      toast.error('Failed to create user')
     } finally {
       setIsCreating(false)
     }
@@ -567,7 +513,7 @@ function UserManagement() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Password</Label>
-                <Input value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 8 characters, 1 uppercase, 1 number" type="password" />
+                <Input value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Role</Label>
@@ -575,7 +521,7 @@ function UserManagement() {
                   <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                  <SelectContent className="bg-[#1B2A4A] border-white/10">
                     <SelectItem value="STUDENT">Student</SelectItem>
                     <SelectItem value="TEACHER">Teacher</SelectItem>
                     <SelectItem value="SCHOOL_ADMIN">School Admin</SelectItem>
@@ -607,7 +553,7 @@ function UserManagement() {
           <SelectTrigger className="w-full sm:w-[160px] bg-[#1B2A4A] border-white/10 text-white">
             <SelectValue placeholder="Role" />
           </SelectTrigger>
-          <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+          <SelectContent className="bg-[#1B2A4A] border-white/10">
             <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="STUDENT">Student</SelectItem>
             <SelectItem value="TEACHER">Teacher</SelectItem>
@@ -622,13 +568,13 @@ function UserManagement() {
           <SelectTrigger className="w-full sm:w-[160px] bg-[#1B2A4A] border-white/10 text-white">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-          <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+          <SelectContent className="bg-[#1B2A4A] border-white/10">
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={fetchUsers} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
+        <Button variant="outline" onClick={fetchUsers} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-[#264B5E]">
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh
         </Button>
       </div>
@@ -636,80 +582,85 @@ function UserManagement() {
       {/* Table */}
       <DarkCard>
         <CardContent className="p-0">
-          <div className="overflow-auto max-h-[600px]">
-              <Table className="min-w-[1000px]">
-                <TableHeader>
-                  <TableRow className="border-white/10 hover:bg-transparent bg-white/5 sticky top-0 z-10">
-                    <TableHead className="text-slate-200 font-semibold min-w-[140px]">Name</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[180px]">Email</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[130px]">Role</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[120px]">School</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[100px]">Status</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[160px]">Subscription</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[100px] sticky right-0 bg-[#1B2A4A]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i} className="border-white/5">
-                        {Array.from({ length: 7 }).map((_, j) => (
-                          <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : filtered.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center text-slate-400 py-8">No users found</TableCell></TableRow>
-                  ) : filtered.map((u) => (
-                    <TableRow key={u.id} className="border-white/5 hover:bg-white/8 transition-colors">
-                      <TableCell className="font-medium text-white whitespace-nowrap">{u.name}</TableCell>
-                      <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.email}</TableCell>
-                      <TableCell><RoleBadge role={u.role} /></TableCell>
-                      <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.school?.name || '—'}</TableCell>
-                      <TableCell><StatusBadge status={u.isActive ? 'Active' : 'Suspended'} /></TableCell>
-                      <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.subscription ? `${u.subscription.tier.replace(/_/g, ' ')} (${u.subscription.status})` : 'Free'}</TableCell>
-                      <TableCell className="sticky right-0 bg-[#1B2A4A]">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="bg-[#1B2A4A] border-white/10 z-50" align="end">
-                            <DropdownMenuLabel className="text-slate-400">Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator className="bg-white/10" />
-                            <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10"
-                              onClick={() => { setEditTarget(u); setEditRole(u.role); setEditRoleOpen(true) }}>
-                              <Edit className="w-4 h-4 mr-2" /> Change Role
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10"
-                              onClick={() => { setResetTarget(u); setResetPwdOpen(true) }}>
-                              <KeyRound className="w-4 h-4 mr-2" /> Reset Password
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className={u.isActive ? "text-amber-400 focus:text-amber-300 focus:bg-white/10" : "text-emerald-400 focus:text-emerald-300 focus:bg-white/10"}
-                              onClick={() => handleToggleActive(u)}>
-                              {u.isActive ? <><Ban className="w-4 h-4 mr-2" /> Suspend</> : <><CheckCircle2 className="w-4 h-4 mr-2" /> Activate</>}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-white/10" />
-                            <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-white/10"
-                              onClick={() => setDeleteTarget(u)}>
-                              <Trash2 className="w-4 h-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+          <ScrollArea className="max-h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="text-slate-400">Name</TableHead>
+                  <TableHead className="text-slate-400">Email</TableHead>
+                  <TableHead className="text-slate-400">Role</TableHead>
+                  <TableHead className="text-slate-400 hidden md:table-cell">School</TableHead>
+                  <TableHead className="text-slate-400">Status</TableHead>
+                  <TableHead className="text-slate-400 hidden lg:table-cell">Subscription</TableHead>
+                  <TableHead className="text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 7 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-          </div>
+                  ))
+                ) : filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-slate-500 py-8">No users found</TableCell></TableRow>
+                ) : filtered.map((u) => (
+                  <TableRow key={u.id} className="border-white/5 hover:bg-white/5">
+                    <TableCell className="font-medium text-white">{u.name}</TableCell>
+                    <TableCell className="text-slate-400 text-sm">{u.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[10px] border-white/20 ${u.role === 'MASTER_ADMIN' ? 'text-[#D4A843] border-[#D4A843]/30' : 'text-slate-300'}`}>
+                        {u.role === 'MASTER_ADMIN' && <Crown className="w-3 h-3 mr-1" />}
+                        {u.role.replace(/_/g, ' ')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-slate-400 hidden md:table-cell text-sm">{u.school?.name || '—'}</TableCell>
+                    <TableCell><StatusBadge status={u.isActive ? 'Active' : 'Suspended'} /></TableCell>
+                    <TableCell className="text-slate-400 hidden lg:table-cell text-xs">{u.subscription ? `${u.subscription.tier} (${u.subscription.status})` : 'Free'}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-[#1B2A4A] border-white/10">
+                          <DropdownMenuLabel className="text-slate-400">Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator className="bg-white/10" />
+                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10"
+                            onClick={() => { setEditTarget(u); setEditRole(u.role); setEditRoleOpen(true) }}>
+                            <Edit className="w-4 h-4 mr-2" /> Change Role
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10"
+                            onClick={() => { setResetTarget(u); setResetPwdOpen(true) }}>
+                            <KeyRound className="w-4 h-4 mr-2" /> Reset Password
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className={u.isActive ? "text-amber-400 focus:text-amber-300 focus:bg-white/10" : "text-emerald-400 focus:text-emerald-300 focus:bg-white/10"}
+                            onClick={() => handleToggleActive(u)}>
+                            {u.isActive ? <><Ban className="w-4 h-4 mr-2" /> Suspend</> : <><CheckCircle2 className="w-4 h-4 mr-2" /> Activate</>}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator className="bg-white/10" />
+                          <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-white/10"
+                            onClick={() => setDeleteTarget(u)}>
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </CardContent>
       </DarkCard>
-      <div className="flex items-center justify-between text-xs text-slate-400 mt-2">
+      <div className="flex items-center justify-between text-xs text-slate-500">
         <span>Showing {filtered.length} of {totalUsers} users</span>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="bg-[#1B2A4A] border-white/10 text-slate-300 h-7 text-xs hover:bg-white/10">Previous</Button>
-          <Button variant="outline" size="sm" disabled={filtered.length < 25} onClick={() => setPage(p => p + 1)} className="bg-[#1B2A4A] border-white/10 text-slate-300 h-7 text-xs hover:bg-white/10">Next</Button>
+          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="bg-[#1B2A4A] border-white/10 text-slate-300 h-7 text-xs">Previous</Button>
+          <Button variant="outline" size="sm" disabled={filtered.length < 25} onClick={() => setPage(p => p + 1)} className="bg-[#1B2A4A] border-white/10 text-slate-300 h-7 text-xs">Next</Button>
         </div>
       </div>
 
@@ -725,7 +676,7 @@ function UserManagement() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-slate-300">New Password</Label>
-              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 8 characters, 1 uppercase, 1 number" type="password" />
+              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
             </div>
           </div>
           <DialogFooter>
@@ -751,7 +702,7 @@ function UserManagement() {
               <Label className="text-slate-300">New Role</Label>
               <Select value={editRole} onValueChange={setEditRole}>
                 <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                <SelectContent className="bg-[#1B2A4A] border-white/10">
                   <SelectItem value="STUDENT">Student</SelectItem>
                   <SelectItem value="TEACHER">Teacher</SelectItem>
                   <SelectItem value="SCHOOL_ADMIN">School Admin</SelectItem>
@@ -802,9 +753,6 @@ function PasswordResetRequests() {
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('pending')
 
-  // Map statusFilter for API calls: 'all' means no filter
-  const apiStatusFilter = statusFilter === 'all' ? '' : statusFilter
-
   // Reset Password Dialog
   const [resetPwdOpen, setResetPwdOpen] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
@@ -815,7 +763,7 @@ function PasswordResetRequests() {
   const fetchRequests = useCallback(async () => {
     try {
       const params = new URLSearchParams({ limit: '50' })
-      if (apiStatusFilter) params.set('status', apiStatusFilter)
+      if (statusFilter) params.set('status', statusFilter)
       const res = await fetch(`/api/admin/password-resets?${params}`)
       if (res.ok) {
         const data = await res.json()
@@ -826,19 +774,15 @@ function PasswordResetRequests() {
     } finally {
       setIsLoading(false)
     }
-  }, [apiStatusFilter])
+  }, [statusFilter])
 
   useEffect(() => { fetchRequests() }, [fetchRequests])
 
   const pendingCount = requests.filter(r => r.status === 'pending').length
 
   const handleResetFromRequest = (req: PasswordResetRequest) => {
-    if (!req.user?.id) {
-      toast.error('Cannot reset password: no user account found for this email')
-      return
-    }
     setResetEmail(req.email)
-    setResetUserId(req.user.id)
+    setResetUserId(req.user?.id || '')
     setResetPwdOpen(true)
   }
 
@@ -883,8 +827,8 @@ function PasswordResetRequests() {
             <SelectTrigger className="w-[140px] bg-[#1B2A4A] border-white/10 text-white text-xs">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
-              <SelectItem value="all">All</SelectItem>
+            <SelectContent className="bg-[#1B2A4A] border-white/10">
+              <SelectItem value="">All</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>
@@ -955,7 +899,7 @@ function PasswordResetRequests() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label className="text-slate-300">New Password</Label>
-              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 8 characters, 1 uppercase, 1 number" type="password" />
+              <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="bg-[#0D1B2A] border-white/10 text-white" placeholder="Min 6 characters" type="password" />
             </div>
           </div>
           <DialogFooter>
@@ -1088,7 +1032,7 @@ function SchoolManagement() {
                   <Label className="text-slate-300">Emirate</Label>
                   <Select value={newSchool.emirate} onValueChange={(v) => setNewSchool({ ...newSchool, emirate: v })}>
                     <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                    <SelectContent className="bg-[#1B2A4A] border-white/10">
                       <SelectItem value="Abu Dhabi">Abu Dhabi</SelectItem>
                       <SelectItem value="Dubai">Dubai</SelectItem>
                       <SelectItem value="Sharjah">Sharjah</SelectItem>
@@ -1105,7 +1049,7 @@ function SchoolManagement() {
                   <Label className="text-slate-300">School Type</Label>
                   <Select value={newSchool.schoolType} onValueChange={(v) => setNewSchool({ ...newSchool, schoolType: v })}>
                     <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                    <SelectContent className="bg-[#1B2A4A] border-white/10">
                       <SelectItem value="PUBLIC">Public</SelectItem>
                       <SelectItem value="PRIVATE">Private</SelectItem>
                       <SelectItem value="INTERNATIONAL">International</SelectItem>
@@ -1116,7 +1060,7 @@ function SchoolManagement() {
                   <Label className="text-slate-300">Curriculum</Label>
                   <Select value={newSchool.curriculum} onValueChange={(v) => setNewSchool({ ...newSchool, curriculum: v })}>
                     <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white"><SelectValue /></SelectTrigger>
-                    <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
+                    <SelectContent className="bg-[#1B2A4A] border-white/10">
                       <SelectItem value="AMERICAN">American</SelectItem>
                       <SelectItem value="BRITISH">British</SelectItem>
                       <SelectItem value="IB">IB</SelectItem>
@@ -1184,51 +1128,49 @@ function SchoolManagement() {
       {/* Table */}
       <DarkCard>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <ScrollArea className="max-h-[500px]">
-              <Table className="min-w-[700px]">
-                <TableHeader>
-                  <TableRow className="border-white/10 hover:bg-transparent bg-white/5">
-                    <TableHead className="text-slate-300 font-semibold min-w-[180px]">Name</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[100px]">City</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[100px]">Type</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[80px]">Verified</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[60px]">Users</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[100px]">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i} className="border-white/5">
-                        {Array.from({ length: 6 }).map((_, j) => (
-                          <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : schools.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-8">No schools found</TableCell></TableRow>
-                  ) : schools.map(s => (
-                    <TableRow key={s.id} className="border-white/5 hover:bg-white/5 transition-colors">
-                      <TableCell className="font-medium text-white whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {s.isFeatured && <Star className="w-3.5 h-3.5 text-[#D4A843] fill-[#D4A843]" />}
-                          {s.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-300 whitespace-nowrap">{s.city || '—'}</TableCell>
-                      <TableCell className="text-slate-300 whitespace-nowrap">{s.schoolType || '—'}</TableCell>
-                      <TableCell>
-                        {s.isVerified ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
-                      </TableCell>
-                      <TableCell className="text-slate-300">{s._count?.users || 0}</TableCell>
-                      <TableCell><StatusBadge status={s.verificationStatus} /></TableCell>
+          <ScrollArea className="max-h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="text-slate-400">Name</TableHead>
+                  <TableHead className="text-slate-400 hidden md:table-cell">City</TableHead>
+                  <TableHead className="text-slate-400">Type</TableHead>
+                  <TableHead className="text-slate-400">Verified</TableHead>
+                  <TableHead className="text-slate-400 hidden lg:table-cell">Users</TableHead>
+                  <TableHead className="text-slate-400">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 6 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </div>
+                  ))
+                ) : schools.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center text-slate-500 py-8">No schools found</TableCell></TableRow>
+                ) : schools.map(s => (
+                  <TableRow key={s.id} className="border-white/5 hover:bg-white/5">
+                    <TableCell className="font-medium text-white">
+                      <div className="flex items-center gap-2">
+                        {s.isFeatured && <Star className="w-3.5 h-3.5 text-[#D4A843] fill-[#D4A843]" />}
+                        {s.name}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-slate-400 hidden md:table-cell">{s.city || '—'}</TableCell>
+                    <TableCell className="text-slate-400">{s.schoolType || '—'}</TableCell>
+                    <TableCell>
+                      {s.isVerified ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
+                    </TableCell>
+                    <TableCell className="text-slate-400 hidden lg:table-cell">{s._count?.users || 0}</TableCell>
+                    <TableCell><StatusBadge status={s.verificationStatus} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </CardContent>
       </DarkCard>
     </motion.div>
@@ -1265,681 +1207,44 @@ function AuditLogs() {
       <h3 className="text-lg font-semibold text-white">Audit Logs</h3>
       <DarkCard>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <ScrollArea className="max-h-[500px]">
-              <Table className="min-w-[700px]">
-                <TableHeader>
-                  <TableRow className="border-white/10 hover:bg-transparent bg-white/5">
-                    <TableHead className="text-slate-300 font-semibold min-w-[100px]">Action</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[120px]">User</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[100px]">Resource</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[200px]">Details</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[140px]">Time</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i} className="border-white/5">
-                        {Array.from({ length: 5 }).map((_, j) => (
-                          <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : logs.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center text-slate-400 py-8">No audit logs yet</TableCell></TableRow>
-                  ) : logs.map(log => (
-                    <TableRow key={log.id} className="border-white/5 hover:bg-white/5 transition-colors">
-                      <TableCell>
-                        <Badge variant="outline" className="text-[11px] border-white/20 text-slate-300 font-semibold">{log.action}</Badge>
-                      </TableCell>
-                      <TableCell className="text-slate-300 text-sm whitespace-nowrap">{log.user?.name || 'System'}</TableCell>
-                      <TableCell className="text-slate-300 text-sm whitespace-nowrap">{log.resource}</TableCell>
-                      <TableCell className="text-slate-400 text-xs max-w-[250px] truncate">{log.details || '—'}</TableCell>
-                      <TableCell className="text-slate-400 text-xs whitespace-nowrap">{formatDateTime(log.createdAt)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </div>
-        </CardContent>
-      </DarkCard>
-    </motion.div>
-  )
-}
-
-// ============================================================
-// SECTION 7: SUBSCRIPTION MANAGEMENT
-// ============================================================
-
-interface SubscriptionDetail {
-  tier: string
-  status: string
-  trialStartsAt: string | null
-  trialEndsAt: string | null
-  currentPeriodStart: string | null
-  currentPeriodEnd: string | null
-  cancelAtPeriodEnd: boolean
-}
-
-interface SubUserData {
-  id: string
-  name: string
-  email: string
-  tier: string
-  status: string
-  trialStartsAt: string | null
-  trialEndsAt: string | null
-  currentPeriodEnd: string | null
-  cancelAtPeriodEnd: boolean
-}
-
-const SUBSCRIPTION_TIERS = ['FREE', 'BASIC', 'PRO', 'ENTERPRISE', 'SCHOOL']
-
-function SubscriptionManagement() {
-  const [users, setUsers] = useState<SubUserData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [search, setSearch] = useState('')
-
-  // Manage dialog
-  const [manageOpen, setManageOpen] = useState(false)
-  const [manageTarget, setManageTarget] = useState<SubUserData | null>(null)
-  const [subscriptionDetail, setSubscriptionDetail] = useState<SubscriptionDetail | null>(null)
-  const [isLoadingDetail, setIsLoadingDetail] = useState(false)
-  const [actionLoading, setActionLoading] = useState(false)
-
-  // Action states
-  const [selectedTier, setSelectedTier] = useState('')
-  const [trialDays, setTrialDays] = useState(7)
-
-  const fetchUsers = useCallback(async () => {
-    try {
-      const params = new URLSearchParams({ page: '1', limit: '100' })
-      if (search) params.set('search', search)
-      const res = await fetch(`/api/admin/users?${params}`)
-      if (res.ok) {
-        const data = await res.json()
-        const mapped: SubUserData[] = (data.data || []).map((u: UserData) => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          tier: u.subscription?.tier || 'FREE',
-          status: u.subscription?.status || 'inactive',
-          trialStartsAt: null,
-          trialEndsAt: null,
-          currentPeriodEnd: null,
-          cancelAtPeriodEnd: false,
-        }))
-        setUsers(mapped)
-      }
-    } catch (err) {
-      console.error('Failed to fetch subscription users:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [search])
-
-  useEffect(() => { fetchUsers() }, [fetchUsers])
-
-  const handleManage = async (user: SubUserData) => {
-    setManageTarget(user)
-    setManageOpen(true)
-    setIsLoadingDetail(true)
-    setSelectedTier('')
-    setTrialDays(7)
-    try {
-      const res = await fetch(`/api/admin/subscriptions/${user.id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setSubscriptionDetail(data.data || data.subscription || null)
-      } else {
-        setSubscriptionDetail({
-          tier: user.tier,
-          status: user.status,
-          trialStartsAt: null,
-          trialEndsAt: null,
-          currentPeriodStart: null,
-          currentPeriodEnd: null,
-          cancelAtPeriodEnd: false,
-        })
-      }
-    } catch {
-      setSubscriptionDetail({
-        tier: user.tier,
-        status: user.status,
-        trialStartsAt: null,
-        trialEndsAt: null,
-        currentPeriodStart: null,
-        currentPeriodEnd: null,
-        cancelAtPeriodEnd: false,
-      })
-    } finally {
-      setIsLoadingDetail(false)
-    }
-  }
-
-  const handleAction = async (action: string, extra?: Record<string, unknown>) => {
-    if (!manageTarget) return
-    setActionLoading(true)
-    try {
-      const res = await fetch(`/api/admin/subscriptions/${manageTarget.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...extra }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        toast.success(data.message || `Subscription ${action} succeeded`)
-        setManageOpen(false)
-        setManageTarget(null)
-        setSubscriptionDetail(null)
-        fetchUsers()
-      } else {
-        toast.error(data.error || `Failed to ${action} subscription`)
-      }
-    } catch {
-      toast.error(`Failed to ${action} subscription`)
-    } finally {
-      setActionLoading(false)
-    }
-  }
-
-  return (
-    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-[#0A7E8C]" /> Subscription Management
-        </h3>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input placeholder="Search users..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 w-[200px] bg-[#1B2A4A] border-white/10 text-white placeholder:text-slate-500 text-sm" />
-          </div>
-          <Button variant="outline" onClick={fetchUsers} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
-        </div>
-      </div>
-
-      <DarkCard>
-        <CardContent className="p-0">
-          <div className="overflow-auto max-h-[600px]">
-            <Table className="min-w-[1000px]">
+          <ScrollArea className="max-h-[500px]">
+            <Table>
               <TableHeader>
-                <TableRow className="border-white/10 hover:bg-transparent bg-white/5 sticky top-0 z-10">
-                  <TableHead className="text-slate-200 font-semibold min-w-[140px]">Name</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[180px]">Email</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Tier</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[110px]">Status</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Trial End</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Period End</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[100px]">Cancel at End</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[80px] sticky right-0 bg-[#1B2A4A]">Actions</TableHead>
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="text-slate-400">Action</TableHead>
+                  <TableHead className="text-slate-400">User</TableHead>
+                  <TableHead className="text-slate-400">Resource</TableHead>
+                  <TableHead className="text-slate-400 hidden md:table-cell">Details</TableHead>
+                  <TableHead className="text-slate-400">Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i} className="border-white/5">
-                      {Array.from({ length: 8 }).map((_, j) => (
+                      {Array.from({ length: 5 }).map((_, j) => (
                         <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
                       ))}
                     </TableRow>
                   ))
-                ) : users.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-slate-400 py-8">No users found</TableCell></TableRow>
-                ) : users.map((u) => (
-                  <TableRow key={u.id} className="border-white/5 hover:bg-white/8 transition-colors">
-                    <TableCell className="font-medium text-white whitespace-nowrap">{u.name}</TableCell>
-                    <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.email}</TableCell>
-                    <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.tier.replace(/_/g, ' ')}</TableCell>
-                    <TableCell><StatusBadge status={u.status} /></TableCell>
-                    <TableCell className="text-slate-300 text-sm whitespace-nowrap">{formatDate(u.trialEndsAt)}</TableCell>
-                    <TableCell className="text-slate-300 text-sm whitespace-nowrap">{formatDate(u.currentPeriodEnd)}</TableCell>
-                    <TableCell className="text-slate-300 text-sm">{u.cancelAtPeriodEnd ? <span className="text-amber-400">Yes</span> : <span className="text-slate-500">No</span>}</TableCell>
-                    <TableCell className="sticky right-0 bg-[#1B2A4A]">
-                      <Button variant="outline" size="sm" onClick={() => handleManage(u)} className="bg-[#0D7377]/20 border-[#0D7377]/40 text-[#0D7377] hover:bg-[#0D7377]/30 hover:text-[#0A7E8C] h-7 text-xs">
-                        Manage
-                      </Button>
+                ) : logs.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-8">No audit logs yet</TableCell></TableRow>
+                ) : logs.map(log => (
+                  <TableRow key={log.id} className="border-white/5 hover:bg-white/5">
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] border-white/20 text-slate-300">{log.action}</Badge>
                     </TableCell>
+                    <TableCell className="text-slate-400 text-sm">{log.user?.name || 'System'}</TableCell>
+                    <TableCell className="text-slate-300 text-sm">{log.resource}</TableCell>
+                    <TableCell className="text-slate-500 text-xs hidden md:table-cell max-w-[200px] truncate">{log.details || '—'}</TableCell>
+                    <TableCell className="text-slate-500 text-xs">{formatDateTime(log.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </ScrollArea>
         </CardContent>
       </DarkCard>
-
-      {/* Manage Subscription Dialog */}
-      <Dialog open={manageOpen} onOpenChange={(open) => { if (!open) { setManageOpen(false); setManageTarget(null); setSubscriptionDetail(null) } }}>
-        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5 text-[#0A7E8C]" /> Manage Subscription</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Manage subscription for {manageTarget?.email}
-            </DialogDescription>
-          </DialogHeader>
-
-          {isLoadingDetail ? (
-            <div className="space-y-3 py-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-8 bg-white/10 rounded animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4 py-4">
-              {/* Current Subscription Details */}
-              <div className="bg-[#0D1B2A] rounded-lg p-4 space-y-2">
-                <h4 className="text-sm font-semibold text-slate-300 mb-2">Current Subscription</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-slate-400">Tier:</span> <span className="text-white font-medium">{(subscriptionDetail?.tier || manageTarget?.tier || 'FREE').replace(/_/g, ' ')}</span></div>
-                  <div><span className="text-slate-400">Status:</span> <StatusBadge status={subscriptionDetail?.status || manageTarget?.status || 'inactive'} /></div>
-                  <div><span className="text-slate-400">Trial Start:</span> <span className="text-white">{formatDate(subscriptionDetail?.trialStartsAt)}</span></div>
-                  <div><span className="text-slate-400">Trial End:</span> <span className="text-white">{formatDate(subscriptionDetail?.trialEndsAt)}</span></div>
-                  <div><span className="text-slate-400">Period Start:</span> <span className="text-white">{formatDate(subscriptionDetail?.currentPeriodStart)}</span></div>
-                  <div><span className="text-slate-400">Period End:</span> <span className="text-white">{formatDate(subscriptionDetail?.currentPeriodEnd)}</span></div>
-                  <div className="col-span-2"><span className="text-slate-400">Cancel at Period End:</span> <span className={subscriptionDetail?.cancelAtPeriodEnd ? 'text-amber-400' : 'text-slate-300'}>{subscriptionDetail?.cancelAtPeriodEnd ? 'Yes' : 'No'}</span></div>
-                </div>
-              </div>
-
-              <Separator className="bg-white/10" />
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                {/* Upgrade */}
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-slate-300 text-xs">Upgrade Tier</Label>
-                    <Select value={selectedTier} onValueChange={setSelectedTier}>
-                      <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white h-9 text-sm">
-                        <SelectValue placeholder="Select tier" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
-                        {SUBSCRIPTION_TIERS.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button size="sm" disabled={actionLoading || !selectedTier} onClick={() => handleAction('upgrade', { tier: selectedTier })} className="bg-[#059669] hover:bg-[#047857] text-white h-9">
-                    <TrendingUp className="w-3.5 h-3.5 mr-1" /> Upgrade
-                  </Button>
-                </div>
-
-                {/* Downgrade */}
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-slate-300 text-xs">Downgrade Tier</Label>
-                    <Select value={selectedTier} onValueChange={setSelectedTier}>
-                      <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white h-9 text-sm">
-                        <SelectValue placeholder="Select tier" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
-                        {SUBSCRIPTION_TIERS.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button size="sm" disabled={actionLoading || !selectedTier} onClick={() => handleAction('downgrade', { tier: selectedTier })} className="bg-amber-600 hover:bg-amber-700 text-white h-9">
-                    <TrendingDown className="w-3.5 h-3.5 mr-1" /> Downgrade
-                  </Button>
-                </div>
-
-                {/* Extend Trial */}
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-slate-300 text-xs">Extend Trial (days)</Label>
-                    <Input type="number" min={1} max={365} value={trialDays} onChange={(e) => setTrialDays(Number(e.target.value))} className="bg-[#0D1B2A] border-white/10 text-white h-9 text-sm" />
-                  </div>
-                  <Button size="sm" disabled={actionLoading || trialDays < 1} onClick={() => handleAction('extend_trial', { days: trialDays })} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white h-9">
-                    <Clock className="w-3.5 h-3.5 mr-1" /> Extend
-                  </Button>
-                </div>
-
-                <Separator className="bg-white/10" />
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-2">
-                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('activate')} className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 text-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Activate
-                  </Button>
-                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('suspend')} className="bg-amber-600 hover:bg-amber-700 text-white h-9 text-xs">
-                    <Ban className="w-3.5 h-3.5 mr-1" /> Suspend
-                  </Button>
-                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('cancel')} className="bg-red-600 hover:bg-red-700 text-white h-9 text-xs">
-                    <XCircle className="w-3.5 h-3.5 mr-1" /> Cancel
-                  </Button>
-                  <Button size="sm" disabled={actionLoading} onClick={() => handleAction('restore')} className="bg-sky-600 hover:bg-sky-700 text-white h-9 text-xs">
-                    <RefreshCw className="w-3.5 h-3.5 mr-1" /> Restore
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setManageOpen(false); setManageTarget(null); setSubscriptionDetail(null) }} className="border-white/10 text-slate-300">Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </motion.div>
-  )
-}
-
-// ============================================================
-// SECTION 8: ADMIN MESSAGING
-// ============================================================
-
-interface MessageData {
-  id: string
-  recipientId: string
-  recipientName: string
-  recipientEmail: string
-  subject: string
-  content: string
-  category: string
-  isRead: boolean
-  createdAt: string
-}
-
-const MESSAGE_CATEGORIES = [
-  { value: 'general', label: 'General' },
-  { value: 'password_reset', label: 'Password Reset' },
-  { value: 'subscription', label: 'Subscription' },
-  { value: 'account', label: 'Account' },
-  { value: 'system', label: 'System' },
-  { value: 'support', label: 'Support' },
-]
-
-function AdminMessaging() {
-  const [messages, setMessages] = useState<MessageData[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Compose dialog
-  const [composeOpen, setComposeOpen] = useState(false)
-  const [isSending, setIsSending] = useState(false)
-  const [composeData, setComposeData] = useState({
-    recipientId: '',
-    subject: '',
-    content: '',
-    category: 'general',
-  })
-
-  // User list for recipient search
-  const [userList, setUserList] = useState<UserData[]>([])
-  const [userSearch, setUserSearch] = useState('')
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
-
-  // View message dialog
-  const [viewOpen, setViewOpen] = useState(false)
-  const [viewMessage, setViewMessage] = useState<MessageData | null>(null)
-
-  const fetchMessages = useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/messages')
-      if (res.ok) {
-        const data = await res.json()
-        setMessages(data.data || data.messages || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch messages:', err)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetchMessages() }, [fetchMessages])
-
-  const fetchUsers = useCallback(async (searchTerm: string) => {
-    if (!searchTerm || searchTerm.length < 2) {
-      setUserList([])
-      return
-    }
-    setIsLoadingUsers(true)
-    try {
-      const params = new URLSearchParams({ page: '1', limit: '20', search: searchTerm })
-      const res = await fetch(`/api/admin/users?${params}`)
-      if (res.ok) {
-        const data = await res.json()
-        setUserList(data.data || [])
-      }
-    } catch {
-      console.error('Failed to search users')
-    } finally {
-      setIsLoadingUsers(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    const timer = setTimeout(() => fetchUsers(userSearch), 300)
-    return () => clearTimeout(timer)
-  }, [userSearch, fetchUsers])
-
-  const handleSend = async () => {
-    if (!composeData.recipientId || !composeData.subject || !composeData.content) {
-      toast.error('Recipient, subject, and content are required')
-      return
-    }
-    setIsSending(true)
-    try {
-      const res = await fetch('/api/admin/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(composeData),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        toast.success('Message sent successfully')
-        setComposeOpen(false)
-        setComposeData({ recipientId: '', subject: '', content: '', category: 'general' })
-        setUserSearch('')
-        fetchMessages()
-      } else {
-        toast.error(data.error || 'Failed to send message')
-      }
-    } catch {
-      toast.error('Failed to send message')
-    } finally {
-      setIsSending(false)
-    }
-  }
-
-  const getCategoryBadge = (category: string) => {
-    const config: Record<string, string> = {
-      general: 'bg-slate-500/20 text-slate-300 border-slate-500/40',
-      password_reset: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-      subscription: 'bg-[#0A7E8C]/20 text-[#0A7E8C] border-[#0A7E8C]/40',
-      account: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
-      system: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-      support: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    }
-    return config[category] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'
-  }
-
-  return (
-    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-[#D4A843]" /> Admin Messaging
-        </h3>
-        <div className="flex items-center gap-2">
-          <Button className="bg-[#0D7377] hover:bg-[#0A5E62] text-white" onClick={() => setComposeOpen(true)}>
-            <Send className="w-4 h-4 mr-2" /> Compose Message
-          </Button>
-          <Button variant="outline" onClick={fetchMessages} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
-            <RefreshCw className="w-4 h-4 mr-2" /> Refresh
-          </Button>
-        </div>
-      </div>
-
-      <DarkCard>
-        <CardContent className="p-0">
-          <div className="overflow-auto max-h-[600px]">
-            <Table className="min-w-[900px]">
-              <TableHeader>
-                <TableRow className="border-white/10 hover:bg-transparent bg-white/5 sticky top-0 z-10">
-                  <TableHead className="text-slate-200 font-semibold min-w-[140px]">Recipient</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[200px]">Subject</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[120px]">Category</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[140px]">Sent Date</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[80px]">Read</TableHead>
-                  <TableHead className="text-slate-200 font-semibold min-w-[80px] sticky right-0 bg-[#1B2A4A]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i} className="border-white/5">
-                      {Array.from({ length: 6 }).map((_, j) => (
-                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : messages.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-slate-400 py-8">No messages sent yet</TableCell></TableRow>
-                ) : messages.map((msg) => (
-                  <TableRow key={msg.id} className="border-white/5 hover:bg-white/8 transition-colors">
-                    <TableCell className="text-slate-200 text-sm whitespace-nowrap">{msg.recipientName || msg.recipientEmail}</TableCell>
-                    <TableCell className="text-white text-sm font-medium whitespace-nowrap max-w-[250px] truncate">{msg.subject}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-semibold ${getCategoryBadge(msg.category)}`}>
-                        {msg.category.replace(/_/g, ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-slate-300 text-sm whitespace-nowrap">{formatDateTime(msg.createdAt)}</TableCell>
-                    <TableCell>
-                      {msg.isRead ? (
-                        <Badge variant="outline" className="text-[10px] bg-emerald-500/20 text-emerald-300 border-emerald-500/40 px-2 py-0.5">Read</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] bg-slate-500/20 text-slate-300 border-slate-500/40 px-2 py-0.5">Unread</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="sticky right-0 bg-[#1B2A4A]">
-                      <Button variant="outline" size="sm" onClick={() => { setViewMessage(msg); setViewOpen(true) }} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10 hover:text-white h-7 text-xs">
-                        <Eye className="w-3.5 h-3.5 mr-1" /> View
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </DarkCard>
-
-      {/* Compose Message Dialog */}
-      <Dialog open={composeOpen} onOpenChange={(open) => { if (!open) { setComposeOpen(false); setUserSearch('') } }}>
-        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Send className="w-5 h-5 text-[#D4A843]" /> Compose Message</DialogTitle>
-            <DialogDescription className="text-slate-400">Send a message to a user on the platform.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Recipient */}
-            <div className="space-y-2">
-              <Label className="text-slate-300">Recipient</Label>
-              <div className="relative">
-                <Input
-                  placeholder="Search by name or email..."
-                  value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
-                  className="bg-[#0D1B2A] border-white/10 text-white"
-                />
-                {isLoadingUsers && <div className="absolute right-3 top-1/2 -translate-y-1/2"><RefreshCw className="w-4 h-4 text-slate-400 animate-spin" /></div>}
-              </div>
-              {userList.length > 0 && userSearch.length >= 2 && (
-                <div className="max-h-[150px] overflow-y-auto bg-[#0D1B2A] border border-white/10 rounded-lg">
-                  {userList.map((u) => (
-                    <button
-                      key={u.id}
-                      className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors flex items-center gap-2 text-sm"
-                      onClick={() => {
-                        setComposeData({ ...composeData, recipientId: u.id })
-                        setUserSearch(`${u.name} (${u.email})`)
-                        setUserList([])
-                      }}
-                    >
-                      <span className="text-white">{u.name}</span>
-                      <span className="text-slate-400 text-xs">{u.email}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {composeData.recipientId && (
-                <div className="text-xs text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Recipient selected
-                </div>
-              )}
-            </div>
-
-            {/* Subject */}
-            <div className="space-y-2">
-              <Label className="text-slate-300">Subject</Label>
-              <Input
-                value={composeData.subject}
-                onChange={(e) => setComposeData({ ...composeData, subject: e.target.value })}
-                className="bg-[#0D1B2A] border-white/10 text-white"
-                placeholder="Message subject"
-              />
-            </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <Label className="text-slate-300">Category</Label>
-              <Select value={composeData.category} onValueChange={(v) => setComposeData({ ...composeData, category: v })}>
-                <SelectTrigger className="bg-[#0D1B2A] border-white/10 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
-                  {MESSAGE_CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Content */}
-            <div className="space-y-2">
-              <Label className="text-slate-300">Content</Label>
-              <Textarea
-                value={composeData.content}
-                onChange={(e) => setComposeData({ ...composeData, content: e.target.value })}
-                className="bg-[#0D1B2A] border-white/10 text-white min-h-[120px] resize-y"
-                placeholder="Write your message here..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setComposeOpen(false); setUserSearch('') }} className="border-white/10 text-slate-300">Cancel</Button>
-            <Button onClick={handleSend} disabled={isSending || !composeData.recipientId || !composeData.subject || !composeData.content} className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
-              {isSending ? 'Sending...' : <><Send className="w-4 h-4 mr-2" /> Send Message</>}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* View Message Dialog */}
-      <Dialog open={viewOpen} onOpenChange={(open) => { if (!open) { setViewOpen(false); setViewMessage(null) } }}>
-        <DialogContent className="bg-[#1B2A4A] border-white/10 text-white max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Mail className="w-5 h-5 text-[#D4A843]" /> Message Details</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              To: {viewMessage?.recipientName || viewMessage?.recipientEmail}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-4">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-slate-400">Subject:</span> <span className="text-white font-medium">{viewMessage?.subject}</span></div>
-              <div><span className="text-slate-400">Category:</span> <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-semibold ${getCategoryBadge(viewMessage?.category || '')}`}>{viewMessage?.category?.replace(/_/g, ' ')}</Badge></div>
-              <div><span className="text-slate-400">Sent:</span> <span className="text-white">{formatDateTime(viewMessage?.createdAt)}</span></div>
-              <div><span className="text-slate-400">Read:</span> <span className={viewMessage?.isRead ? 'text-emerald-400' : 'text-slate-400'}>{viewMessage?.isRead ? 'Yes' : 'No'}</span></div>
-            </div>
-            <Separator className="bg-white/10" />
-            <div className="bg-[#0D1B2A] rounded-lg p-4 text-sm text-slate-200 whitespace-pre-wrap max-h-[300px] overflow-y-auto">
-              {viewMessage?.content}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setViewOpen(false); setViewMessage(null) }} className="border-white/10 text-slate-300">Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   )
 }
@@ -1953,7 +1258,6 @@ export default function FounderDashboard() {
   const [subscriptionBreakdown, setSubscriptionBreakdown] = useState<{ tier: string; count: number }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
-  const [tabError, setTabError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -1963,8 +1267,6 @@ export default function FounderDashboard() {
           const data = await res.json()
           setOverview(data.data?.overview || null)
           setSubscriptionBreakdown(data.data?.subscriptionBreakdown || [])
-        } else {
-          console.error('[FOUNDER] Admin API returned status:', res.status)
         }
       } catch (err) {
         console.error('Failed to fetch admin data:', err)
@@ -1974,30 +1276,6 @@ export default function FounderDashboard() {
     }
     fetchAdminData()
   }, [])
-
-  // Clear tab error when switching tabs
-  const handleTabChange = (value: string) => {
-    setTabError(null)
-    setActiveTab(value)
-  }
-
-  // Error boundary wrapper for tab content
-  const TabErrorBoundary = ({ children }: { children: React.ReactNode }) => (
-    <TabErrorBoundaryClass
-      fallback={(error, reset) => (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <AlertCircle className="w-10 h-10 text-amber-400 mb-3" />
-          <p className="text-slate-400">Something went wrong loading this section.</p>
-          <p className="text-xs text-slate-500 mt-1 max-w-md">{error.message}</p>
-          <Button variant="outline" onClick={reset} className="mt-3 bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
-            <RefreshCw className="w-4 h-4 mr-2" /> Try Again
-          </Button>
-        </div>
-      )}
-    >
-      {children}
-    </TabErrorBoundaryClass>
-  )
 
   return (
     <div className="space-y-6">
@@ -2010,79 +1288,56 @@ export default function FounderDashboard() {
           </h1>
           <p className="text-sm text-slate-500 mt-1">Master Administrator — Full platform control</p>
         </div>
-        <Button variant="outline" onClick={() => window.location.reload()} className="text-[#1B3A4B] border-[#1B3A4B]/20 hover:bg-[#1B3A4B]/5">
+        <Button variant="outline" onClick={() => window.location.reload()} className="text-[#1B3A4B] border-[#1B3A4B]/20">
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh
         </Button>
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <div className="overflow-x-auto pb-1">
-          <TabsList className="bg-[#1B3A4B]/5 border border-[#1B3A4B]/10 w-full sm:w-auto inline-flex">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Overview</TabsTrigger>
-            <TabsTrigger value="sub-overview" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Sub Overview</TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Users</TabsTrigger>
-            <TabsTrigger value="passwords" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">
-              Password Resets
-            </TabsTrigger>
-            <TabsTrigger value="subscriptions" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Subscriptions</TabsTrigger>
-            <TabsTrigger value="messages" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Messages</TabsTrigger>
-            <TabsTrigger value="schools" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Schools</TabsTrigger>
-            <TabsTrigger value="audit" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white text-xs sm:text-sm px-3 sm:px-4">Audit Logs</TabsTrigger>
-          </TabsList>
-        </div>
-
-        {tabError && (
-          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            {tabError}
-          </div>
-        )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-[#1B3A4B]/5 border border-[#1B3A4B]/10">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Overview</TabsTrigger>
+          <TabsTrigger value="subscriptions" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Subscriptions</TabsTrigger>
+          <TabsTrigger value="users" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Users</TabsTrigger>
+          <TabsTrigger value="passwords" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">
+            Password Resets
+          </TabsTrigger>
+          <TabsTrigger value="schools" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Schools</TabsTrigger>
+          <TabsTrigger value="audit" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Audit Logs</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
             <PlatformOverview overview={overview} isLoading={isLoading} />
           </div>
         </TabsContent>
 
-        <TabsContent value="sub-overview" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+        <TabsContent value="subscriptions" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
             <SubscriptionOverview breakdown={subscriptionBreakdown} />
           </div>
         </TabsContent>
 
         <TabsContent value="users" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
             <UserManagement />
           </div>
         </TabsContent>
 
         <TabsContent value="passwords" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
             <PasswordResetRequests />
           </div>
         </TabsContent>
 
-        <TabsContent value="subscriptions" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
-            <SubscriptionManagement />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="messages" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
-            <AdminMessaging />
-          </div>
-        </TabsContent>
-
         <TabsContent value="schools" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
             <SchoolManagement />
           </div>
         </TabsContent>
 
         <TabsContent value="audit" className="mt-6">
-          <div className="bg-[#0D1B2A] rounded-2xl p-4 md:p-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
             <AuditLogs />
           </div>
         </TabsContent>

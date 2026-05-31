@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Bell, Menu, X, Globe, AlertCircle
+  Search, Bell, Menu, X, Globe
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,44 +30,6 @@ import SettingsView from '@/components/settings/SettingsView'
 import FounderDashboard from '@/components/founder/FounderDashboard'
 import SchoolDirectory from '@/components/schools/SchoolDirectory'
 import { useNavStore, useAuthStore, useAppStore, type ViewName } from '@/lib/store'
-
-// ============================================================
-// VIEW ERROR BOUNDARY - catches render errors in any view
-// ============================================================
-
-class ViewErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false, error: null }
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error }
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-500" />
-          </div>
-          <h2 className="text-xl font-bold text-[#1B3A4B]">Something went wrong</h2>
-          <p className="text-muted-foreground mt-2 max-w-md text-center">{this.state.error?.message || 'An unexpected error occurred'}</p>
-          <Button
-            variant="outline"
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="mt-4"
-          >
-            Try Again
-          </Button>
-        </div>
-      )
-    }
-    return this.props.children
-  }
-}
 
 // ============================================================
 // PLACEHOLDER VIEW COMPONENTS (for views not yet implemented)
@@ -158,38 +120,26 @@ export default function AppShell() {
 
   const unreadCount = notifications.filter(n => !n.isRead).length
 
-  // Subscription & trial state
+  // Trial banner logic
   const isOnTrial = user?.subscriptionStatus === 'TRIAL'
-  const isExpired = user?.subscriptionStatus === 'EXPIRED' || user?.subscriptionStatus === 'CANCELLED'
-  const isFreeTier = user?.subscriptionTier === 'FREE'
+  const trialEndsAt = user?.subscriptionTier === 'FREE' ? null : undefined
   const [trialTimeLeft, setTrialTimeLeft] = React.useState<string>('')
-  const [subscriptionData, setSubscriptionData] = React.useState<{ tier: string; status: string; trialEndsAt?: string } | null>(null)
 
   React.useEffect(() => {
-    // Always fetch subscription data on mount (for all users)
+    if (!isOnTrial) return
     const fetchSubscription = async () => {
       try {
         const res = await fetch('/api/subscriptions')
         if (res.ok) {
           const data = await res.json()
-          const sub = data.data
-          setSubscriptionData({
-            tier: sub?.tier || 'FREE',
-            status: sub?.status || 'TRIAL',
-            trialEndsAt: sub?.trialEndsAt,
-          })
-
-          // If on trial, start countdown timer
-          if (sub?.status === 'TRIAL' && sub?.trialEndsAt) {
-            const endsAt = sub.trialEndsAt
+          const endsAt = data.data?.trialEndsAt
+          if (endsAt) {
             const updateTimer = () => {
               const now = new Date().getTime()
               const end = new Date(endsAt).getTime()
               const diff = end - now
               if (diff <= 0) {
                 setTrialTimeLeft('Expired')
-                // Refresh the page to update the subscription status
-                window.location.reload()
                 return
               }
               const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -205,25 +155,13 @@ export default function AppShell() {
             const interval = setInterval(updateTimer, 1000)
             return () => clearInterval(interval)
           }
-
-          // If expired and still showing TRIAL in JWT, force refresh
-          if (sub?.status === 'EXPIRED' && user?.subscriptionStatus === 'TRIAL') {
-            // The JWT is stale — refresh the session
-            const sessionRes = await fetch('/api/auth/session')
-            if (sessionRes.ok) {
-              const session = await sessionRes.json()
-              if (session?.user) {
-                useAuthStore.getState().checkSession()
-              }
-            }
-          }
         }
       } catch {
         // silently fail
       }
     }
     fetchSubscription()
-  }, [])
+  }, [isOnTrial])
 
   // Session is already managed by auth store
 
@@ -377,14 +315,14 @@ export default function AppShell() {
 
         {/* Main content area */}
         <main className={`flex-1 overflow-y-auto custom-scrollbar ${currentView === 'chat' ? 'flex flex-col' : ''}`}>
-          {/* Subscription Banner — Trial, Expired, or Free Tier */}
+          {/* Trial Banner */}
           {isOnTrial && trialTimeLeft && (
             <div className="bg-[#D4A843]/10 border-b border-[#D4A843]/20 px-4 md:px-6 py-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-[#D4A843] rounded-full animate-pulse" />
                 <span className="text-sm text-[#1B3A4B]">
                   <strong>24-Hour Free Trial</strong> — {trialTimeLeft}
-                  <span className="text-[#1B3A4B]/50 ml-2">Access: 3 training modules + 1 diagnostic assessment + AI assistant</span>
+                  <span className="text-[#1B3A4B]/50 ml-2">Restricted access: basic courses & limited assessments only</span>
                 </span>
               </div>
               <Button
@@ -396,42 +334,7 @@ export default function AppShell() {
               </Button>
             </div>
           )}
-          {isExpired && !isOnTrial && (
-            <div className="bg-red-50 border-b border-red-200 px-4 md:px-6 py-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-sm text-red-800">
-                  <strong>Trial Expired</strong> — Your 24-hour trial has ended. Upgrade to unlock full access.
-                  <span className="text-red-600/60 ml-2">Free tier: 3 basic modules only</span>
-                </span>
-              </div>
-              <Button
-                size="sm"
-                className="bg-red-500 text-white hover:bg-red-600 font-semibold text-xs h-7 shadow-sm"
-                onClick={() => useNavStore.getState().navigate('pricing')}
-              >
-                Upgrade Now
-              </Button>
-            </div>
-          )}
-          {isFreeTier && !isOnTrial && !isExpired && (
-            <div className="bg-[#0D7377]/5 border-b border-[#0D7377]/10 px-4 md:px-6 py-2 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-[#0D7377] rounded-full" />
-                <span className="text-sm text-[#1B3A4B]">
-                  <strong>Free Plan</strong> — Limited access: 3 training modules + 1 assessment
-                </span>
-              </div>
-              <Button
-                size="sm"
-                className="bg-[#0D7377] text-white hover:bg-[#0A5E62] font-semibold text-xs h-7 shadow-sm"
-                onClick={() => useNavStore.getState().navigate('pricing')}
-              >
-                Upgrade
-              </Button>
-            </div>
-          )}
-          <div className={currentView === 'chat' ? 'flex-1 flex flex-col p-2 md:p-3 min-h-0' : currentView === 'training' ? 'p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto' : 'p-4 md:p-6 lg:p-8 max-w-7xl mx-auto'}>
+          <div className={currentView === 'chat' ? 'flex-1 flex flex-col p-2 md:p-3 min-h-0' : 'p-4 md:p-6 lg:p-8 max-w-7xl mx-auto'}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentView}
@@ -441,7 +344,7 @@ export default function AppShell() {
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className={currentView === 'chat' ? 'flex-1 min-h-0' : ''}
               >
-                <ViewErrorBoundary><ViewRouter view={currentView} /></ViewErrorBoundary>
+                <ViewRouter view={currentView} />
               </motion.div>
             </AnimatePresence>
           </div>
