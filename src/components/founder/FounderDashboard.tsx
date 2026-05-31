@@ -372,6 +372,10 @@ function UserManagement() {
       toast.error('All fields are required')
       return
     }
+    if (newUser.password.length < 6) {
+      toast.error('Password must be at least 6 characters')
+      return
+    }
     setIsCreating(true)
     try {
       const res = await fetch('/api/admin/users', {
@@ -386,10 +390,12 @@ function UserManagement() {
         setNewUser({ name: '', email: '', password: '', role: 'STUDENT' })
         fetchUsers()
       } else {
+        // Show the specific error from the API
         toast.error(data.error || 'Failed to create user')
       }
-    } catch {
-      toast.error('Failed to create user')
+    } catch (err) {
+      console.error('Add user error:', err)
+      toast.error('Network error — please check your connection and try again')
     } finally {
       setIsCreating(false)
     }

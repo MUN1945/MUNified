@@ -189,7 +189,11 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password)
 
-    // Create user with subscription and delegate profile
+    // Build the user creation data — teachers get DIRECTOR_PRO trial, students get FREE trial
+    // Both roles get a DelegateProfile (even teachers are MUN participants)
+    const isTeacherOrAbove = ["TEACHER", "ADMIN", "SCHOOL_ADMIN", "SUPER_ADMIN", "FOUNDER", "MASTER_ADMIN"].includes(role)
+    const initialTier = isTeacherOrAbove ? "DIRECTOR_PRO" : "FREE"
+
     const user = await db.user.create({
       data: {
         name: name.trim(),
@@ -200,7 +204,7 @@ export async function POST(request: NextRequest) {
         emailVerified: true,
         subscription: {
           create: {
-            tier: "FREE",
+            tier: initialTier,
             status: "TRIAL",
             trialStartsAt: new Date(),
             trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -258,15 +262,43 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[ADMIN USERS] Error creating user:", error)
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // P2002 = Unique constraint violation (duplicate email)
+      if (error.code === "P2002") {
+        const target = (error.meta?.target as string[])?.join(', ') || 'unknown'
+        return NextResponse.json(
+          { success: false, error: `A record with this ${target} already exists` },
+          { status: 409 }
+        )
+      }
+      // P2003 = Foreign key constraint failure
+      if (error.code === "P2003") {
+        return NextResponse.json(
+          { success: false, error: "Referenced record not found. Please check the school assignment." },
+          { status: 400 }
+        )
+      }
+      // P2012 = Missing required value
+      if (error.code === "P2012") {
+        const missing = (error.meta?.path as string[])?.join('.') || 'unknown field'
+        return NextResponse.json(
+          { success: false, error: `Missing required value: ${missing}` },
+          { status: 400 }
+        )
+      }
+      console.error("[ADMIN USERS] Prisma error code:", error.code, "meta:", error.meta)
       return NextResponse.json(
-        { success: false, error: "A user with this email already exists" },
-        { status: 409 }
+        { success: false, error: `Database error (${error.code}). Please try again or contact support.` },
+        { status: 500 }
       )
     }
 
+    // Log the full error for debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error("[ADMIN USERS] Full error:", errorMessage)
+
     return NextResponse.json(
-      { success: false, error: "Failed to create user" },
+      { success: false, error: `Failed to create user: ${errorMessage}` },
       { status: 500 }
     )
   }

@@ -22,11 +22,33 @@ const publicPrefixes = [
   "/api/auth",
   "/api/courses",
   "/api/schools",
+  "/api/billing/webhook", // Lemon Squeezy webhook must be public
 ]
 
 // Routes that require specific roles
 const adminRoutes = [
   "/api/admin",
+]
+
+// ============================================================
+// SUBSCRIPTION-GATED ROUTES
+// Routes that require an active (non-expired) subscription
+// ============================================================
+
+// API routes that require at least an active trial or paid subscription
+const subscriptionRequiredRoutes = [
+  "/api/conferences",
+  "/api/enrollments",
+  "/api/gamification",
+  "/api/research",
+  "/api/research/evaluate",
+  "/api/messages",
+]
+
+// API routes that require a paid subscription (not available on free/trial)
+const paidOnlyRoutes = [
+  // Currently none — we use per-route enforcement via subscription.ts
+  // This is for routes that are completely blocked for FREE users
 ]
 
 export async function middleware(request: NextRequest) {
@@ -111,6 +133,35 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/dashboard", request.url))
       }
     }
+
+    // ============================
+    // SUBSCRIPTION STATUS CHECK (for dashboard routes)
+    // Add subscription info to a custom header so the frontend can react
+    // ============================
+    const subStatus = token.subscriptionStatus as string | undefined
+    const subTier = token.subscriptionTier as string | undefined
+
+    const response = NextResponse.next()
+    // Pass subscription info to frontend via custom headers
+    response.headers.set("x-subscription-tier", subTier || "FREE")
+    response.headers.set("x-subscription-status", subStatus || "TRIAL")
+
+    // If expired, add a flag so frontend shows upgrade prompt
+    if (subStatus === "EXPIRED" || subStatus === "CANCELLED") {
+      response.headers.set("x-subscription-expired", "true")
+    }
+
+    // Add security headers
+    response.headers.set("X-Content-Type-Options", "nosniff")
+    response.headers.set("X-Frame-Options", "DENY")
+    response.headers.set("X-XSS-Protection", "1; mode=block")
+    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.set(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()"
+    )
+
+    return response
   }
 
   // For admin API routes, check authentication and role
@@ -129,6 +180,51 @@ export async function middleware(request: NextRequest) {
     if (!["MASTER_ADMIN", "FOUNDER", "SUPER_ADMIN", "ADMIN"].includes(role)) {
       return NextResponse.json(
         { success: false, error: "Insufficient permissions" },
+        { status: 403 }
+      )
+    }
+  }
+
+  // ============================
+  // SUBSCRIPTION-GATED API ROUTES
+  // These routes check if the user has an active subscription
+  // (TRIAL, ACTIVE, or PAST_DUE within grace period)
+  // ============================
+  const isSubscriptionRequired = subscriptionRequiredRoutes.some(prefix => pathname.startsWith(prefix))
+
+  if (isSubscriptionRequired) {
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
+    const subStatus = token.subscriptionStatus as string | undefined
+
+    // EXPIRED users cannot access subscription-required routes
+    // They must upgrade to regain access
+    if (subStatus === "EXPIRED") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Your trial has expired. Please upgrade to continue using this feature.",
+          code: "SUBSCRIPTION_EXPIRED",
+        },
+        { status: 403 }
+      )
+    }
+
+    // CANCELLED users past their period end cannot access
+    if (subStatus === "CANCELLED") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Your subscription has been cancelled. Please reactivate or upgrade to continue.",
+          code: "SUBSCRIPTION_CANCELLED",
+        },
         { status: 403 }
       )
     }

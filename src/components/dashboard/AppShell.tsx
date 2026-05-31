@@ -120,26 +120,38 @@ export default function AppShell() {
 
   const unreadCount = notifications.filter(n => !n.isRead).length
 
-  // Trial banner logic
+  // Subscription & trial state
   const isOnTrial = user?.subscriptionStatus === 'TRIAL'
-  const trialEndsAt = user?.subscriptionTier === 'FREE' ? null : undefined
+  const isExpired = user?.subscriptionStatus === 'EXPIRED' || user?.subscriptionStatus === 'CANCELLED'
+  const isFreeTier = user?.subscriptionTier === 'FREE'
   const [trialTimeLeft, setTrialTimeLeft] = React.useState<string>('')
+  const [subscriptionData, setSubscriptionData] = React.useState<{ tier: string; status: string; trialEndsAt?: string } | null>(null)
 
   React.useEffect(() => {
-    if (!isOnTrial) return
+    // Always fetch subscription data on mount (for all users)
     const fetchSubscription = async () => {
       try {
         const res = await fetch('/api/subscriptions')
         if (res.ok) {
           const data = await res.json()
-          const endsAt = data.data?.trialEndsAt
-          if (endsAt) {
+          const sub = data.data
+          setSubscriptionData({
+            tier: sub?.tier || 'FREE',
+            status: sub?.status || 'TRIAL',
+            trialEndsAt: sub?.trialEndsAt,
+          })
+
+          // If on trial, start countdown timer
+          if (sub?.status === 'TRIAL' && sub?.trialEndsAt) {
+            const endsAt = sub.trialEndsAt
             const updateTimer = () => {
               const now = new Date().getTime()
               const end = new Date(endsAt).getTime()
               const diff = end - now
               if (diff <= 0) {
                 setTrialTimeLeft('Expired')
+                // Refresh the page to update the subscription status
+                window.location.reload()
                 return
               }
               const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -155,13 +167,25 @@ export default function AppShell() {
             const interval = setInterval(updateTimer, 1000)
             return () => clearInterval(interval)
           }
+
+          // If expired and still showing TRIAL in JWT, force refresh
+          if (sub?.status === 'EXPIRED' && user?.subscriptionStatus === 'TRIAL') {
+            // The JWT is stale — refresh the session
+            const sessionRes = await fetch('/api/auth/session')
+            if (sessionRes.ok) {
+              const session = await sessionRes.json()
+              if (session?.user) {
+                useAuthStore.getState().checkSession()
+              }
+            }
+          }
         }
       } catch {
         // silently fail
       }
     }
     fetchSubscription()
-  }, [isOnTrial])
+  }, [])
 
   // Session is already managed by auth store
 
@@ -315,14 +339,14 @@ export default function AppShell() {
 
         {/* Main content area */}
         <main className={`flex-1 overflow-y-auto custom-scrollbar ${currentView === 'chat' ? 'flex flex-col' : ''}`}>
-          {/* Trial Banner */}
+          {/* Subscription Banner — Trial, Expired, or Free Tier */}
           {isOnTrial && trialTimeLeft && (
             <div className="bg-[#D4A843]/10 border-b border-[#D4A843]/20 px-4 md:px-6 py-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-[#D4A843] rounded-full animate-pulse" />
                 <span className="text-sm text-[#1B3A4B]">
                   <strong>24-Hour Free Trial</strong> — {trialTimeLeft}
-                  <span className="text-[#1B3A4B]/50 ml-2">Restricted access: basic courses & limited assessments only</span>
+                  <span className="text-[#1B3A4B]/50 ml-2">Access: 3 training modules + 1 diagnostic assessment + AI assistant</span>
                 </span>
               </div>
               <Button
@@ -331,6 +355,41 @@ export default function AppShell() {
                 onClick={() => useNavStore.getState().navigate('pricing')}
               >
                 Upgrade Now
+              </Button>
+            </div>
+          )}
+          {isExpired && !isOnTrial && (
+            <div className="bg-red-50 border-b border-red-200 px-4 md:px-6 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-sm text-red-800">
+                  <strong>Trial Expired</strong> — Your 24-hour trial has ended. Upgrade to unlock full access.
+                  <span className="text-red-600/60 ml-2">Free tier: 3 basic modules only</span>
+                </span>
+              </div>
+              <Button
+                size="sm"
+                className="bg-red-500 text-white hover:bg-red-600 font-semibold text-xs h-7 shadow-sm"
+                onClick={() => useNavStore.getState().navigate('pricing')}
+              >
+                Upgrade Now
+              </Button>
+            </div>
+          )}
+          {isFreeTier && !isOnTrial && !isExpired && (
+            <div className="bg-[#0D7377]/5 border-b border-[#0D7377]/10 px-4 md:px-6 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-[#0D7377] rounded-full" />
+                <span className="text-sm text-[#1B3A4B]">
+                  <strong>Free Plan</strong> — Limited access: 3 training modules + 1 assessment
+                </span>
+              </div>
+              <Button
+                size="sm"
+                className="bg-[#0D7377] text-white hover:bg-[#0A5E62] font-semibold text-xs h-7 shadow-sm"
+                onClick={() => useNavStore.getState().navigate('pricing')}
+              >
+                Upgrade
               </Button>
             </div>
           )}

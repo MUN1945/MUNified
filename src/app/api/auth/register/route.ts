@@ -113,13 +113,13 @@ export async function POST(request: NextRequest) {
             speechesDelivered: 0,
           },
         },
-        // Create trial subscription
+        // Create trial subscription — teachers get DIRECTOR_PRO trial, students get FREE trial
         subscription: {
           create: {
-            tier: "FREE",
+            tier: userRole === "TEACHER" ? "DIRECTOR_PRO" : "FREE",
             status: "TRIAL",
             trialStartsAt: new Date(),
-            trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24-hour trial with restricted access (basic courses, limited assessments only)
+            trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24-hour trial
           },
         },
       },
