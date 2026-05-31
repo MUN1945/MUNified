@@ -219,9 +219,9 @@ function LessonContentRenderer({ content }: { content: string }) {
     // ## Headers
     if (line.startsWith('## ')) {
       elements.push(
-        <div key={key} className="mt-6 mb-3 flex items-center gap-2.5">
-          <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#0D7377] to-[#059669]" />
-          <h2 className="text-base font-bold text-foreground tracking-tight">{line.replace('## ', '')}</h2>
+        <div key={key} className="mt-6 mb-3 flex items-center gap-2.5 min-w-0 overflow-hidden">
+          <div className="w-1 h-6 rounded-full bg-gradient-to-b from-[#0D7377] to-[#059669] shrink-0" />
+          <h2 className="text-base font-bold text-foreground tracking-tight break-words overflow-hidden">{line.replace('## ', '')}</h2>
         </div>
       )
       continue
@@ -230,7 +230,7 @@ function LessonContentRenderer({ content }: { content: string }) {
     // ### Subheaders
     if (line.startsWith('### ')) {
       elements.push(
-        <h3 key={key} className="mt-4 mb-2 text-sm font-semibold text-foreground/80 pl-3.5 border-l-2 border-[#0D7377]/30">
+        <h3 key={key} className="mt-4 mb-2 text-sm font-semibold text-foreground/80 pl-3.5 border-l-2 border-[#0D7377]/30 break-words overflow-hidden min-w-0">
           {line.replace('### ', '')}
         </h3>
       )
@@ -241,11 +241,11 @@ function LessonContentRenderer({ content }: { content: string }) {
     if (line.startsWith('TIP:') || line.startsWith('💡')) {
       const tipText = line.startsWith('TIP:') ? line.replace('TIP:', '').trim() : line.replace('💡', '').trim()
       elements.push(
-        <div key={key} className="my-3 flex gap-3 p-3.5 rounded-xl bg-sky-50 border border-sky-200/60 dark:bg-sky-950/30 dark:border-sky-800/40">
+        <div key={key} className="my-3 flex gap-3 p-3.5 rounded-xl bg-sky-50 border border-sky-200/60 overflow-hidden">
           <div className="shrink-0 mt-0.5">
             <Lightbulb className="w-4 h-4 text-sky-500" />
           </div>
-          <p className="text-sm text-sky-800 dark:text-sky-200 leading-relaxed">{tipText}</p>
+          <p className="text-sm text-sky-800 leading-relaxed break-words min-w-0 overflow-hidden">{tipText}</p>
         </div>
       )
       continue
@@ -255,11 +255,11 @@ function LessonContentRenderer({ content }: { content: string }) {
     if (line.startsWith('WARNING:') || line.startsWith('⚠️')) {
       const warnText = line.startsWith('WARNING:') ? line.replace('WARNING:', '').trim() : line.replace('⚠️', '').trim()
       elements.push(
-        <div key={key} className="my-3 flex gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800/40">
+        <div key={key} className="my-3 flex gap-3 p-3.5 rounded-xl bg-amber-50 border border-amber-200/60 overflow-hidden">
           <div className="shrink-0 mt-0.5">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
           </div>
-          <p className="text-sm text-amber-800 dark:text-amber-200 leading-relaxed">{warnText}</p>
+          <p className="text-sm text-amber-800 leading-relaxed break-words min-w-0 overflow-hidden">{warnText}</p>
         </div>
       )
       continue
@@ -269,11 +269,11 @@ function LessonContentRenderer({ content }: { content: string }) {
     if (line.startsWith('KEY POINT:') || line.startsWith('🎯')) {
       const kpText = line.startsWith('KEY POINT:') ? line.replace('KEY POINT:', '').trim() : line.replace('🎯', '').trim()
       elements.push(
-        <div key={key} className="my-3 flex gap-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800/40">
+        <div key={key} className="my-3 flex gap-3 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/60 overflow-hidden">
           <div className="shrink-0 mt-0.5">
             <Crosshair className="w-4 h-4 text-emerald-500" />
           </div>
-          <p className="text-sm text-emerald-800 dark:text-emerald-200 leading-relaxed">{kpText}</p>
+          <p className="text-sm text-emerald-800 leading-relaxed break-words min-w-0 overflow-hidden">{kpText}</p>
         </div>
       )
       continue
@@ -282,11 +282,10 @@ function LessonContentRenderer({ content }: { content: string }) {
     // CHECK: interactive checklist items
     if (line.startsWith('CHECK:') || line.startsWith('✅')) {
       const checkText = line.startsWith('CHECK:') ? line.replace('CHECK:', '').trim() : line.replace('✅', '').trim()
-      const checkId = `check-${i}`
       elements.push(
-        <div key={key} className="my-2 flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50">
+        <div key={key} className="my-2 flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/40 border border-border/50 overflow-hidden">
           <CheckSquare className="w-4 h-4 text-[#0D7377] shrink-0 mt-0.5" />
-          <span className="text-sm text-foreground/80 leading-relaxed">{checkText}</span>
+          <span className="text-sm text-foreground/80 leading-relaxed break-words min-w-0">{checkText}</span>
         </div>
       )
       continue
@@ -297,9 +296,9 @@ function LessonContentRenderer({ content }: { content: string }) {
       const match = line.match(/- \*\*(.+?)\*\*:?\s*(.*)/)
       if (match) {
         elements.push(
-          <div key={key} className="flex gap-2.5 ml-1 mb-1.5">
+          <div key={key} className="flex gap-2.5 ml-1 mb-1.5 min-w-0">
             <span className="text-[#0D7377] mt-0.5 shrink-0 text-xs">&#9679;</span>
-            <span className="text-sm leading-relaxed">
+            <span className="text-sm leading-relaxed break-words min-w-0 overflow-hidden">
               <strong className="text-foreground font-semibold">{match[1]}</strong>
               {match[2] ? <span className="text-muted-foreground">: {match[2]}</span> : ''}
             </span>
@@ -309,9 +308,9 @@ function LessonContentRenderer({ content }: { content: string }) {
       }
       // Fallback for unmatched
       elements.push(
-        <div key={key} className="flex gap-2.5 ml-1 mb-1.5">
+        <div key={key} className="flex gap-2.5 ml-1 mb-1.5 min-w-0">
           <span className="text-[#0D7377] mt-0.5 shrink-0 text-xs">&#9679;</span>
-          <span className="text-sm text-foreground leading-relaxed">{line.replace('- ', '')}</span>
+          <span className="text-sm text-foreground leading-relaxed break-words min-w-0 overflow-hidden">{line.replace('- ', '')}</span>
         </div>
       )
       continue
@@ -320,9 +319,9 @@ function LessonContentRenderer({ content }: { content: string }) {
     // Regular bullet: - text
     if (line.startsWith('- ')) {
       elements.push(
-        <div key={key} className="flex gap-2.5 ml-1 mb-1.5">
+        <div key={key} className="flex gap-2.5 ml-1 mb-1.5 min-w-0">
           <span className="text-[#0D7377]/60 mt-0.5 shrink-0 text-xs">&#9679;</span>
-          <span className="text-sm text-muted-foreground leading-relaxed">{line.replace('- ', '')}</span>
+          <span className="text-sm text-muted-foreground leading-relaxed break-words min-w-0 overflow-hidden">{line.replace('- ', '')}</span>
         </div>
       )
       continue
@@ -332,11 +331,11 @@ function LessonContentRenderer({ content }: { content: string }) {
     const numberedMatch = line.match(/^(\d+)\.\s+(.*)/)
     if (numberedMatch) {
       elements.push(
-        <div key={key} className="flex gap-2.5 ml-1 mb-1.5">
+        <div key={key} className="flex gap-2.5 ml-1 mb-1.5 min-w-0">
           <span className="text-xs font-bold text-[#0D7377] bg-[#0D7377]/8 w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">
             {numberedMatch[1]}
           </span>
-          <span className="text-sm text-foreground leading-relaxed">{numberedMatch[2]}</span>
+          <span className="text-sm text-foreground leading-relaxed break-words min-w-0 overflow-hidden">{numberedMatch[2]}</span>
         </div>
       )
       continue
@@ -351,7 +350,7 @@ function LessonContentRenderer({ content }: { content: string }) {
       return <span key={j}>{part}</span>
     })
     elements.push(
-      <p key={key} className="text-sm text-foreground/80 leading-relaxed mb-1">{rendered}</p>
+      <p key={key} className="text-sm text-foreground/80 leading-relaxed mb-1 break-words overflow-hidden" style={{ overflowWrap: 'break-word' }}>{rendered}</p>
     )
   }
 
@@ -364,7 +363,7 @@ function LessonContentRenderer({ content }: { content: string }) {
 
 function CourseGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="rounded-xl border border-border/50 overflow-hidden bg-card">
           {/* Thumbnail skeleton */}
@@ -696,7 +695,7 @@ export default function TrainingHub() {
                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${selectedCourse.gradient} flex items-center justify-center shrink-0 shadow-lg`}>
                   <selectedCourse.icon className="w-7 h-7 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-2 flex-wrap mb-2">
                     <Badge variant="outline" className={`text-[11px] font-medium ${DIFFICULTY_COLORS[selectedCourse.difficulty]}`}>
                       {selectedCourse.difficulty}
@@ -718,10 +717,10 @@ export default function TrainingHub() {
                       </Badge>
                     )}
                   </div>
-                  <h2 className="text-lg md:text-xl font-bold text-foreground leading-tight mb-1.5">{selectedCourse.title}</h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{selectedCourse.description}</p>
+                  <h2 className="text-lg md:text-xl font-bold text-foreground leading-tight mb-1.5 break-words overflow-hidden">{selectedCourse.title}</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 break-words overflow-hidden">{selectedCourse.description}</p>
                   <div className="mt-4 flex items-center gap-4">
-                    <div className="flex-1 max-w-xs">
+                    <div className="flex-1 max-w-xs min-w-0">
                       <div className="flex items-center justify-between text-xs mb-1.5">
                         <span className="text-muted-foreground font-medium">Progress</span>
                         <span className="font-semibold text-foreground">{progress}%</span>
@@ -745,16 +744,17 @@ export default function TrainingHub() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
+            className="lg:h-[calc(100vh-280px)]"
           >
-            <Card className="overflow-hidden border-border/60">
-              <CardHeader className="pb-2 pt-4 px-4">
+            <Card className="overflow-hidden border-border/60 h-full flex flex-col">
+              <CardHeader className="pb-2 pt-4 px-4 shrink-0">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-[#0D7377]" />
                   Lessons
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-2 pt-0">
-                <ScrollArea className="max-h-[600px]">
+              <CardContent className="p-2 pt-0 flex-1 min-h-0">
+                <ScrollArea className="h-full">
                   <div className="space-y-0.5">
                     {selectedCourse.lessons.map((lesson, i) => {
                       const isDone = completedLessons[lesson.id]
@@ -784,12 +784,12 @@ export default function TrainingHub() {
                           }`}>
                             {isDone ? <CheckCircle2 className="w-4 h-4" /> : isLocked ? <Lock className="w-3.5 h-3.5" /> : i + 1}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-medium truncate text-sm leading-tight ${isActive ? 'text-[#0D7377]' : isDone ? 'text-emerald-600' : ''}`}>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <div className={`font-medium truncate text-sm leading-tight break-words ${isActive ? 'text-[#0D7377]' : isDone ? 'text-emerald-600' : 'text-foreground'}`}>
                               {lesson.title}
                             </div>
                             <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Clock className="w-3 h-3" /> {lesson.duration}
+                              <Clock className="w-3 h-3 shrink-0" /> <span className="truncate">{lesson.duration}</span>
                             </div>
                           </div>
                           {isActive && (
@@ -809,16 +809,17 @@ export default function TrainingHub() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
+            className="lg:h-[calc(100vh-280px)]"
           >
-            <Card className="min-h-[500px] overflow-hidden border-border/60">
+            <Card className="overflow-hidden border-border/60 h-full flex flex-col">
               {activeLesson ? (
                 <>
-                  <CardHeader className="pb-3 border-b">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="text-base font-bold leading-tight">{activeLesson.title}</CardTitle>
+                  <CardHeader className="pb-3 border-b shrink-0">
+                    <div className="flex items-start justify-between gap-3 min-w-0">
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <CardTitle className="text-base font-bold leading-tight break-words">{activeLesson.title}</CardTitle>
                         {activeLesson.description && (
-                          <CardDescription className="mt-1 text-sm">{activeLesson.description}</CardDescription>
+                          <CardDescription className="mt-1 text-sm break-words">{activeLesson.description}</CardDescription>
                         )}
                       </div>
                       <Badge variant="secondary" className="text-[11px] font-medium gap-1 shrink-0">
@@ -826,29 +827,31 @@ export default function TrainingHub() {
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-5 flex flex-col">
-                    <ScrollArea className="max-h-[420px] flex-1">
+                  <CardContent className="pt-5 flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <ScrollArea className="flex-1 min-h-0">
                       <motion.div
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
+                        className="pr-2"
+                        style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
                       >
                         <LessonContentRenderer content={activeLesson.content} />
                       </motion.div>
                     </ScrollArea>
 
-                    {/* Mark Complete button */}
-                    <div className="mt-5 pt-4 border-t">
+                    {/* Mark Complete button pinned at bottom */}
+                    <div className="mt-5 pt-4 border-t shrink-0">
                       {completedLessons[activeLesson.id] ? (
                         <motion.div
                           initial={{ scale: 0.9 }}
                           animate={{ scale: 1 }}
                           className="flex items-center gap-2.5"
                         >
-                          <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                          <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                           </div>
-                          <div>
+                          <div className="min-w-0 overflow-hidden">
                             <span className="font-semibold text-sm text-emerald-600">Lesson Completed</span>
                             <span className="text-xs text-muted-foreground ml-2">+{Math.round(selectedCourse.xpReward / selectedCourse.lessons.length)} XP</span>
                           </div>
@@ -866,12 +869,12 @@ export default function TrainingHub() {
                   </CardContent>
                 </>
               ) : (
-                <div className="flex flex-col items-center justify-center h-[400px] text-center px-6">
+                <div className="flex flex-col items-center justify-center flex-1 text-center px-6 min-h-[300px]">
                   <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
                     <BookOpen className="w-8 h-8 text-muted-foreground/30" />
                   </div>
                   <h3 className="font-semibold text-base mb-1.5 text-foreground">Select a lesson</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs">Choose a lesson from the list to begin your learning journey</p>
+                  <p className="text-sm text-muted-foreground max-w-xs break-words">Choose a lesson from the list to begin your learning journey</p>
                 </div>
               )}
             </Card>
@@ -901,16 +904,16 @@ export default function TrainingHub() {
         <Card className="bg-gradient-to-r from-[#1B3A4B] to-[#243B4F] border-[#D4A843]/15 overflow-hidden">
           <CardContent className="p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 min-w-0">
                 <div className="w-12 h-12 rounded-xl bg-[#D4A843]/15 flex items-center justify-center shrink-0">
                   <Crown className="w-6 h-6 text-[#D4A843]" />
                 </div>
-                <div>
-                  <div className="text-white font-semibold text-sm">{userLevel} Level</div>
-                  <div className="text-white/50 text-xs mt-0.5">{userXp.toLocaleString()} XP earned</div>
+                <div className="min-w-0 overflow-hidden">
+                  <div className="text-white font-semibold text-sm break-words">{userLevel} Level</div>
+                  <div className="text-white/50 text-xs mt-0.5 break-words">{userXp.toLocaleString()} XP earned</div>
                 </div>
               </div>
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-5 shrink-0">
                 <div className="flex items-center gap-1.5 text-[#D4A843]">
                   <Flame className="w-4 h-4" />
                   <span className="text-sm font-bold">{streak}-day streak</span>
@@ -929,7 +932,7 @@ export default function TrainingHub() {
       {/* Search and Filters */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative flex-1 max-w-sm min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search courses..."
@@ -939,7 +942,7 @@ export default function TrainingHub() {
               disabled={loading}
             />
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap overflow-x-auto pb-1">
             {[
               { value: 'all', label: 'All' },
               { value: 'my-courses', label: 'My Courses' },
@@ -953,7 +956,7 @@ export default function TrainingHub() {
               <button
                 key={f.value}
                 onClick={() => setFilterTab(f.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap shrink-0 ${
                   filterTab === f.value
                     ? 'bg-[#0D7377] text-white shadow-sm'
                     : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -980,11 +983,11 @@ export default function TrainingHub() {
           <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
             <BookOpen className="w-8 h-8 text-muted-foreground/30" />
           </div>
-          <h3 className="font-semibold text-base mb-1">No courses found</h3>
-          <p className="text-sm text-muted-foreground">Try adjusting your search or filters</p>
+          <h3 className="font-semibold text-base mb-1 text-foreground">No courses found</h3>
+          <p className="text-sm text-muted-foreground break-words">Try adjusting your search or filters</p>
         </motion.div>
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5">
         {filteredCourses.map((course, i) => {
           const progress = getCourseProgress(course)
           return (
@@ -995,11 +998,11 @@ export default function TrainingHub() {
               transition={{ duration: 0.4, delay: Math.min(0.1 + i * 0.06, 0.6) }}
             >
               <Card
-                className="overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border-border/50 hover:border-[#0D7377]/20 h-full flex flex-col"
+                className="overflow-hidden cursor-pointer group transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border-border/50 hover:border-[#0D7377]/20 flex flex-col"
                 onClick={() => handleOpenCourse(course.id)}
               >
                 {/* Thumbnail with gradient */}
-                <div className={`relative h-28 bg-gradient-to-br ${course.gradient} flex items-center justify-center overflow-hidden`}>
+                <div className={`relative h-28 bg-gradient-to-br ${course.gradient} flex items-center justify-center overflow-hidden shrink-0`}>
                   <course.icon className="w-11 h-11 text-white/70 group-hover:scale-110 transition-transform duration-300" />
                   {/* Difficulty badge - top left */}
                   <div className="absolute top-2.5 left-2.5">
@@ -1015,7 +1018,7 @@ export default function TrainingHub() {
                   {/* Role tag - bottom right */}
                   {course.roleTag && (
                     <div className="absolute bottom-2.5 right-2.5">
-                      <Badge className="bg-white/15 text-white text-[9px] font-medium backdrop-blur-sm border-white/10">
+                      <Badge className="bg-white/15 text-white text-[9px] font-medium backdrop-blur-sm border-white/10 overflow-hidden break-words">
                         {course.roleTag}
                       </Badge>
                     </div>
@@ -1031,24 +1034,24 @@ export default function TrainingHub() {
                 </div>
 
                 {/* Card content */}
-                <CardContent className="p-4 flex-1 flex flex-col">
-                  <h3 className="font-semibold text-sm leading-snug mb-1.5 group-hover:text-[#0D7377] transition-colors duration-200 line-clamp-2 min-w-0">
+                <CardContent className="p-4 flex-1 flex flex-col min-w-0 overflow-hidden">
+                  <h3 className="font-semibold text-sm leading-snug mb-1.5 group-hover:text-[#0D7377] transition-colors duration-200 line-clamp-2 break-words min-w-0 overflow-hidden">
                     {course.title}
                   </h3>
-                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2 leading-relaxed flex-1 min-w-0">
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2 leading-relaxed flex-1 min-w-0 break-words overflow-hidden">
                     {course.description}
                   </p>
                   {/* Lesson count and duration */}
-                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-2.5 font-medium">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-2.5 font-medium shrink-0">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <BookOpen className="w-3 h-3" /> {course.lessons.length} lessons
                     </span>
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap">
                       <Clock className="w-3 h-3" /> {course.duration}
                     </span>
                   </div>
                   {/* Progress bar */}
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 shrink-0">
                     <div className="flex-1 h-1.5 bg-muted/60 rounded-full overflow-hidden">
                       <motion.div
                         className={`h-full rounded-full transition-colors duration-300 ${
@@ -1062,7 +1065,7 @@ export default function TrainingHub() {
                         transition={{ duration: 0.8, delay: 0.3 + i * 0.06 }}
                       />
                     </div>
-                    <span className="text-[10px] font-semibold text-muted-foreground w-7 text-right tabular-nums">
+                    <span className="text-[10px] font-semibold text-muted-foreground w-7 text-right tabular-nums shrink-0">
                       {progress}%
                     </span>
                   </div>
@@ -1078,21 +1081,21 @@ export default function TrainingHub() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
         <Card className="overflow-hidden border-border/60">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <div className="min-w-0 overflow-hidden">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-[#D4A843]" />
-                  Achievements
+                  <Trophy className="w-4 h-4 text-[#D4A843] shrink-0" />
+                  <span className="break-words">Achievements</span>
                 </CardTitle>
-                <CardDescription className="text-xs mt-0.5">Track your progress and unlock rewards</CardDescription>
+                <CardDescription className="text-xs mt-0.5 break-words">Track your progress and unlock rewards</CardDescription>
               </div>
-              <Badge variant="secondary" className="text-[11px] font-medium gap-1">
+              <Badge variant="secondary" className="text-[11px] font-medium gap-1 shrink-0">
                 <Award className="w-3 h-3" /> {ACHIEVEMENTS.filter(a => a.earned).length}/{ACHIEVEMENTS.length}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {ACHIEVEMENTS.map((achievement, i) => (
                 <motion.div
                   key={achievement.id}
@@ -1105,14 +1108,14 @@ export default function TrainingHub() {
                       : 'border-border/40 opacity-40 bg-muted/20'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${
+                  <div className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center shrink-0 ${
                     achievement.earned ? 'bg-[#D4A843]/15' : 'bg-muted/60'
                   }`}>
                     <achievement.icon className={`w-5 h-5 ${achievement.earned ? 'text-[#D4A843]' : 'text-muted-foreground/50'}`} />
                   </div>
-                  <div className="font-medium text-xs leading-tight mb-0.5 truncate">{achievement.name}</div>
-                  <div className="text-[10px] text-muted-foreground mb-1.5 leading-tight line-clamp-2 min-h-[2rem]">{achievement.description}</div>
-                  <Badge variant="outline" className={`text-[9px] font-semibold ${RARITY_COLORS[achievement.rarity]}`}>
+                  <div className="font-medium text-xs leading-tight mb-0.5 truncate min-w-0 overflow-hidden">{achievement.name}</div>
+                  <div className="text-[10px] text-muted-foreground mb-1.5 leading-tight line-clamp-2 min-h-[2rem] break-words overflow-hidden">{achievement.description}</div>
+                  <Badge variant="outline" className={`text-[9px] font-semibold ${RARITY_COLORS[achievement.rarity]} overflow-hidden`}>
                     {achievement.rarity}
                   </Badge>
                 </motion.div>
