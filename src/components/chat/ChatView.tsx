@@ -966,8 +966,23 @@ export default function ChatView() {
     />
   )
 
-  // Empty state when no channels exist
-  if (!currentChannel && !loading) {
+  // Loading state when channels haven't loaded yet
+  if (!currentChannel) {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
+          <div className="text-center py-20 px-6">
+            <div className="w-16 h-16 rounded-2xl bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <MessageSquare className="w-8 h-8 text-[#0D7377]" />
+            </div>
+            <h2 className="text-xl font-bold text-[#1B3A4B]">Loading Channels...</h2>
+            <p className="text-muted-foreground mt-2 max-w-md">
+              Please wait while we load your chat channels.
+            </p>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
         <div className="text-center py-20 px-6">

@@ -739,7 +739,7 @@ export default function TrainingHub() {
         </motion.div>
 
         {/* Two-column layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5">
           {/* Lesson list */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -754,7 +754,7 @@ export default function TrainingHub() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-2 pt-0">
-                <ScrollArea className="max-h-[520px]">
+                <ScrollArea className="max-h-[600px]">
                   <div className="space-y-0.5">
                     {selectedCourse.lessons.map((lesson, i) => {
                       const isDone = completedLessons[lesson.id]
@@ -810,7 +810,7 @@ export default function TrainingHub() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Card className="min-h-[520px] overflow-hidden border-border/60">
+            <Card className="min-h-[500px] overflow-hidden border-border/60">
               {activeLesson ? (
                 <>
                   <CardHeader className="pb-3 border-b">
@@ -827,7 +827,7 @@ export default function TrainingHub() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-5 flex flex-col">
-                    <ScrollArea className="max-h-[340px] flex-1">
+                    <ScrollArea className="max-h-[420px] flex-1">
                       <motion.div
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}

@@ -431,7 +431,7 @@ export default function AppShell() {
               </Button>
             </div>
           )}
-          <div className={currentView === 'chat' ? 'flex-1 flex flex-col p-2 md:p-3 min-h-0' : 'p-4 md:p-6 lg:p-8 max-w-7xl mx-auto'}>
+          <div className={currentView === 'chat' ? 'flex-1 flex flex-col p-2 md:p-3 min-h-0' : currentView === 'training' ? 'p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto' : 'p-4 md:p-6 lg:p-8 max-w-7xl mx-auto'}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentView}

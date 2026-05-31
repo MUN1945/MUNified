@@ -629,17 +629,17 @@ function UserManagement() {
       {/* Table */}
       <DarkCard>
         <CardContent className="p-0">
-          <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
-              <Table className="min-w-[900px]">
+          <div className="overflow-auto max-h-[600px]">
+              <Table className="min-w-[1000px]">
                 <TableHeader>
-                  <TableRow className="border-white/10 hover:bg-transparent bg-white/5">
+                  <TableRow className="border-white/10 hover:bg-transparent bg-white/5 sticky top-0 z-10">
                     <TableHead className="text-slate-200 font-semibold min-w-[140px]">Name</TableHead>
                     <TableHead className="text-slate-200 font-semibold min-w-[180px]">Email</TableHead>
                     <TableHead className="text-slate-200 font-semibold min-w-[130px]">Role</TableHead>
                     <TableHead className="text-slate-200 font-semibold min-w-[120px]">School</TableHead>
                     <TableHead className="text-slate-200 font-semibold min-w-[100px]">Status</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[140px]">Subscription</TableHead>
-                    <TableHead className="text-slate-200 font-semibold min-w-[80px]">Actions</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[160px]">Subscription</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[100px] sticky right-0 bg-[#1B2A4A]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -661,7 +661,7 @@ function UserManagement() {
                       <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.school?.name || '—'}</TableCell>
                       <TableCell><StatusBadge status={u.isActive ? 'Active' : 'Suspended'} /></TableCell>
                       <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.subscription ? `${u.subscription.tier.replace(/_/g, ' ')} (${u.subscription.status})` : 'Free'}</TableCell>
-                      <TableCell>
+                      <TableCell className="sticky right-0 bg-[#1B2A4A]">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10">
@@ -795,6 +795,9 @@ function PasswordResetRequests() {
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('pending')
 
+  // Map statusFilter for API calls: 'all' means no filter
+  const apiStatusFilter = statusFilter === 'all' ? '' : statusFilter
+
   // Reset Password Dialog
   const [resetPwdOpen, setResetPwdOpen] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
@@ -805,7 +808,7 @@ function PasswordResetRequests() {
   const fetchRequests = useCallback(async () => {
     try {
       const params = new URLSearchParams({ limit: '50' })
-      if (statusFilter) params.set('status', statusFilter)
+      if (apiStatusFilter) params.set('status', apiStatusFilter)
       const res = await fetch(`/api/admin/password-resets?${params}`)
       if (res.ok) {
         const data = await res.json()
@@ -816,15 +819,19 @@ function PasswordResetRequests() {
     } finally {
       setIsLoading(false)
     }
-  }, [statusFilter])
+  }, [apiStatusFilter])
 
   useEffect(() => { fetchRequests() }, [fetchRequests])
 
   const pendingCount = requests.filter(r => r.status === 'pending').length
 
   const handleResetFromRequest = (req: PasswordResetRequest) => {
+    if (!req.user?.id) {
+      toast.error('Cannot reset password: no user account found for this email')
+      return
+    }
     setResetEmail(req.email)
-    setResetUserId(req.user?.id || '')
+    setResetUserId(req.user.id)
     setResetPwdOpen(true)
   }
 
@@ -870,7 +877,7 @@ function PasswordResetRequests() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-[#1B2A4A] border-white/10 z-50">
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>

@@ -91,6 +91,38 @@ export async function PATCH(
         : { disconnect: true }
     }
 
+    // When changing role, also update the subscription tier accordingly
+    // Role -> Subscription tier mapping:
+    //   STUDENT -> FREE (keep as is)
+    //   TEACHER -> DIRECTOR_PRO + ACTIVE
+    //   SCHOOL_ADMIN -> SCHOOL_STARTER + ACTIVE
+    //   ADMIN / SUPER_ADMIN / FOUNDER / MASTER_ADMIN -> SCHOOL_PROFESSIONAL + ACTIVE
+    if (role !== undefined) {
+      const roleToTier: Record<string, { tier: string; status: string }> = {
+        STUDENT: { tier: "FREE", status: "TRIAL" },
+        TEACHER: { tier: "DIRECTOR_PRO", status: "ACTIVE" },
+        SCHOOL_ADMIN: { tier: "SCHOOL_STARTER", status: "ACTIVE" },
+        ADMIN: { tier: "SCHOOL_PROFESSIONAL", status: "ACTIVE" },
+        SUPER_ADMIN: { tier: "SCHOOL_PROFESSIONAL", status: "ACTIVE" },
+        FOUNDER: { tier: "SCHOOL_PROFESSIONAL", status: "ACTIVE" },
+        MASTER_ADMIN: { tier: "SCHOOL_PROFESSIONAL", status: "ACTIVE" },
+      }
+      const subUpdate = roleToTier[role]
+      if (subUpdate) {
+        await db.subscription.upsert({
+          where: { userId: id },
+          update: { tier: subUpdate.tier as any, status: subUpdate.status as any },
+          create: {
+            userId: id,
+            tier: subUpdate.tier as any,
+            status: subUpdate.status as any,
+            trialStartsAt: new Date(),
+            trialEndsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        })
+      }
+    }
+
     const updatedUser = await db.user.update({
       where: { id },
       data: updateData,
