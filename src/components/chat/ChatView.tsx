@@ -858,7 +858,14 @@ export default function ChatView() {
             isEdited: Boolean(m.isEdited || false),
             isBot: Boolean((m.user as Record<string, unknown>)?.isBot || m.isBot || false),
           }))
-          setMessages(mappedMessages)
+          // Merge with existing messages — deduplicate by ID to avoid
+          // losing optimistic local-only messages or duplicating them.
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id))
+            const newFromServer = mappedMessages.filter(m => !existingIds.has(m.id))
+            if (newFromServer.length === 0) return prev // no change, skip re-render
+            return [...prev, ...newFromServer]
+          })
         }
       } catch {
         // polling failed silently

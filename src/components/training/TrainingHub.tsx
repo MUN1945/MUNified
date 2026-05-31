@@ -257,15 +257,6 @@ export default function TrainingHub() {
             if (courseId) {
               enrollmentMap[courseId] = { id: enrollmentId, courseId, progress, completed }
             }
-
-            // Derive completed lessons from enrollment progress
-            if (completed && courseId) {
-              const course = (data as Record<string, unknown>[]).length > 0
-                ? (await coursesRes).status === 'fulfilled'
-                  ? null // We'll handle this below after courses are set
-                : null
-                : null
-            }
           }
 
           setApiEnrollments(enrollmentMap)
@@ -362,6 +353,9 @@ export default function TrainingHub() {
   }, [])
 
   const handleMarkComplete = useCallback(async (lessonId: string, xpReward: number) => {
+    // Prevent double-marking
+    if (completedLessons[lessonId]) return
+
     // Update local state immediately for responsiveness
     setCompletedLessons(prev => ({ ...prev, [lessonId]: true }))
     setXpNotification({ xp: xpReward, visible: true })
@@ -373,10 +367,12 @@ export default function TrainingHub() {
 
     const enrollment = apiEnrollments[course.id]
     const totalLessons = course.lessons.length
-    const completedCount = course.lessons.filter(l =>
-      l.id === lessonId || completedLessons[l.id]
-    ).length + 1 // +1 for the lesson being marked now
-    const progress = Math.round((completedCount / totalLessons) * 100)
+    // Count completed lessons INCLUDING the one just marked.
+    // We add 1 for the current lesson since completedLessons state
+    // may not have updated yet due to React batching.
+    const previouslyCompleted = course.lessons.filter(l => completedLessons[l.id] && l.id !== lessonId).length
+    const completedCount = previouslyCompleted + 1 // +1 for the lesson being marked right now
+    const progress = Math.min(Math.round((completedCount / totalLessons) * 100), 100)
 
     try {
       if (enrollment) {
