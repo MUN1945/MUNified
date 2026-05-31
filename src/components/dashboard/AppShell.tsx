@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Bell, Menu, X, Globe
+  Search, Bell, Menu, X, Globe, AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,44 @@ import SettingsView from '@/components/settings/SettingsView'
 import FounderDashboard from '@/components/founder/FounderDashboard'
 import SchoolDirectory from '@/components/schools/SchoolDirectory'
 import { useNavStore, useAuthStore, useAppStore, type ViewName } from '@/lib/store'
+
+// ============================================================
+// VIEW ERROR BOUNDARY - catches render errors in any view
+// ============================================================
+
+class ViewErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-[#1B3A4B]">Something went wrong</h2>
+          <p className="text-muted-foreground mt-2 max-w-md text-center">{this.state.error?.message || 'An unexpected error occurred'}</p>
+          <Button
+            variant="outline"
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="mt-4"
+          >
+            Try Again
+          </Button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // ============================================================
 // PLACEHOLDER VIEW COMPONENTS (for views not yet implemented)
@@ -403,7 +441,7 @@ export default function AppShell() {
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className={currentView === 'chat' ? 'flex-1 min-h-0' : ''}
               >
-                <ViewRouter view={currentView} />
+                <ViewErrorBoundary><ViewRouter view={currentView} /></ViewErrorBoundary>
               </motion.div>
             </AnimatePresence>
           </div>

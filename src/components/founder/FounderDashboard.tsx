@@ -49,6 +49,28 @@ import {
 } from '@/components/ui/chart'
 import { Textarea } from '@/components/ui/textarea'
 
+// Proper React Error Boundary - catches render errors in children
+class TabErrorBoundaryClass extends React.Component<
+  { children: React.ReactNode; fallback: (error: Error, reset: () => void) => React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode; fallback: (error: Error, reset: () => void) => React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      return this.props.fallback(this.state.error, () => this.setState({ hasError: false, error: null }))
+    }
+    return this.props.children
+  }
+}
+
 // ============================================================
 // TYPES
 // ============================================================
@@ -163,7 +185,7 @@ function StatusBadge({ status }: { status: string }) {
     APPROVED: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
   }
   return (
-    <Badge variant="outline" className={`text-[11px] px-2.5 py-0.5 font-semibold ${config[status] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'}`}>
+    <Badge variant="outline" className={`text-xs px-2.5 py-0.5 font-semibold ${config[status] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'}`}>
       {status}
     </Badge>
   )
@@ -180,7 +202,7 @@ function RoleBadge({ role }: { role: string }) {
     STUDENT: 'bg-slate-400/20 text-slate-300 border-slate-400/40',
   }
   return (
-    <Badge variant="outline" className={`text-[11px] px-2.5 py-0.5 font-semibold whitespace-nowrap ${config[role] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'}`}>
+    <Badge variant="outline" className={`text-xs px-2.5 py-0.5 font-semibold whitespace-nowrap ${config[role] || 'bg-slate-500/20 text-slate-300 border-slate-500/40'}`}>
       {role === 'MASTER_ADMIN' && <Crown className="w-3 h-3 mr-1 inline" />}
       {role.replace(/_/g, ' ')}
     </Badge>
@@ -607,18 +629,17 @@ function UserManagement() {
       {/* Table */}
       <DarkCard>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <ScrollArea className="max-h-[500px]">
+          <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
               <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow className="border-white/10 hover:bg-transparent bg-white/5">
-                    <TableHead className="text-slate-300 font-semibold min-w-[140px]">Name</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[180px]">Email</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[130px]">Role</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[120px]">School</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[100px]">Status</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[140px]">Subscription</TableHead>
-                    <TableHead className="text-slate-300 font-semibold min-w-[80px] sticky right-0 bg-[#1B2A4A]">Actions</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[140px]">Name</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[180px]">Email</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[130px]">Role</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[120px]">School</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[100px]">Status</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[140px]">Subscription</TableHead>
+                    <TableHead className="text-slate-200 font-semibold min-w-[80px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -633,14 +654,14 @@ function UserManagement() {
                   ) : filtered.length === 0 ? (
                     <TableRow><TableCell colSpan={7} className="text-center text-slate-400 py-8">No users found</TableCell></TableRow>
                   ) : filtered.map((u) => (
-                    <TableRow key={u.id} className="border-white/5 hover:bg-white/5 transition-colors">
+                    <TableRow key={u.id} className="border-white/5 hover:bg-white/8 transition-colors">
                       <TableCell className="font-medium text-white whitespace-nowrap">{u.name}</TableCell>
-                      <TableCell className="text-slate-300 text-sm whitespace-nowrap">{u.email}</TableCell>
+                      <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.email}</TableCell>
                       <TableCell><RoleBadge role={u.role} /></TableCell>
-                      <TableCell className="text-slate-300 text-sm whitespace-nowrap">{u.school?.name || '—'}</TableCell>
+                      <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.school?.name || '—'}</TableCell>
                       <TableCell><StatusBadge status={u.isActive ? 'Active' : 'Suspended'} /></TableCell>
-                      <TableCell className="text-slate-300 text-xs whitespace-nowrap">{u.subscription ? `${u.subscription.tier.replace(/_/g, ' ')} (${u.subscription.status})` : 'Free'}</TableCell>
-                      <TableCell className="sticky right-0 bg-[#1B2A4A]">
+                      <TableCell className="text-slate-200 text-sm whitespace-nowrap">{u.subscription ? `${u.subscription.tier.replace(/_/g, ' ')} (${u.subscription.status})` : 'Free'}</TableCell>
+                      <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white hover:bg-white/10">
@@ -674,7 +695,6 @@ function UserManagement() {
                   ))}
                 </TableBody>
               </Table>
-            </ScrollArea>
           </div>
         </CardContent>
       </DarkCard>
@@ -1313,22 +1333,22 @@ export default function FounderDashboard() {
   }
 
   // Error boundary wrapper for tab content
-  const TabErrorBoundary = ({ children }: { children: React.ReactNode }) => {
-    try {
-      return <>{children}</>
-    } catch (err) {
-      setTabError('This section encountered an error. Please refresh the page.')
-      return (
+  const TabErrorBoundary = ({ children }: { children: React.ReactNode }) => (
+    <TabErrorBoundaryClass
+      fallback={(error, reset) => (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <AlertCircle className="w-10 h-10 text-amber-400 mb-3" />
           <p className="text-slate-400">Something went wrong loading this section.</p>
-          <Button variant="outline" onClick={() => window.location.reload()} className="mt-3 bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
-            <RefreshCw className="w-4 h-4 mr-2" /> Reload Page
+          <p className="text-xs text-slate-500 mt-1 max-w-md">{error.message}</p>
+          <Button variant="outline" onClick={reset} className="mt-3 bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-white/10">
+            <RefreshCw className="w-4 h-4 mr-2" /> Try Again
           </Button>
         </div>
-      )
-    }
-  }
+      )}
+    >
+      {children}
+    </TabErrorBoundaryClass>
+  )
 
   return (
     <div className="space-y-6">

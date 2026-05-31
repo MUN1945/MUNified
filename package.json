@@ -12,7 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "db:seed": "bunx prisma db seed",
-    "ensure-accounts": "curl -X POST 'http://localhost:3000/api/admin/ensure-accounts?secret=diplomatiq-setup-2026'"
+    "ensure-accounts": "curl -X POST 'http://localhost:3000/api/admin/ensure-accounts?secret=diplomatiq2026setup_a7f3e9b1c4d6'"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -58,6 +58,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.3.0",
+    "dotenv": "^17.4.2",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.2",
     "input-otp": "^1.4.2",
