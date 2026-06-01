@@ -6,6 +6,9 @@ import PDFDocument from "pdfkit"
 import { readFile } from "fs/promises"
 import path from "path"
 
+// Use Node.js runtime for PDF generation (requires fs access)
+export const runtime = 'nodejs'
+
 // ============================================================
 // POST /api/invoices/generate — Generate a professional PDF invoice
 // Authenticated users can generate invoices for their payments

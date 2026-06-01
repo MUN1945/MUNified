@@ -34,6 +34,7 @@ const subscriptionExemptApiRoutes = [
   "/api/auth",
   "/api/subscriptions",
   "/api/billing",
+  "/api/invoices",
   "/api/conduct/acknowledge",
   "/api/user/delete",
   "/api/user/change-password",
