@@ -456,10 +456,24 @@ function StudentView() {
     setChatMessages(prev => [...prev, { role: 'user', content: question }])
     setIsChatLoading(true)
     try {
+      // Build context with evaluation scores if available
+      let contextMessage = question
+      if (evaluation) {
+        contextMessage = `[Research Paper Evaluation Context — Paper: "${paperTitle || 'Untitled'}", Overall Score: ${evaluation.overallScore}/100, ` +
+          `Citation Quality: ${evaluation.citationQuality.score}/10 (${Math.round(evaluation.citationQuality.score / 10)}/10), ` +
+          `Research Depth: ${evaluation.researchDepth.score}/10 (${Math.round(evaluation.researchDepth.score / 10)}/10), ` +
+          `Writing Quality: ${evaluation.writingQuality.score}/10 (${Math.round(evaluation.writingQuality.score / 10)}/10), ` +
+          `Diplomacy Relevance: ${evaluation.diplomacyRelevance.score}/10 (${Math.round(evaluation.diplomacyRelevance.score / 10)}/10), ` +
+          `Argument Quality: ${evaluation.argumentQuality.score}/10 (${Math.round(evaluation.argumentQuality.score / 10)}/10), ` +
+          `Analytical Thinking: ${evaluation.analyticalThinking.score}/10 (${Math.round(evaluation.analyticalThinking.score / 10)}/10), ` +
+          `AI Content: ${evaluation.aiDetection.aiContentPercentage}%, ` +
+          `Originality: ${evaluation.originalityScore}/100, Authenticity: ${evaluation.authenticityScore}/100] ` +
+          question
+      }
       const res = await fetch('/api/ai-assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: question, context: 'research-lab' }),
+        body: JSON.stringify({ message: contextMessage, context: 'research-lab' }),
       })
       if (res.ok) {
         const data = await res.json()
@@ -1094,6 +1108,138 @@ function StudentView() {
           </motion.div>
         ))}
       </div>
+
+      {/* DiplomatiQ Guru — Research Lab Assistant (always visible) */}
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <Card className="border-[#0D7377]/30 bg-[#0D7377]/[0.02]">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-[#0D7377]">
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback className="bg-[#0D7377]/20 text-[#0D7377] border-[#0D7377]/30 text-[10px] border">
+                    <Sparkles className="w-4 h-4" />
+                  </AvatarFallback>
+                </Avatar>
+                DiplomatiQ Guru — Research Lab Assistant
+              </CardTitle>
+              <Badge className="text-[9px] h-4 px-1.5 border-0 bg-[#0D7377]/15 text-[#0D7377]">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" /> AI Assistant
+              </Badge>
+            </div>
+            <CardDescription className="text-xs">
+              Your AI research mentor — ask about paper evaluation, argument strengthening, scoring rubrics, or research methodology. DiplomatiQ Guru evaluates papers on a 1-10 rubric across 6 dimensions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Scoring Rubric Quick Reference */}
+            <div className="mb-4 p-3 rounded-lg bg-[#F5F0EB] border border-[#E8DED0]">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-[#1B3A4B] mb-2 flex items-center gap-1">
+                <Star className="w-3 h-3 text-[#D4A843]" /> Scoring Rubric (1-10 scale)
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { range: '9-10', label: 'Outstanding', color: '#D4A843' },
+                  { range: '7-8', label: 'Proficient', color: '#059669' },
+                  { range: '5-6', label: 'Developing', color: '#F59E0B' },
+                  { range: '3-4', label: 'Beginning', color: '#F97316' },
+                  { range: '1-2', label: 'Needs Work', color: '#EF4444' },
+                  { range: '6 dims', label: 'Citations • Research • Writing • Diplomacy • Arguments • Analysis', color: '#1B3A4B' },
+                ].map((item) => (
+                  <div key={item.range} className="flex items-center gap-1.5 text-[10px]">
+                    <span className="font-bold min-w-[28px]" style={{ color: item.color }}>{item.range}</span>
+                    <span className="text-muted-foreground">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <ScrollArea className="max-h-64">
+                <div className="space-y-3 pr-2">
+                  {chatMessages.length === 0 && (
+                    <div className="text-center py-6">
+                      <div className="w-12 h-12 rounded-full bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-3">
+                        <Sparkles className="w-6 h-6 text-[#0D7377]" />
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Ask DiplomatiQ Guru about research methodology, argument enhancement, or paper evaluation
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {[
+                          'How can I strengthen my arguments?',
+                          'What sources should I cite for MUN?',
+                          'Score my paper structure (1-10)',
+                          'Help me improve analytical depth',
+                          'What makes a strong position paper?',
+                          'Tips for reducing AI content',
+                        ].map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            className="text-xs px-3 py-1.5 rounded-full border border-[#0D7377]/20 bg-[#0D7377]/5 text-[#0D7377] hover:bg-[#0D7377]/10 transition-colors"
+                            onClick={() => setChatQuestion(suggestion)}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      {msg.role === 'bot' && (
+                        <Avatar className="w-6 h-6 shrink-0 mt-0.5">
+                          <AvatarFallback className="bg-[#0D7377]/20 text-[#0D7377] text-[8px] border border-[#0D7377]/30">
+                            <Sparkles className="w-3 h-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
+                        msg.role === 'user'
+                          ? 'bg-[#0D7377] text-white'
+                          : 'bg-[#0D7377]/5 text-[#1B3A4B] border border-[#0D7377]/10'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                  {isChatLoading && (
+                    <div className="flex gap-2 items-start">
+                      <Avatar className="w-6 h-6 shrink-0">
+                        <AvatarFallback className="bg-[#0D7377]/20 text-[#0D7377] text-[8px] border border-[#0D7377]/30">
+                          <Sparkles className="w-3 h-3" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="bg-[#0D7377]/5 border border-[#0D7377]/10 rounded-xl px-3 py-2 flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin text-[#0D7377]" />
+                        <span className="text-xs text-[#0D7377]/60">Thinking...</span>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              </ScrollArea>
+              <div className="flex gap-2">
+                <Input
+                  value={chatQuestion}
+                  onChange={(e) => setChatQuestion(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAskGuru() } }}
+                  placeholder="Ask DiplomatiQ Guru for research guidance..."
+                  className="border-[#0D7377]/20 focus-visible:ring-[#0D7377]/20 text-sm"
+                  disabled={isChatLoading}
+                />
+                <Button
+                  size="sm"
+                  className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white gap-1 px-3 shrink-0"
+                  onClick={handleAskGuru}
+                  disabled={!chatQuestion.trim() || isChatLoading}
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }

@@ -782,6 +782,49 @@ export default function ChatView() {
   // Determine if user is teacher/admin for channel creation
   const isTeacher = authUser?.role ? ['TEACHER', 'SCHOOL_ADMIN', 'SUPER_ADMIN', 'FOUNDER', 'MASTER_ADMIN'].includes(authUser.role) : false
 
+  // Auto-setup chat channels if none exist
+  const autoSetupChat = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/setup/chat', {
+        method: 'POST',
+        headers: { 'x-setup-secret': 'diplomatiq-chat-setup-2026' },
+      })
+      if (res.ok) {
+        const result = await res.json()
+        return result.success === true
+      }
+    } catch {
+      // Setup failed silently
+    }
+    return false
+  }, [])
+
+  // Map raw API channel data to ChatChannel, handling Prisma nested objects
+  const mapChannelData = useCallback((rawChannels: Record<string, unknown>[]): ChatChannel[] => {
+    // Channel types the UI recognizes; 'general' from API maps to 'text'
+    const VALID_TYPES = ['text', 'announcement', 'voice', 'study', 'committee']
+    const TYPE_MAP: Record<string, ChannelType> = { general: 'text' }
+
+    return rawChannels.map((ch) => {
+      const rawType = String(ch.type || '')
+      const mappedType = TYPE_MAP[rawType] || (VALID_TYPES.includes(rawType) ? rawType as ChannelType : 'text')
+
+      return {
+        id: String(ch.id || ''),
+        name: String(ch.name || ''),
+        type: mappedType,
+        category: (ch.category && String(ch.category) !== 'null' && String(ch.category) !== 'undefined')
+          ? String(ch.category)
+          : 'General',
+        description: String(ch.description || ''),
+        // Use _count.messages if available, otherwise fall back to unread field
+        unread: Number(ch.unread || (ch._count as Record<string, unknown>)?.messages || 0),
+        isMuted: Boolean(ch.isMuted || false),
+        isCommittee: Boolean(ch.isCommittee || ch.type === 'committee' || false),
+      }
+    })
+  }, [])
+
   // Fetch channels on mount
   useEffect(() => {
     const fetchChannels = async () => {
@@ -789,17 +832,27 @@ export default function ChatView() {
         const channelsRes = await fetch('/api/channels')
         if (channelsRes.ok) {
           const data = await channelsRes.json()
+          // API returns { success: true, data: [...] }
           const rawChannels = Array.isArray(data) ? data : (data.channels || data.data || [])
-          const channelList: ChatChannel[] = rawChannels.map((ch: Record<string, unknown>) => ({
-            id: String(ch.id || ''),
-            name: String(ch.name || ''),
-            type: (['text', 'announcement', 'voice', 'study', 'committee'].includes(String(ch.type || '')) ? String(ch.type) : 'text') as ChannelType,
-            category: (ch.category && String(ch.category) !== 'null') ? String(ch.category) : 'General',
-            description: String(ch.description || ''),
-            unread: Number(ch.unread || 0),
-            isMuted: Boolean(ch.isMuted || false),
-            isCommittee: Boolean(ch.isCommittee || ch.type === 'committee' || false),
-          }))
+          let channelList = mapChannelData(rawChannels)
+
+          // Auto-setup if no channels exist
+          if (channelList.length === 0) {
+            setSetupLoading(true)
+            const setupSuccess = await autoSetupChat()
+            setSetupLoading(false)
+
+            if (setupSuccess) {
+              // Re-fetch channels after setup
+              const retryRes = await fetch('/api/channels')
+              if (retryRes.ok) {
+                const retryData = await retryRes.json()
+                const retryRaw = Array.isArray(retryData) ? retryData : (retryData.channels || retryData.data || [])
+                channelList = mapChannelData(retryRaw)
+              }
+            }
+          }
+
           setChannels(channelList)
           if (channelList.length > 0) {
             setActiveChannel(channelList[0].id)
@@ -812,7 +865,7 @@ export default function ChatView() {
       }
     }
     fetchChannels()
-  }, [])
+  }, [mapChannelData, autoSetupChat])
 
   // Fetch online users for the members sidebar
   useEffect(() => {
@@ -845,6 +898,34 @@ export default function ChatView() {
     fetchUsers()
   }, [])
 
+  // Map raw API message data to ChatMessage, handling Prisma nested user objects
+  const mapMessageData = useCallback((rawMessages: Record<string, unknown>[]): ChatMessage[] => {
+    return rawMessages.map((m) => {
+      const userObj = m.user as Record<string, unknown> | null
+      return {
+        id: String(m.id || ''),
+        channelId: String(m.channelId || ''),
+        userId: String(m.userId || userObj?.id || ''),
+        userName: String(m.userName || userObj?.name || 'Unknown'),
+        userRole: String(m.userRole || userObj?.role || 'STUDENT') as UserRole,
+        content: String(m.content || ''),
+        timestamp: String(m.timestamp || m.createdAt || new Date().toISOString()),
+        isSystem: Boolean(m.isSystem || false),
+        isEdited: Boolean(m.isEdited || false),
+        isBot: Boolean(userObj?.isBot || m.isBot || false),
+      }
+    })
+  }, [])
+
+  // Extract raw messages array from API response: { success, data: [...] }
+  const extractMessagesFromResponse = useCallback((msgData: Record<string, unknown>): Record<string, unknown>[] => {
+    if (Array.isArray(msgData)) return msgData
+    // API returns { success: true, data: [...messages] }
+    if (Array.isArray(msgData.data)) return msgData.data as Record<string, unknown>[]
+    if (Array.isArray(msgData.messages)) return msgData.messages as Record<string, unknown>[]
+    return []
+  }, [])
+
   // Poll for new messages every 5 seconds
   useEffect(() => {
     if (!activeChannel) return
@@ -853,19 +934,8 @@ export default function ChatView() {
         const messagesRes = await fetch(`/api/messages?channelId=${activeChannel}`)
         if (messagesRes.ok) {
           const msgData = await messagesRes.json()
-          const rawMessages = Array.isArray(msgData) ? msgData : (msgData.messages || msgData.data || [])
-          const mappedMessages: ChatMessage[] = rawMessages.map((m: Record<string, unknown>) => ({
-            id: String(m.id || ''),
-            channelId: String(m.channelId || ''),
-            userId: String(m.userId || (m.user as Record<string, unknown>)?.id || ''),
-            userName: String(m.userName || (m.user as Record<string, unknown>)?.name || 'Unknown'),
-            userRole: String(m.userRole || (m.user as Record<string, unknown>)?.role || 'STUDENT') as UserRole,
-            content: String(m.content || ''),
-            timestamp: String(m.timestamp || m.createdAt || new Date().toISOString()),
-            isSystem: Boolean(m.isSystem || false),
-            isEdited: Boolean(m.isEdited || false),
-            isBot: Boolean((m.user as Record<string, unknown>)?.isBot || m.isBot || false),
-          }))
+          const rawMessages = extractMessagesFromResponse(msgData)
+          const mappedMessages = mapMessageData(rawMessages)
           // Merge with existing messages — deduplicate by ID to avoid
           // losing optimistic local-only messages or duplicating them.
           setMessages(prev => {
@@ -882,7 +952,7 @@ export default function ChatView() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
-  }, [activeChannel])
+  }, [activeChannel, mapMessageData, extractMessagesFromResponse])
 
   // Fetch messages when active channel changes
   const fetchMessages = useCallback(async (channelId: string) => {
@@ -890,25 +960,14 @@ export default function ChatView() {
       const messagesRes = await fetch(`/api/messages?channelId=${channelId}`)
       if (messagesRes.ok) {
         const msgData = await messagesRes.json()
-        const rawMessages = Array.isArray(msgData) ? msgData : (msgData.messages || msgData.data || [])
-        const mappedMessages: ChatMessage[] = rawMessages.map((m: Record<string, unknown>) => ({
-          id: String(m.id || ''),
-          channelId: String(m.channelId || ''),
-          userId: String(m.userId || (m.user as Record<string, unknown>)?.id || ''),
-          userName: String(m.userName || (m.user as Record<string, unknown>)?.name || 'Unknown'),
-          userRole: String(m.userRole || (m.user as Record<string, unknown>)?.role || 'STUDENT') as UserRole,
-          content: String(m.content || ''),
-          timestamp: String(m.timestamp || m.createdAt || new Date().toISOString()),
-          isSystem: Boolean(m.isSystem || false),
-          isEdited: Boolean(m.isEdited || false),
-          isBot: Boolean((m.user as Record<string, unknown>)?.isBot || m.isBot || false),
-        }))
+        const rawMessages = extractMessagesFromResponse(msgData)
+        const mappedMessages = mapMessageData(rawMessages)
         setMessages(mappedMessages)
       }
     } catch {
       // Failed to fetch
     }
-  }, [])
+  }, [mapMessageData, extractMessagesFromResponse])
 
   useEffect(() => {
     if (activeChannel) {
@@ -944,18 +1003,20 @@ export default function ChatView() {
       })
       if (res.ok) {
         const response = await res.json()
+        // API returns { success: true, data: { ...message with nested user } }
         const rawMsg = response.data || response
+        const userObj = rawMsg.user as Record<string, unknown> | null
         const newMsg: ChatMessage = {
           id: String(rawMsg.id || ''),
           channelId: String(rawMsg.channelId || activeChannel),
-          userId: String(rawMsg.userId || (rawMsg.user as Record<string, unknown>)?.id || ''),
-          userName: String(rawMsg.userName || (rawMsg.user as Record<string, unknown>)?.name || 'You'),
-          userRole: String(rawMsg.userRole || (rawMsg.user as Record<string, unknown>)?.role || 'STUDENT') as UserRole,
+          userId: String(rawMsg.userId || userObj?.id || ''),
+          userName: String(rawMsg.userName || userObj?.name || 'You'),
+          userRole: String(rawMsg.userRole || userObj?.role || 'STUDENT') as UserRole,
           content: String(rawMsg.content || content),
           timestamp: String(rawMsg.timestamp || rawMsg.createdAt || new Date().toISOString()),
           isSystem: Boolean(rawMsg.isSystem || false),
           isEdited: Boolean(rawMsg.isEdited || false),
-          isBot: Boolean((rawMsg.user as Record<string, unknown>)?.isBot || false),
+          isBot: Boolean(userObj?.isBot || false),
         }
         setMessages(prev => [...prev, newMsg])
       }
@@ -989,15 +1050,18 @@ export default function ChatView() {
 
       if (res.ok) {
         const response = await res.json()
+        // API returns { success: true, data: { ...message with nested user } }
         if (response.data) {
+          const botData = response.data
+          const botUserObj = botData.user as Record<string, unknown> | null
           const botMsg: ChatMessage = {
-            id: String(response.data.id || ''),
-            channelId: String(response.data.channelId || activeChannel),
-            userId: String(response.data.userId || (response.data.user as Record<string, unknown>)?.id || ''),
-            userName: String((response.data.user as Record<string, unknown>)?.name || BOT_NAME),
-            userRole: String((response.data.user as Record<string, unknown>)?.role || 'ADMIN') as UserRole,
-            content: String(response.data.content || ''),
-            timestamp: String(response.data.createdAt || new Date().toISOString()),
+            id: String(botData.id || ''),
+            channelId: String(botData.channelId || activeChannel),
+            userId: String(botData.userId || botUserObj?.id || ''),
+            userName: String(botUserObj?.name || BOT_NAME),
+            userRole: String(botUserObj?.role || 'ADMIN') as UserRole,
+            content: String(botData.content || ''),
+            timestamp: String(botData.createdAt || new Date().toISOString()),
             isBot: true,
           }
           setMessages(prev => [...prev, botMsg])

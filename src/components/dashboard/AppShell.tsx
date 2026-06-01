@@ -18,7 +18,7 @@ import Sidebar from './Sidebar'
 import StudentDashboard from './StudentDashboard'
 import TeacherDashboard from './TeacherDashboard'
 import AssessmentQuiz from '@/components/assessment/AssessmentQuiz'
-import TrainingHub from '@/components/training/TrainingHub'
+import EnhancedTrainingHub from '@/components/training/EnhancedTrainingHub'
 import ConferenceManager from '@/components/conferences/ConferenceManager'
 import ChatView from '@/components/chat/ChatView'
 import AnalyticsView from '@/components/analytics/AnalyticsView'
@@ -117,7 +117,7 @@ function ViewRouter({ view }: { view: ViewName }) {
       viewContent = <AssessmentQuiz />
       break
     case 'training':
-      viewContent = <TrainingHub />
+      viewContent = <EnhancedTrainingHub />
       break
     case 'conferences':
       viewContent = <ConferenceManager />
