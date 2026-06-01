@@ -171,3 +171,45 @@ Stage Summary:
 - All table columns always visible (no more hidden columns)
 - Commit: e9f2385 pushed to origin/main
 - Production: https://mun-diplomatiq.vercel.app (auto-deploying)
+---
+Task ID: 4
+Agent: Main Agent
+Task: Fix Training content truncation, FounderDashboard portal visibility, Chat overflow
+
+Work Log:
+- Analyzed user screenshot showing Training lesson content being truncated/cut off
+- VLM analysis confirmed: "Mark as Complete" button appears to interrupt content flow, content cut off at bottom, lesson sidebar not visible on mobile
+- Root cause 1: ScrollArea with max-h-[400px] was truncating lesson content too aggressively
+- Root cause 2: "Mark as Complete" footer had no visual separation from content
+- Root cause 3: Lesson sidebar hidden on mobile with no way to access it
+- Root cause 4: FounderDashboard SelectContent had invisible text (dark bg + light-theme text color)
+- Root cause 5: FounderDashboard DialogContent close buttons invisible on dark backgrounds
+- Root cause 6: Chat view had overflow-y-auto on main element conflicting with internal scrolling
+
+TrainingHub fixes:
+- Replaced lesson content ScrollArea with overflow-y-auto div (max-h-[60vh] / max-h-[70vh])
+- Added bg-[#F8FAFB] border-t border-[#E0E5EA] to "Mark as Complete" footer for clear visual separation
+- Replaced lesson sidebar ScrollArea with overflow-y-auto div
+- Added mobile lesson sidebar toggle (collapsible on mobile via mobileLessonsOpen state)
+- Toggle button shows "Lessons (X/Y)" with rotating chevron
+
+FounderDashboard fixes:
+- Added text-white to all 8 SelectContent elements (fixes invisible dropdown options)
+- Added text-slate-200 focus:bg-white/10 focus:text-white to all 29 SelectItem elements
+- Added [&>button]:text-white/50 [&>button]:hover:text-white to all 5 DialogContent elements (fixes invisible X close button)
+- Replaced all 3 ScrollArea instances with overflow-y-auto divs in tables
+- Removed unused ScrollArea import
+
+AppShell fixes:
+- Changed Chat view main element from overflow-y-auto to overflow-hidden + flex flex-col
+- Prevents main scroll from conflicting with Chat's internal scrolling
+
+Build: Successful (zero errors)
+Committed: 502fe2e, pushed to origin/main
+
+Stage Summary:
+- Training lesson content fully visible with proper scrolling
+- FounderDashboard dropdowns and dialogs now have visible text and close buttons
+- Chat view scrolling fixed
+- Commit: 502fe2e pushed to origin/main
+- Production: https://mun-diplomatiq.vercel.app (auto-deploying)
