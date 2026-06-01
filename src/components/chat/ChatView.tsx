@@ -758,8 +758,9 @@ function AIThinkingIndicator() {
 export default function ChatView() {
   const isMobile = useIsMobile()
   const [activeChannel, setActiveChannel] = useState('')
-  const [showMembers, setShowMembers] = useState(!isMobile)
+  const [showMembers, setShowMembers] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [mobileMembersOpen, setMobileMembersOpen] = useState(false)
   const { user: authUser } = useAuthStore()
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [isAILoading, setIsAILoading] = useState(false)
@@ -770,6 +771,13 @@ export default function ChatView() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [users, setUsers] = useState<ChatUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [setupLoading, setSetupLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isMobile) {
+      setShowMembers(true)
+    }
+  }, [isMobile])
 
   // Determine if user is teacher/admin for channel creation
   const isTeacher = authUser?.role ? ['TEACHER', 'SCHOOL_ADMIN', 'SUPER_ADMIN', 'FOUNDER', 'MASTER_ADMIN'].includes(authUser.role) : false
@@ -785,12 +793,12 @@ export default function ChatView() {
           const channelList: ChatChannel[] = rawChannels.map((ch: Record<string, unknown>) => ({
             id: String(ch.id || ''),
             name: String(ch.name || ''),
-            type: (ch.type as ChannelType) || 'text',
-            category: String(ch.category || 'General'),
+            type: (['text', 'announcement', 'voice', 'study', 'committee'].includes(String(ch.type || '')) ? String(ch.type) : 'text') as ChannelType,
+            category: (ch.category && String(ch.category) !== 'null') ? String(ch.category) : 'General',
             description: String(ch.description || ''),
             unread: Number(ch.unread || 0),
             isMuted: Boolean(ch.isMuted || false),
-            isCommittee: Boolean(ch.isCommittee || false),
+            isCommittee: Boolean(ch.isCommittee || ch.type === 'committee' || false),
           }))
           setChannels(channelList)
           if (channelList.length > 0) {
@@ -908,7 +916,9 @@ export default function ChatView() {
     }
   }, [activeChannel, fetchMessages])
 
-  const currentChannel = channels.find((c) => c.id === activeChannel) || channels[0] || null
+  const currentChannel: ChatChannel | null = channels.length > 0
+    ? (channels.find((c) => c.id === activeChannel) || channels[0])
+    : null
 
   const channelMessages = messages.filter((m) => m.channelId === activeChannel)
 
@@ -1039,8 +1049,20 @@ export default function ChatView() {
     />
   )
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
+        <div className="text-center py-20 px-6">
+          <div className="w-12 h-12 rounded-full border-2 border-[#0D7377] border-t-transparent animate-spin mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Loading channels...</p>
+        </div>
+      </div>
+    )
+  }
+
   // Empty state when no channels exist
-  if (!currentChannel && !loading) {
+  if (!currentChannel) {
     return (
       <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
         <div className="text-center py-20 px-6">
@@ -1051,6 +1073,28 @@ export default function ChatView() {
           <p className="text-muted-foreground mt-2 max-w-md">
             Chat channels will appear here once they are created. Committee channels include the DiplomatiQ Guru AI assistant.
           </p>
+          <Button
+            className="mt-4 bg-[#0D7377] hover:bg-[#0A5C5F] text-white gap-2"
+            disabled={setupLoading}
+            onClick={async () => {
+              setSetupLoading(true)
+              try {
+                const res = await fetch('/api/setup/chat', {
+                  method: 'POST',
+                  headers: { 'x-setup-secret': 'diplomatiq-chat-setup-2026' },
+                })
+                if (res.ok) {
+                  window.location.reload()
+                }
+              } catch {
+                // Setup failed silently
+              }
+              setSetupLoading(false)
+            }}
+          >
+            {setupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {setupLoading ? 'Setting up...' : 'Setup Chat Channels'}
+          </Button>
         </div>
       </div>
     )
@@ -1148,7 +1192,13 @@ export default function ChatView() {
                     variant="ghost"
                     size="icon"
                     className={`h-8 w-8 ${showMembers ? 'text-[#0D7377] bg-[#0D7377]/5' : 'text-muted-foreground'}`}
-                    onClick={() => setShowMembers(!showMembers)}
+                    onClick={() => {
+                      if (isMobile) {
+                        setMobileMembersOpen(true)
+                      } else {
+                        setShowMembers(!showMembers)
+                      }
+                    }}
                   >
                     <Users className="w-4 h-4" />
                   </Button>
@@ -1227,13 +1277,13 @@ export default function ChatView() {
       )}
 
       {/* Online Users Sidebar (Mobile - Sheet) */}
-      {isMobile && showMembers && (
-        <Sheet open={showMembers} onOpenChange={setShowMembers}>
+      {isMobile && (
+        <Sheet open={mobileMembersOpen} onOpenChange={setMobileMembersOpen}>
           <SheetContent side="right" className="p-0 w-72 border-0">
             <SheetHeader className="sr-only">
               <SheetTitle>Members</SheetTitle>
             </SheetHeader>
-            <OnlineUsersSidebar users={users} onClose={() => setShowMembers(false)} />
+            <OnlineUsersSidebar users={users} onClose={() => setMobileMembersOpen(false)} />
           </SheetContent>
         </Sheet>
       )}

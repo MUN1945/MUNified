@@ -1,13 +1,13 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useRef, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FileSearch, Upload, FileText, AlertTriangle, CheckCircle2, XCircle,
   ChevronDown, ChevronUp, BookOpen, PenTool, Globe, Brain, Lightbulb,
   Target, TrendingUp, Clock, Star, ThumbsUp, ThumbsDown, MessageSquare,
   Eye, ArrowRight, Sparkles, Shield, BarChart3, Users, Calendar,
-  FileUp, ClipboardPaste, RotateCcw, Award, AlertCircle
+  FileUp, ClipboardPaste, RotateCcw, Award, AlertCircle, Loader2, Send
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -397,6 +397,11 @@ function StudentView() {
 
   const [evalError, setEvalError] = useState<string | null>(null)
 
+  const [chatQuestion, setChatQuestion] = useState('')
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'bot'; content: string }[]>([])
+  const [isChatLoading, setIsChatLoading] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
   const handleEvaluate = async () => {
     if (!paperText.trim()) return
     setIsEvaluating(true)
@@ -440,7 +445,38 @@ function StudentView() {
     setPaperTitle('')
     setEvaluation(null)
     setShowFullReport(false)
+    setChatMessages([])
+    setChatQuestion('')
   }
+
+  const handleAskGuru = async () => {
+    if (!chatQuestion.trim()) return
+    const question = chatQuestion.trim()
+    setChatQuestion('')
+    setChatMessages(prev => [...prev, { role: 'user', content: question }])
+    setIsChatLoading(true)
+    try {
+      const res = await fetch('/api/ai-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: question, context: 'research-lab' }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const botContent = data.data?.content || data.data?.message || 'I was unable to generate a response. Please try again.'
+        setChatMessages(prev => [...prev, { role: 'bot', content: botContent }])
+      } else {
+        setChatMessages(prev => [...prev, { role: 'bot', content: 'I\'m having trouble responding right now. Please try again in a moment.' }])
+      }
+    } catch {
+      setChatMessages(prev => [...prev, { role: 'bot', content: 'Network error — please check your connection and try again.' }])
+    }
+    setIsChatLoading(false)
+  }
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages.length, isChatLoading])
 
   // If evaluation is loaded, show results
   if (evaluation) {
@@ -469,6 +505,10 @@ function StudentView() {
           <div>
             <h2 className="text-2xl font-bold text-[#1B3A4B]">Evaluation Results</h2>
             <p className="text-muted-foreground mt-1">{paperTitle || 'Research Paper Analysis'}</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#0D7377]" />
+              <span className="text-xs font-medium text-[#0D7377]">Evaluated by DiplomatiQ Guru</span>
+            </div>
           </div>
           <Button variant="outline" onClick={handleReset} className="border-[#E8DED0]">
             <RotateCcw className="w-4 h-4 mr-2" /> Submit Another Paper
@@ -787,6 +827,113 @@ function StudentView() {
             </AnimatePresence>
           </Card>
         </motion.div>
+
+        {/* Chat with DiplomatiQ Guru */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+        >
+          <Card className="border-[#0D7377]/30 bg-[#0D7377]/[0.02]">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-[#0D7377]">
+                  <Avatar className="w-7 h-7">
+                    <AvatarFallback className="bg-[#0D7377]/20 text-[#0D7377] border-[#0D7377]/30 text-[10px] border">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  Chat with DiplomatiQ Guru
+                </CardTitle>
+                <Badge className="text-[9px] h-4 px-1.5 border-0 bg-[#0D7377]/15 text-[#0D7377]">
+                  <Sparkles className="w-2.5 h-2.5 mr-0.5" /> AI Assistant
+                </Badge>
+              </div>
+              <CardDescription className="text-xs">
+                Ask follow-up questions about your evaluation, get guidance on strengthening your arguments, or request research tips.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <ScrollArea className="max-h-64">
+                  <div className="space-y-3 pr-2">
+                    {chatMessages.length === 0 && (
+                      <div className="text-center py-6">
+                        <div className="w-10 h-10 rounded-full bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-2">
+                          <Sparkles className="w-5 h-5 text-[#0D7377]" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Ask DiplomatiQ Guru anything about your paper evaluation
+                        </p>
+                        <div className="flex flex-wrap gap-2 justify-center mt-3">
+                          {['How can I strengthen my arguments?', 'What sources should I cite?', 'Help me improve my analytical depth'].map((suggestion) => (
+                            <button
+                              key={suggestion}
+                              className="text-xs px-3 py-1.5 rounded-full border border-[#0D7377]/20 bg-[#0D7377]/5 text-[#0D7377] hover:bg-[#0D7377]/10 transition-colors"
+                              onClick={() => setChatQuestion(suggestion)}
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {chatMessages.map((msg, i) => (
+                      <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        {msg.role === 'bot' && (
+                          <Avatar className="w-6 h-6 shrink-0 mt-0.5">
+                            <AvatarFallback className="bg-[#0D7377]/20 text-[#0D7377] text-[8px] border border-[#0D7377]/30">
+                              <Sparkles className="w-3 h-3" />
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
+                          msg.role === 'user'
+                            ? 'bg-[#0D7377] text-white'
+                            : 'bg-[#0D7377]/5 text-[#1B3A4B] border border-[#0D7377]/10'
+                        }`}>
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))}
+                    {isChatLoading && (
+                      <div className="flex gap-2 items-start">
+                        <Avatar className="w-6 h-6 shrink-0">
+                          <AvatarFallback className="bg-[#0D7377]/20 text-[#0D7377] text-[8px] border border-[#0D7377]/30">
+                            <Sparkles className="w-3 h-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="bg-[#0D7377]/5 border border-[#0D7377]/10 rounded-xl px-3 py-2 flex items-center gap-2">
+                          <Loader2 className="w-3 h-3 animate-spin text-[#0D7377]" />
+                          <span className="text-xs text-[#0D7377]/60">Thinking...</span>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                </ScrollArea>
+                <div className="flex gap-2">
+                  <Input
+                    value={chatQuestion}
+                    onChange={(e) => setChatQuestion(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAskGuru() } }}
+                    placeholder="Ask DiplomatiQ Guru for guidance..."
+                    className="border-[#0D7377]/20 focus-visible:ring-[#0D7377]/20 text-sm"
+                    disabled={isChatLoading}
+                  />
+                  <Button
+                    size="sm"
+                    className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white gap-1 px-3 shrink-0"
+                    onClick={handleAskGuru}
+                    disabled={!chatQuestion.trim() || isChatLoading}
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     )
   }
@@ -803,6 +950,10 @@ function StudentView() {
           <div>
             <h2 className="text-2xl font-bold text-[#1B3A4B]">Research Lab</h2>
             <p className="text-muted-foreground">Submit your MUN research paper for AI-powered evaluation</p>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#0D7377]" />
+              <span className="text-xs font-medium text-[#0D7377]">Powered by DiplomatiQ Guru</span>
+            </div>
           </div>
         </div>
       </motion.div>

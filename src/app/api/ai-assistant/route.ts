@@ -22,6 +22,7 @@ const SYSTEM_PROMPT = `You are **DiplomatiQ Guru**, the official AI knowledge as
 - Assist with resolution writing, speech preparation, and diplomatic strategy
 - Explain UN system structure and how committees operate
 - Offer age-appropriate, academically sound guidance for all experience levels
+- Evaluate research papers and provide scores and guidance on how to enhance arguments
 
 ## Behavioral Guidelines
 1. **Accurate & Professional**: Provide fact-based, academically sound responses. Cite real UN documents, resolutions, and historical events when relevant.
@@ -45,6 +46,7 @@ const SYSTEM_PROMPT = `You are **DiplomatiQ Guru**, the official AI knowledge as
 - Negotiation and alliance-building strategies
 - Sustainable Development Goals (SDGs)
 - Regional organizations and their roles
+- Research paper evaluation, argument strengthening, and academic writing guidance
 
 ## If a User Asks About Off-Topic Subjects
 Politely redirect: "That's an interesting question, but it falls outside my area of expertise as an MUN and UN educational assistant. I'd love to help you with committee procedures, country research, resolution writing, or any other MUN-related topic! What would you like to explore?"
@@ -83,27 +85,50 @@ Politely redirect: "That's an interesting question, but it falls outside my area
 - If a delegate asks about their country's position, provide factual information and suggest where to find more.
 - If a delegate asks about resolution writing, provide a structured template or example.
 - If a delegate is preparing for their first MUN, offer beginner-friendly guidance and encouragement.
-- If asked about the DiplomatiQ platform, provide helpful information about its features.`
+- If asked about the DiplomatiQ platform, provide helpful information about its features.
+- When asked about research papers or argument enhancement, provide specific, actionable feedback with examples.`
+
+const RESEARCH_LAB_PROMPT = `\n\n## Research Lab Mode
+You are currently operating in the Research Lab context. The student is asking about their research paper evaluation, seeking guidance on how to improve their arguments, or requesting help with academic writing for MUN. Be especially thorough and constructive in this context. Provide specific examples and step-by-step guidance when discussing argument enhancement, citation improvement, or analytical depth.`
 
 // ============================================================
 // OFF-TOPIC DETECTION
 // ============================================================
 
 const OFF_TOPIC_KEYWORDS = [
-  // Gaming, entertainment, pop culture
   'minecraft', 'fortnite', 'roblox', 'netflix', 'tiktok', 'instagram',
   'spotify', 'youtube video', 'movie recommendation',
-  // Personal/romantic
   'dating', 'relationship advice', 'crush',
-  // Explicitly harmful
   'how to hack', 'how to steal', 'how to break',
-  // Financial advice
   'stock tip', 'investment advice', 'crypto trading', 'buy bitcoin',
 ]
 
 function isOffTopic(message: string): boolean {
   const lower = message.toLowerCase()
   return OFF_TOPIC_KEYWORDS.some(keyword => lower.includes(keyword))
+}
+
+// ============================================================
+// ENSURE RESEARCH LAB CHANNEL
+// ============================================================
+
+async function ensureResearchLabChannel(): Promise<string> {
+  const existing = await db.channel.findFirst({
+    where: { name: 'research-lab', schoolId: null },
+  })
+  if (existing) return existing.id
+
+  const channel = await db.channel.create({
+    data: {
+      name: 'research-lab',
+      description: 'AI-powered research guidance and paper evaluation discussions',
+      type: 'study',
+      category: 'Research Lab',
+      isCommittee: false,
+      schoolId: null,
+    },
+  })
+  return channel.id
 }
 
 // ============================================================
@@ -118,6 +143,7 @@ interface ChatMessageForAI {
 async function buildChatHistory(
   channelId: string,
   currentMessage: string,
+  isResearchLab: boolean,
   limit: number = 20
 ): Promise<ChatMessageForAI[]> {
   const messages = await db.message.findMany({
@@ -131,10 +157,10 @@ async function buildChatHistory(
     take: limit,
   })
 
-  // Reverse to chronological order
   const chronological = messages.reverse()
 
-  const chatHistory: ChatMessageForAI[] = [{ role: "system", content: SYSTEM_PROMPT }]
+  const systemContent = isResearchLab ? SYSTEM_PROMPT + RESEARCH_LAB_PROMPT : SYSTEM_PROMPT
+  const chatHistory: ChatMessageForAI[] = [{ role: "system", content: systemContent }]
 
   for (const msg of chronological) {
     if (msg.user.isBot) {
@@ -144,7 +170,6 @@ async function buildChatHistory(
     }
   }
 
-  // Add the current message
   chatHistory.push({ role: "user", content: currentMessage })
 
   return chatHistory
@@ -156,7 +181,6 @@ async function buildChatHistory(
 
 export async function POST(request: NextRequest) {
   try {
-    // Authenticate the user
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -166,16 +190,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { channelId, message } = body
+    const { channelId, message, context } = body
 
-    if (!channelId || !message) {
+    if (!message) {
       return NextResponse.json(
-        { success: false, error: "Channel ID and message are required" },
+        { success: false, error: "Message is required" },
         { status: 400 }
       )
     }
 
-    // Validate message length
     const trimmedMessage = message.trim()
     if (trimmedMessage.length === 0) {
       return NextResponse.json(
@@ -190,21 +213,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify channel exists
-    const channel = await db.channel.findUnique({
-      where: { id: channelId },
-    })
+    let effectiveChannelId = channelId
+    let channel: { id: string; name: string; category: string | null; isCommittee: boolean } | null = null
+    const isResearchLab = context === 'research-lab' || !channelId
 
-    if (!channel) {
-      return NextResponse.json(
-        { success: false, error: "Channel not found" },
-        { status: 404 }
-      )
+    if (!channelId) {
+      effectiveChannelId = await ensureResearchLabChannel()
+      channel = await db.channel.findUnique({ where: { id: effectiveChannelId } })
+    } else {
+      channel = await db.channel.findUnique({ where: { id: channelId } })
     }
 
-    // Check if the message is off-topic
+    if (!channel && effectiveChannelId) {
+      channel = { id: effectiveChannelId, name: 'research-lab', category: 'Research Lab', isCommittee: false }
+    }
+
     if (isOffTopic(trimmedMessage)) {
-      // Find the bot user
       const botUser = await db.user.findFirst({
         where: { isBot: true, email: "diplomatiq-guru@system.diplomatiq.com" },
       })
@@ -218,11 +242,10 @@ export async function POST(request: NextRequest) {
 
       const redirectMessage = `That's an interesting question, but it falls outside my area of expertise as an MUN and UN educational assistant. I'd love to help you with committee procedures, country research, resolution writing, or any other MUN-related topic! What would you like to explore?`
 
-      // Save the redirect response as a message from the bot
       const botMessage = await db.message.create({
         data: {
           content: redirectMessage,
-          channelId,
+          channelId: effectiveChannelId,
           userId: botUser.id,
         },
         include: {
@@ -239,7 +262,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Find the bot user
     const botUser = await db.user.findFirst({
       where: { isBot: true, email: "diplomatiq-guru@system.diplomatiq.com" },
     })
@@ -251,10 +273,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build chat history for context
-    const chatHistory = await buildChatHistory(channelId, `[${session.user.name}]: ${trimmedMessage}`)
+    const chatHistory = await buildChatHistory(
+      effectiveChannelId,
+      `[${session.user.name}]: ${trimmedMessage}`,
+      isResearchLab
+    )
 
-    // Call the AI model
     let aiResponse: string
     try {
       const zai = await ZAI.create()
@@ -266,7 +290,6 @@ export async function POST(request: NextRequest) {
 
       aiResponse = completion.choices[0]?.message?.content || "I'm having trouble processing your question right now. Could you please try again?"
 
-      // Safety check: truncate if too long
       if (aiResponse.length > 2000) {
         aiResponse = aiResponse.substring(0, 1997) + "..."
       }
@@ -275,11 +298,10 @@ export async function POST(request: NextRequest) {
       aiResponse = "I'm experiencing a temporary issue and can't respond right now. Please try again in a moment, and I'll be happy to help with your MUN question!"
     }
 
-    // Save the AI response as a message from the bot
     const botMessage = await db.message.create({
       data: {
         content: aiResponse,
-        channelId,
+        channelId: effectiveChannelId,
         userId: botUser.id,
       },
       include: {
@@ -289,20 +311,23 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Log the AI interaction for audit purposes
-    await db.auditLog.create({
-      data: {
-        userId: session.user.id,
-        action: "READ",
-        resource: "ai_assistant",
-        resourceId: channelId,
-        details: JSON.stringify({
-          questionLength: trimmedMessage.length,
-          responseLength: aiResponse.length,
-          channelName: channel.name,
-        }),
-      },
-    })
+    try {
+      await db.auditLog.create({
+        data: {
+          userId: session.user.id,
+          action: "READ",
+          resource: "ai_assistant",
+          resourceId: effectiveChannelId,
+          details: JSON.stringify({
+            questionLength: trimmedMessage.length,
+            responseLength: aiResponse.length,
+            channelName: channel?.name || "unknown",
+          }),
+        },
+      })
+    } catch {
+      // Audit log failure should not break the response
+    }
 
     return NextResponse.json({
       success: true,
