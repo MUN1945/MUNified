@@ -41,3 +41,31 @@ Stage Summary:
 - Commit: 456dd20 - "fix: resolve Chat UI layout, overflow, positioning, and responsiveness issues"
 - Production: https://mun-diplomatiq.vercel.app (live)
 - Scope: Chat module UI only - no functionality or other module changes
+---
+Task ID: 2
+Agent: Main Agent
+Task: Implement Full Arabic & English Language Switching
+
+Work Log:
+- Designed and implemented custom i18n architecture using Zustand (consistent with existing store pattern)
+- Created I18nProvider with React context, useI18n hook, and t() translation function
+- Created useI18nStore with localStorage persistence via Zustand persist middleware
+- Created comprehensive translation files: en.json (491 keys) and ar.json (491 keys) with perfect parity
+- Arabic translations use formal Modern Standard Arabic (MSA) with diplomatic/educational context
+- Created LanguageSwitcher component (dropdown and compact toggle variants)
+- Integrated LanguageSwitcher into AppShell header bar
+- Updated root layout.tsx with I18nProvider wrapper and dynamic dir/lang attributes
+- Updated 27 component files with t() translation calls
+- Added comprehensive RTL CSS overrides in globals.css
+- Connected Settings language dropdown to actual i18n store (was cosmetic before)
+- Built and verified zero compilation errors
+- Committed (1184db2) and pushed to GitHub
+- Vercel auto-deploy triggered, production verified (HTTP 200)
+
+Stage Summary:
+- 30 files changed, 1935 insertions, 275 deletions
+- Commit: 1184db2 - "feat: implement full English/Arabic bilingual language switching with RTL support"
+- Production: https://mun-diplomatiq.vercel.app (live)
+- i18n architecture: Custom Zustand-based with localStorage persistence
+- Translation coverage: 491 keys across 23 sections
+- RTL support: Dynamic dir attribute + comprehensive CSS overrides
