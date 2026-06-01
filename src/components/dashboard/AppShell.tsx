@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Bell, Menu, X, Globe
+  Search, Bell, Menu, X, Globe, AlertCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,53 +59,115 @@ function PlaceholderView({ title, description }: { title: string; description: s
 // VIEW ROUTER
 // ============================================================
 
+// Error boundary wrapper to prevent component crashes from breaking the entire app
+class ViewErrorBoundary extends React.Component<
+  { children: React.ReactNode; viewName: string },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode; viewName: string }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error(`[ViewErrorBoundary] Error in view "${this.props.viewName}":`, error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-[#0D1B2A] mb-2">Something went wrong</h2>
+          <p className="text-sm text-[#5A6A7A] max-w-md mb-4">
+            This section encountered an error. Try refreshing the page or navigating to a different section.
+          </p>
+          <Button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="bg-[#0D7377] hover:bg-[#0D7377]/90 text-white"
+          >
+            Try Again
+          </Button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 function ViewRouter({ view }: { view: ViewName }) {
   const { user } = useAuthStore()
 
   const isStudent = user?.role === 'STUDENT'
   const isFounderOrSuperAdmin = user?.role === 'FOUNDER' || user?.role === 'SUPER_ADMIN' || user?.role === 'MASTER_ADMIN'
 
+  let viewContent: React.ReactNode
+
   switch (view) {
     case 'dashboard':
-      return isStudent ? <StudentDashboard /> : <TeacherDashboard />
+      viewContent = isStudent ? <StudentDashboard /> : <TeacherDashboard />
+      break
     case 'assessment':
-      return <AssessmentQuiz />
+      viewContent = <AssessmentQuiz />
+      break
     case 'training':
-      return <TrainingHub />
+      viewContent = <TrainingHub />
+      break
     case 'conferences':
-      return <ConferenceManager />
+      viewContent = <ConferenceManager />
+      break
     case 'committees':
-      return <PlaceholderView title="Committees" description="Manage committee assignments, topics, and delegate placements." />
+      viewContent = <PlaceholderView title="Committees" description="Manage committee assignments, topics, and delegate placements." />
+      break
     case 'chat':
-      return <ChatView />
+      viewContent = <ChatView />
+      break
     case 'research':
-      return <ResearchPaperEvaluation />
+      viewContent = <ResearchPaperEvaluation />
+      break
     case 'analytics':
-      return <AnalyticsView />
+      viewContent = <AnalyticsView />
+      break
     case 'settings':
-      return <SettingsView />
+      viewContent = <SettingsView />
+      break
     case 'pricing':
-      return <PricingPage />
+      viewContent = <PricingPage />
+      break
     case 'conduct':
-      return <CodeOfConduct />
+      viewContent = <CodeOfConduct />
+      break
     case 'profile':
-      return <SettingsView />
+      viewContent = <SettingsView />
+      break
     case 'leaderboard':
-      return <LeaderboardView />
+      viewContent = <LeaderboardView />
+      break
     case 'notifications':
-      return <PlaceholderView title="Notifications" description="Stay updated on conferences, training, and achievements." />
+      viewContent = <PlaceholderView title="Notifications" description="Stay updated on conferences, training, and achievements." />
+      break
     case 'founder':
-      if (!isFounderOrSuperAdmin) {
-        return <PlaceholderView title="Access Denied" description="The Command Center is only accessible to founders and super admins." />
-      }
-      return <FounderDashboard />
+      viewContent = isFounderOrSuperAdmin
+        ? <FounderDashboard />
+        : <PlaceholderView title="Access Denied" description="The Command Center is only accessible to founders and super admins." />
+      break
     case 'schools':
-      return <SchoolDirectory />
+      viewContent = <SchoolDirectory />
+      break
     case 'users':
-      return <PlaceholderView title="User Management" description="Manage user accounts, roles, and permissions." />
+      viewContent = <PlaceholderView title="User Management" description="Manage user accounts, roles, and permissions." />
+      break
     default:
-      return isStudent ? <StudentDashboard /> : <TeacherDashboard />
+      viewContent = isStudent ? <StudentDashboard /> : <TeacherDashboard />
   }
+
+  return <ViewErrorBoundary viewName={view}>{viewContent}</ViewErrorBoundary>
 }
 
 // ============================================================

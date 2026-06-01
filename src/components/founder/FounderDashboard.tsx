@@ -583,15 +583,16 @@ function UserManagement() {
       <DarkCard>
         <CardContent className="p-0">
           <ScrollArea className="max-h-[500px]">
+            <div className="min-w-[800px]">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-transparent">
                   <TableHead className="text-slate-400">Name</TableHead>
                   <TableHead className="text-slate-400">Email</TableHead>
                   <TableHead className="text-slate-400">Role</TableHead>
-                  <TableHead className="text-slate-400 hidden md:table-cell">School</TableHead>
+                  <TableHead className="text-slate-400">School</TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
-                  <TableHead className="text-slate-400 hidden lg:table-cell">Subscription</TableHead>
+                  <TableHead className="text-slate-400">Subscription</TableHead>
                   <TableHead className="text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -616,9 +617,9 @@ function UserManagement() {
                         {u.role.replace(/_/g, ' ')}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell text-sm">{u.school?.name || '—'}</TableCell>
+                    <TableCell className="text-slate-400 text-sm">{u.school?.name || '—'}</TableCell>
                     <TableCell><StatusBadge status={u.isActive ? 'Active' : 'Suspended'} /></TableCell>
-                    <TableCell className="text-slate-400 hidden lg:table-cell text-xs">{u.subscription ? `${u.subscription.tier} (${u.subscription.status})` : 'Free'}</TableCell>
+                    <TableCell className="text-slate-400 text-xs">{u.subscription ? `${u.subscription.tier} (${u.subscription.status})` : 'Free'}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -653,6 +654,7 @@ function UserManagement() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </ScrollArea>
         </CardContent>
       </DarkCard>
@@ -1129,14 +1131,15 @@ function SchoolManagement() {
       <DarkCard>
         <CardContent className="p-0">
           <ScrollArea className="max-h-[500px]">
+            <div className="min-w-[700px]">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-transparent">
                   <TableHead className="text-slate-400">Name</TableHead>
-                  <TableHead className="text-slate-400 hidden md:table-cell">City</TableHead>
+                  <TableHead className="text-slate-400">City</TableHead>
                   <TableHead className="text-slate-400">Type</TableHead>
                   <TableHead className="text-slate-400">Verified</TableHead>
-                  <TableHead className="text-slate-400 hidden lg:table-cell">Users</TableHead>
+                  <TableHead className="text-slate-400">Users</TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1159,17 +1162,18 @@ function SchoolManagement() {
                         {s.name}
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden md:table-cell">{s.city || '—'}</TableCell>
+                    <TableCell className="text-slate-400">{s.city || '—'}</TableCell>
                     <TableCell className="text-slate-400">{s.schoolType || '—'}</TableCell>
                     <TableCell>
                       {s.isVerified ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
                     </TableCell>
-                    <TableCell className="text-slate-400 hidden lg:table-cell">{s._count?.users || 0}</TableCell>
+                    <TableCell className="text-slate-400">{s._count?.users || 0}</TableCell>
                     <TableCell><StatusBadge status={s.verificationStatus} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </div>
           </ScrollArea>
         </CardContent>
       </DarkCard>
@@ -1208,13 +1212,14 @@ function AuditLogs() {
       <DarkCard>
         <CardContent className="p-0">
           <ScrollArea className="max-h-[500px]">
+            <div className="min-w-[700px]">
             <Table>
               <TableHeader>
                 <TableRow className="border-white/10 hover:bg-transparent">
                   <TableHead className="text-slate-400">Action</TableHead>
                   <TableHead className="text-slate-400">User</TableHead>
                   <TableHead className="text-slate-400">Resource</TableHead>
-                  <TableHead className="text-slate-400 hidden md:table-cell">Details</TableHead>
+                  <TableHead className="text-slate-400">Details</TableHead>
                   <TableHead className="text-slate-400">Time</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1236,12 +1241,13 @@ function AuditLogs() {
                     </TableCell>
                     <TableCell className="text-slate-400 text-sm">{log.user?.name || 'System'}</TableCell>
                     <TableCell className="text-slate-300 text-sm">{log.resource}</TableCell>
-                    <TableCell className="text-slate-500 text-xs hidden md:table-cell max-w-[200px] truncate">{log.details || '—'}</TableCell>
+                    <TableCell className="text-slate-500 text-xs max-w-[200px] truncate">{log.details || '—'}</TableCell>
                     <TableCell className="text-slate-500 text-xs">{formatDateTime(log.createdAt)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </div>
           </ScrollArea>
         </CardContent>
       </DarkCard>
