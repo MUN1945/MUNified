@@ -25,6 +25,7 @@ import AnalyticsView from '@/components/analytics/AnalyticsView'
 import LeaderboardView from '@/components/gamification/LeaderboardView'
 import ResearchPaperEvaluation from '@/components/research/ResearchPaperEvaluation'
 import CodeOfConduct from '@/components/conduct/CodeOfConduct'
+import ConductAcknowledgementModal from '@/components/conduct/ConductAcknowledgementModal'
 import PricingPage from '@/components/pricing/PricingPage'
 import SettingsView from '@/components/settings/SettingsView'
 import FounderDashboard from '@/components/founder/FounderDashboard'
@@ -179,6 +180,32 @@ export default function AppShell() {
   const { user, logout } = useAuthStore()
   const { notifications, searchQuery, setSearchQuery, sidebarCollapsed, toggleSidebar, markNotificationRead } = useAppStore()
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
+  const [showConductModal, setShowConductModal] = React.useState(false)
+
+  // Fetch CoC acknowledgement status on mount
+  React.useEffect(() => {
+    const checkConductStatus = async () => {
+      try {
+        const res = await fetch('/api/conduct/acknowledge')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.success && data.data && !data.data.acknowledged) {
+            setShowConductModal(true)
+          }
+        }
+      } catch {
+        // non-critical
+      }
+    }
+    if (user) {
+      checkConductStatus()
+    }
+  }, [user])
+
+  const handleConductAcknowledged = () => {
+    setShowConductModal(false)
+  }
+
 
   const unreadCount = notifications.filter(n => !n.isRead).length
 
@@ -231,6 +258,12 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#FFF8F0]">
+      {/* Conduct Acknowledgement Modal */}
+      <ConductAcknowledgementModal
+        open={showConductModal}
+        onAcknowledged={handleConductAcknowledged}
+      />
+
       {/* Desktop Sidebar */}
       <div className="hidden md:flex">
         <Sidebar />

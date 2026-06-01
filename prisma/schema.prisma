@@ -235,6 +235,9 @@ model User {
   isBot              Boolean           @default(false)
   emailVerified      Boolean           @default(false)
   lastLoginAt        DateTime?
+  conductAcknowledged    Boolean           @default(false)
+  conductAcknowledgedAt  DateTime?
+  conductVersion         String?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 

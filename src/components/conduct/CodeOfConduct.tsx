@@ -181,9 +181,23 @@ export default function CodeOfConduct() {
 
   const handleAcknowledge = useCallback(() => {
     if (allRead) {
-      setAcknowledged(prev => !prev)
+      const newValue = !acknowledged
+      setAcknowledged(newValue)
+      // Sync to database via API
+      if (newValue) {
+        fetch('/api/conduct/acknowledge', { method: 'POST' })
+          .then(res => res.json())
+          .then(data => {
+            if (!data.success) {
+              console.error('Failed to sync acknowledgement to database')
+            }
+          })
+          .catch(() => {
+            console.error('Failed to sync acknowledgement to database')
+          })
+      }
     }
-  }, [allRead])
+  }, [allRead, acknowledged])
 
   return (
     <div className="min-h-screen bg-[#0A0F1C] text-white">

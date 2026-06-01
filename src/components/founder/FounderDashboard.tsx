@@ -1255,6 +1255,215 @@ function AuditLogs() {
 }
 
 // ============================================================
+// SECTION: CONDUCT TRACKING
+// ============================================================
+
+interface ConductUserData {
+  id: string
+  name: string
+  email: string
+  role: string
+  conductAcknowledged: boolean
+  conductAcknowledgedAt: string | null
+  conductVersion: string | null
+}
+
+function ConductTracking() {
+  const [users, setUsers] = useState<ConductUserData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalUsers, setTotalUsers] = useState(0)
+
+  const fetchConductStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/conduct-status?limit=100')
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data.data || [])
+        setTotalUsers(data.pagination?.total || 0)
+      }
+    } catch (err) {
+      console.error('Failed to fetch conduct status:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchConductStatus() }, [fetchConductStatus])
+
+  const acknowledgedCount = users.filter(u => u.conductAcknowledged).length
+  const pendingCount = totalUsers - acknowledgedCount
+  const percentage = totalUsers > 0 ? Math.round((acknowledgedCount / totalUsers) * 100) : 0
+
+  // Recent acknowledgements (last 5)
+  const recentAcknowledgements = users
+    .filter(u => u.conductAcknowledged && u.conductAcknowledgedAt)
+    .sort((a, b) => new Date(b.conductAcknowledgedAt!).getTime() - new Date(a.conductAcknowledgedAt!).getTime())
+    .slice(0, 5)
+
+  return (
+    <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-white">Code of Conduct Tracking</h3>
+          {pendingCount > 0 && (
+            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+              {pendingCount} pending
+            </Badge>
+          )}
+        </div>
+        <Button variant="outline" onClick={fetchConductStatus} className="bg-[#1B2A4A] border-white/10 text-slate-300 hover:bg-[#264B5E]">
+          <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <DarkCard>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-lg bg-[#0D7377]/20 flex items-center justify-center">
+                <CheckCircle2 className="w-4.5 h-4.5 text-[#0D7377]" />
+              </div>
+              <span className="text-xs text-slate-500">Acknowledged</span>
+            </div>
+            <div className="text-2xl font-bold">{acknowledgedCount} <span className="text-sm font-normal text-slate-500">/ {totalUsers}</span></div>
+          </CardContent>
+        </DarkCard>
+        <DarkCard>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-lg bg-[#D4A843]/20 flex items-center justify-center">
+                <Shield className="w-4.5 h-4.5 text-[#D4A843]" />
+              </div>
+              <span className="text-xs text-slate-500">Compliance Rate</span>
+            </div>
+            <div className="text-2xl font-bold">{percentage}%</div>
+            <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#0D7377] to-[#059669] transition-all duration-500"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          </CardContent>
+        </DarkCard>
+        <DarkCard>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-4.5 h-4.5 text-amber-400" />
+              </div>
+              <span className="text-xs text-slate-500">Pending Review</span>
+            </div>
+            <div className="text-2xl font-bold">{pendingCount}</div>
+          </CardContent>
+        </DarkCard>
+      </div>
+
+      {/* Recent Acknowledgements */}
+      <DarkCard>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-slate-300">Recent Acknowledgements</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-12 bg-white/5 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : recentAcknowledgements.length > 0 ? (
+            <div className="space-y-2">
+              {recentAcknowledgements.map((u) => (
+                <div key={u.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#0D7377]/20 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-[#0D7377]" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">{u.name}</div>
+                      <div className="text-xs text-slate-500">{u.email}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="outline" className="text-[10px] border-white/20 text-slate-300">{u.role.replace(/_/g, ' ')}</Badge>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {u.conductAcknowledgedAt ? timeAgo(u.conductAcknowledgedAt) : '—'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-slate-500 text-sm text-center py-8">No acknowledgements yet</div>
+          )}
+        </CardContent>
+      </DarkCard>
+
+      {/* Full user list with status */}
+      <DarkCard>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-slate-300">All Users — CoC Status</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="max-h-[400px] overflow-y-auto">
+            <div className="min-w-[600px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="text-slate-400">Name</TableHead>
+                  <TableHead className="text-slate-400">Email</TableHead>
+                  <TableHead className="text-slate-400">Role</TableHead>
+                  <TableHead className="text-slate-400">CoC Status</TableHead>
+                  <TableHead className="text-slate-400">Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-white/5">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <TableCell key={j}><div className="h-4 bg-white/10 rounded animate-pulse w-20" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : users.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-slate-500 py-8">No users found</TableCell></TableRow>
+                ) : users.map((u) => (
+                  <TableRow key={u.id} className="border-white/5 hover:bg-white/5">
+                    <TableCell className="font-medium text-white">{u.name}</TableCell>
+                    <TableCell className="text-slate-400 text-sm">{u.email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] border-white/20 text-slate-300">
+                        {u.role.replace(/_/g, ' ')}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {u.conductAcknowledged ? (
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> Acknowledged
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px]">
+                          <AlertTriangle className="w-3 h-3 mr-1" /> Pending
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-slate-400 text-xs">
+                      {u.conductAcknowledgedAt ? formatDate(u.conductAcknowledgedAt) : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+          </div>
+        </CardContent>
+      </DarkCard>
+    </motion.div>
+  )
+}
+
+// ============================================================
 // MAIN COMPONENT: MASTER ADMIN COMMAND CENTER
 // ============================================================
 
@@ -1309,6 +1518,9 @@ export default function FounderDashboard() {
           </TabsTrigger>
           <TabsTrigger value="schools" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Schools</TabsTrigger>
           <TabsTrigger value="audit" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">Audit Logs</TabsTrigger>
+          <TabsTrigger value="conduct" className="data-[state=active]:bg-[#1B3A4B] data-[state=active]:text-white">
+            <Shield className="w-3.5 h-3.5 mr-1.5" /> CoC Tracking
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
@@ -1344,6 +1556,11 @@ export default function FounderDashboard() {
         <TabsContent value="audit" className="mt-6">
           <div className="bg-[#0D1B2A] rounded-2xl p-6">
             <AuditLogs />
+          </div>
+        </TabsContent>
+        <TabsContent value="conduct" className="mt-6">
+          <div className="bg-[#0D1B2A] rounded-2xl p-6">
+            <ConductTracking />
           </div>
         </TabsContent>
       </Tabs>

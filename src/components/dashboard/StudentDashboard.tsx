@@ -143,6 +143,8 @@ export default function StudentDashboard() {
   const [badges, setBadges] = useState<BadgeData[]>([])
   const [courses, setCourses] = useState<CourseData[]>([])
   const [conferences, setConferences] = useState<ConferenceData[]>([])
+  const [conductAcknowledged, setConductAcknowledged] = useState<boolean | null>(null)
+  const [conductAcknowledgedAt, setConductAcknowledgedAt] = useState<string | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
@@ -244,6 +246,20 @@ export default function StudentDashboard() {
         }
       } catch {
         // conferences fetch is non-critical
+      }
+
+      // Fetch conduct acknowledgement status
+      try {
+        const conductRes = await fetch('/api/conduct/acknowledge')
+        if (conductRes.ok) {
+          const conductData = await conductRes.json()
+          if (conductData.data) {
+            setConductAcknowledged(conductData.data.acknowledged)
+            setConductAcknowledgedAt(conductData.data.acknowledgedAt)
+          }
+        }
+      } catch {
+        // conduct fetch is non-critical
       }
 
       // If no profile from API, create a default
@@ -436,7 +452,55 @@ export default function StudentDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Code of Conduct Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.33 }}
+        >
+          <Card
+            className="h-full border-[#E8DED0]/60 hover:shadow-md transition-all duration-300 cursor-pointer group"
+            onClick={() => navigate('conduct')}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4A843]/20 to-[#0D7377]/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Shield className="w-5 h-5 text-[#0D7377]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-[#1B3A4B]">Code of Conduct</div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {conductAcknowledged === true ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="text-[10px] text-emerald-600 font-medium">Acknowledged</span>
+                        {conductAcknowledgedAt && (
+                          <span className="text-[10px] text-muted-foreground ml-1">
+                            {new Date(conductAcknowledgedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </>
+                    ) : conductAcknowledged === false ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <span className="text-[10px] text-amber-600 font-medium">Review Required</span>
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">Loading...</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {conductAcknowledged
+                  ? 'You have accepted the platform\'s Code of Conduct. Thank you for your commitment to our community standards.'
+                  : 'Please review and accept the Code of Conduct to access all platform features.'}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Active Badges */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -9,32 +9,24 @@ import { Separator } from '@/components/ui/separator'
 
 const footerLinks = {
   Platform: [
-    { label: 'Diagnostic Assessment', href: '#assessment' },
-    { label: 'Diplomatic Academy', href: '#training' },
-    { label: 'Conference Command', href: '#features' },
-    { label: 'Committee Hub', href: '#features' },
-    { label: 'Intelligence Dashboard', href: '#features' },
+    { label: 'Diagnostic Assessment', href: '/#assessment' },
+    { label: 'Diplomatic Academy', href: '/#training' },
+    { label: 'Conference Management', href: '/#features' },
+    { label: 'For Schools', href: '/#features' },
+    { label: 'Pricing', href: '/#pricing' },
   ],
   Resources: [
-    { label: 'MUN Guide', href: '#training' },
-    { label: 'Blog', href: '#features' },
-    { label: 'Webinars', href: '#training' },
-    { label: 'Help Center', href: '#features' },
-    { label: 'API Documentation', href: '#pricing' },
+    { label: 'MUN Guide', href: '/resources/mun-guide' },
+    { label: 'Help Center', href: '/resources/help' },
   ],
   Company: [
-    { label: 'About Us', href: '#features' },
-    { label: 'Careers', href: '#features' },
-    { label: 'Partners', href: '#features' },
-    { label: 'Press Kit', href: '#features' },
+    { label: 'About', href: '/about' },
     { label: 'Contact', href: 'mailto:modelunitednations45@gmail.com' },
   ],
   Legal: [
-    { label: 'Privacy Policy', href: '#pricing' },
-    { label: 'Terms of Service', href: '#pricing' },
-    { label: 'Cookie Policy', href: '#pricing' },
-    { label: 'GDPR', href: '#pricing' },
-    { label: 'Security', href: '#pricing' },
+    { label: 'Code of Conduct', href: '/legal/code-of-conduct' },
+    { label: 'Privacy Policy', href: '/legal/privacy' },
+    { label: 'Terms of Service', href: '/legal/terms' },
   ],
 }
 

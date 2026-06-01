@@ -1038,20 +1038,24 @@ function PlatformSection({ onGetStarted }: { onGetStarted: () => void }) {
 
 function Footer({ onNavigate }: { onNavigate: () => void }) {
   const platformLinks = [
-    { label: 'Features', href: '#features' },
-    { label: 'Assessment', href: '#assessment' },
-    { label: 'Training', href: '#training' },
-    { label: 'Schools', href: '#schools' },
-    { label: 'Pricing', href: '#pricing' },
+    { label: 'Diagnostic Assessment', href: '/#assessment' },
+    { label: 'Diplomatic Academy', href: '/#training' },
+    { label: 'Conference Management', href: '/#features' },
+    { label: 'For Schools', href: '/#features' },
+    { label: 'Pricing', href: '/#pricing' },
+  ]
+  const resourceLinks = [
+    { label: 'MUN Guide', href: '/resources/mun-guide' },
+    { label: 'Help Center', href: '/resources/help' },
   ]
   const companyLinks = [
-    { label: 'About', href: '#features' },
+    { label: 'About', href: '/about' },
     { label: 'Contact', href: 'mailto:modelunitednations45@gmail.com' },
   ]
   const legalLinks = [
-    { label: 'Code of Conduct', href: '#features' },
-    { label: 'Privacy', href: '#pricing' },
-    { label: 'Terms', href: '#pricing' },
+    { label: 'Code of Conduct', href: '/legal/code-of-conduct' },
+    { label: 'Privacy Policy', href: '/legal/privacy' },
+    { label: 'Terms of Service', href: '/legal/terms' },
   ]
 
   const handleLinkClick = (e: React.MouseEvent, item: { label: string; href?: string; action?: () => void }) => {
@@ -1063,7 +1067,7 @@ function Footer({ onNavigate }: { onNavigate: () => void }) {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D4A843]/10 to-transparent" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
@@ -1082,6 +1086,20 @@ function Footer({ onNavigate }: { onNavigate: () => void }) {
             <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Platform</h4>
             <ul className="space-y-2.5">
               {platformLinks.map((item) => (
+                <li key={item.label}>
+                  <a href={item.href} className="text-sm text-white/65 hover:text-[#D4A843] transition-colors">
+                    {item.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Resources Links */}
+          <div>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Resources</h4>
+            <ul className="space-y-2.5">
+              {resourceLinks.map((item) => (
                 <li key={item.label}>
                   <a href={item.href} className="text-sm text-white/65 hover:text-[#D4A843] transition-colors">
                     {item.label}

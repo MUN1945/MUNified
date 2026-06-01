@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Hash, Bell, BellOff, Users, Plus, Search, Menu, X, Send,
   Paperclip, Bold, Italic, ChevronDown, ChevronRight,
@@ -1116,7 +1116,7 @@ export default function ChatView() {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
+      <div className="flex items-center justify-center h-full bg-white">
         <div className="text-center py-20 px-6">
           <div className="w-12 h-12 rounded-full border-2 border-[#0D7377] border-t-transparent animate-spin mx-auto mb-4" />
           <p className="text-sm text-muted-foreground">Loading channels...</p>
@@ -1128,7 +1128,7 @@ export default function ChatView() {
   // Empty state when no channels exist
   if (!currentChannel) {
     return (
-      <div className="flex items-center justify-center h-full rounded-xl border border-[#E8DED0] bg-white">
+      <div className="flex items-center justify-center h-full bg-white">
         <div className="text-center py-20 px-6">
           <div className="w-16 h-16 rounded-2xl bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-4">
             <MessageSquare className="w-8 h-8 text-[#0D7377]" />
@@ -1165,10 +1165,10 @@ export default function ChatView() {
   }
 
   return (
-    <div className="flex h-full rounded-xl overflow-hidden border border-[#E8DED0] shadow-sm">
+    <div className="flex h-full overflow-hidden bg-white">
       {/* Desktop Channel Sidebar */}
       {!isMobile && (
-        <div className="w-60 shrink-0">{channelSidebarContent}</div>
+        <div className="w-60 shrink-0 border-r border-[#E8DED0]">{channelSidebarContent}</div>
       )}
 
       {/* Mobile Channel Sidebar */}
@@ -1274,7 +1274,7 @@ export default function ChatView() {
         </div>
 
         {/* Messages Area */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <div className="py-4">
             {/* Channel Welcome */}
             <div className="px-4 py-6 text-center border-b border-[#E8DED0]/50 mb-4">
@@ -1312,7 +1312,7 @@ export default function ChatView() {
 
             <div ref={messagesEndRef} />
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Typing Indicator */}
         <TypingIndicator users={typingUsers} />
@@ -1329,15 +1329,9 @@ export default function ChatView() {
 
       {/* Online Users Sidebar (Desktop) */}
       {!isMobile && showMembers && (
-        <motion.div
-          className="w-56 shrink-0"
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 224, opacity: 1 }}
-          exit={{ width: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <div className="w-56 shrink-0">
           <OnlineUsersSidebar users={users} />
-        </motion.div>
+        </div>
       )}
 
       {/* Online Users Sidebar (Mobile - Sheet) */}

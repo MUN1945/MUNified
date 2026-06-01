@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Globe, BookOpen, Award, Users, BarChart3, MessageSquare,
-  ChevronRight, Star, Trophy, Target, Clock, MapPin, TrendingUp,
+  ChevronRight, Star, Trophy, Target, Clock, MapPin, TrendingUp, CheckCircle2,
   Shield, GraduationCap, Crown, Gavel, FileText,
   Mic, Handshake, Brain, Plus, Send, Bell,
   CalendarDays, Building2, Sparkles, ClipboardList, UserCheck,
@@ -114,6 +114,8 @@ export default function TeacherDashboard() {
   const [researchTaskCount, setResearchTaskCount] = useState(0)
   const [conferences, setConferences] = useState<ConferenceData[]>([])
   const [recentActivity, setRecentActivity] = useState<{ text: string; time: string; icon: React.ElementType; color: string }[]>([])
+  const [conductAcknowledged, setConductAcknowledged] = useState<boolean | null>(null)
+  const [conductAcknowledgedAt, setConductAcknowledgedAt] = useState<string | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
@@ -170,6 +172,20 @@ export default function TeacherDashboard() {
         const data = raw.data || raw
         const tasks = Array.isArray(data) ? data : (data.tasks || [])
         setResearchTaskCount(tasks.length)
+      }
+
+      // Fetch conduct acknowledgement status
+      try {
+        const conductRes = await fetch('/api/conduct/acknowledge')
+        if (conductRes.ok) {
+          const conductData = await conductRes.json()
+          if (conductData.data) {
+            setConductAcknowledged(conductData.data.acknowledged)
+            setConductAcknowledgedAt(conductData.data.acknowledgedAt)
+          }
+        }
+      } catch {
+        // conduct fetch is non-critical
       }
     } catch {
       setError('Failed to load dashboard data. Please try again.')
@@ -272,6 +288,49 @@ export default function TeacherDashboard() {
           suffix="%"
         />
       </div>
+
+      {/* Code of Conduct Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.28 }}
+      >
+        <Card
+          className="border-[#E8DED0]/60 hover:shadow-md transition-all duration-300 cursor-pointer group"
+          onClick={() => navigate('conduct')}
+        >
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#D4A843]/20 to-[#0D7377]/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+              <Shield className="w-5 h-5 text-[#0D7377]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-[#1B3A4B]">Code of Conduct</div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {conductAcknowledged === true ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] text-emerald-600 font-medium">Acknowledged</span>
+                    {conductAcknowledgedAt && (
+                      <span className="text-[10px] text-muted-foreground ml-1">
+                        {new Date(conductAcknowledgedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </>
+                ) : conductAcknowledged === false ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <span className="text-[10px] text-amber-600 font-medium">Review Required</span>
+                    <span className="text-[10px] text-muted-foreground ml-1">Please review and accept</span>
+                  </>
+                ) : (
+                  <span className="text-[10px] text-muted-foreground">Loading...</span>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#0D7377] transition-colors" />
+          </CardContent>
+        </Card>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity Feed */}
