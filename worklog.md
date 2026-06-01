@@ -111,3 +111,29 @@ Stage Summary:
 - All overflow, scrolling, responsiveness, and color contrast issues addressed
 - Commit: d994e66 pushed to origin/main
 - Production: https://mun-diplomatiq.vercel.app (live, auto-deploying)
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix TrainingHub light-theme issues - all text invisible/washed out on white backgrounds
+
+Work Log:
+- Analyzed user screenshot showing broken training section
+- Discovered app runs in LIGHT theme only (no `dark` class, no next-themes)
+- Previous code used Tailwind -400 colors (text-emerald-400, text-amber-400, etc.) which are designed for dark backgrounds — invisible on white
+- Previous code used bg-*-500/10 which renders as near-invisible on white backgrounds
+- Previous code used from-slate-800 to-slate-900 instead of brand navy colors
+- Previous code used h-full/min-h-0 which doesn't work without parent flex constraints
+- Previous code used truncate on lesson titles causing text cutoff
+- Fixed ALL colors to use -700 variants and -50 background variants for light theme
+- Replaced all semantic token references with hardcoded brand hex values for reliability
+- Fixed lesson titles to wrap naturally instead of truncating
+- Increased lesson sidebar to 300px
+- Removed h-full pattern, let outer AppShell handle scrolling
+- Used proper brand colors: #0D1B2A (navy), #5A6A7A (muted), #0D7377 (teal), #D4A843 (gold), #059669 (emerald), #E0E5EA (border)
+- Build succeeded, committed: 43e6345, pushed to origin/main
+
+Stage Summary:
+- Complete color overhaul from dark-theme to light-theme
+- Commit: 43e6345 pushed to origin/main
+- Production: https://mun-diplomatiq.vercel.app (auto-deploying)
