@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { canSendChatMessages } from "@/lib/subscription"
 
 // GET /api/messages - Get messages for channel (paginated)
 export async function GET(request: NextRequest) {
@@ -79,6 +80,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
+      )
+    }
+
+    // Check subscription: trial and expired users cannot send messages
+    const canSend = await canSendChatMessages(session.user.id)
+    if (!canSend) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Chat messaging requires an active subscription. Please upgrade your plan.",
+          code: "SUBSCRIPTION_REQUIRED",
+        },
+        { status: 403 }
       )
     }
 

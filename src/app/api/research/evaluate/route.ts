@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import ZAI from 'z-ai-web-dev-sdk'
+import { checkFeatureAccess } from '@/lib/subscription'
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +13,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
+      )
+    }
+
+    // Check subscription: research requires paid subscription
+    const access = await checkFeatureAccess(session.user.id, 'research')
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          error: access.reason === 'trial_expired'
+            ? 'Your trial has expired. Please upgrade to access the Research Lab.'
+            : 'Research Lab requires an active subscription. Please upgrade your plan.',
+          code: access.reason === 'trial_expired' ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_REQUIRED',
+        },
+        { status: 403 }
       )
     }
 

@@ -30,6 +30,7 @@ import PricingPage from '@/components/pricing/PricingPage'
 import SettingsView from '@/components/settings/SettingsView'
 import FounderDashboard from '@/components/founder/FounderDashboard'
 import SchoolDirectory from '@/components/schools/SchoolDirectory'
+import SubscriptionGate, { ExpiredTrialBanner, ChatRestrictionOverlay } from '@/components/subscription/SubscriptionGate'
 import { useNavStore, useAuthStore, useAppStore, type ViewName } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
 import LanguageSwitcher from '@/components/ui/language-switcher'
@@ -56,6 +57,60 @@ function PlaceholderView({ title, description }: { title: string; description: s
       </motion.div>
     </div>
   )
+}
+
+// ============================================================
+// SUBSCRIPTION HELPER
+// ============================================================
+
+function useSubscriptionAccess() {
+  const { user } = useAuthStore()
+
+  const isAdminOrTeacher = user ? [
+    'MASTER_ADMIN', 'FOUNDER', 'SUPER_ADMIN', 'ADMIN', 'SCHOOL_ADMIN', 'TEACHER'
+  ].includes(user.role) : false
+
+  const subscriptionStatus = user?.subscriptionStatus || 'EXPIRED'
+  const subscriptionTier = user?.subscriptionTier || 'FREE'
+
+  const isActivePaid = subscriptionStatus === 'ACTIVE' && subscriptionTier !== 'FREE'
+  const isTrialActive = subscriptionStatus === 'TRIAL' && subscriptionTier !== 'FREE'
+  const isExpired = subscriptionStatus === 'EXPIRED' ||
+    (subscriptionStatus === 'TRIAL' && subscriptionTier === 'FREE')
+
+  // Feature access check
+  const hasAccess = (feature: string): boolean => {
+    if (isAdminOrTeacher) return true
+    if (isActivePaid) return true
+
+    // Public features always accessible
+    const publicFeatures = ['dashboard', 'settings', 'pricing', 'conduct', 'profile']
+    if (publicFeatures.includes(feature)) return true
+
+    // Trial-limited features during active trial
+    const trialFeatures = ['training', 'chat']
+    if (trialFeatures.includes(feature) && isTrialActive) return true
+
+    return false
+  }
+
+  // Whether a feature is accessible but with restrictions (trial)
+  const isTrialLimited = (feature: string): boolean => {
+    if (isAdminOrTeacher || isActivePaid) return false
+    const trialFeatures = ['training', 'chat']
+    return trialFeatures.includes(feature) && isTrialActive
+  }
+
+  return {
+    isAdminOrTeacher,
+    isActivePaid,
+    isTrialActive,
+    isExpired,
+    hasAccess,
+    isTrialLimited,
+    subscriptionStatus,
+    subscriptionTier,
+  }
 }
 
 // ============================================================
@@ -106,6 +161,7 @@ class ViewErrorBoundary extends React.Component<
 
 function ViewRouter({ view }: { view: ViewName }) {
   const { user } = useAuthStore()
+  const { hasAccess, isTrialLimited } = useSubscriptionAccess()
 
   const isStudent = user?.role === 'STUDENT'
   const isFounderOrSuperAdmin = user?.role === 'FOUNDER' || user?.role === 'SUPER_ADMIN' || user?.role === 'MASTER_ADMIN'
@@ -117,25 +173,57 @@ function ViewRouter({ view }: { view: ViewName }) {
       viewContent = isStudent ? <StudentDashboard /> : <TeacherDashboard />
       break
     case 'assessment':
-      viewContent = <AssessmentQuiz />
+      viewContent = (
+        <SubscriptionGate feature="assessment">
+          <AssessmentQuiz />
+        </SubscriptionGate>
+      )
       break
     case 'training':
-      viewContent = <EnhancedTrainingHub />
+      viewContent = (
+        <SubscriptionGate feature="training" trialLimited={true}>
+          <EnhancedTrainingHub />
+        </SubscriptionGate>
+      )
       break
     case 'conferences':
-      viewContent = <ConferenceManager />
+      viewContent = (
+        <SubscriptionGate feature="conferences">
+          <ConferenceManager />
+        </SubscriptionGate>
+      )
       break
     case 'committees':
-      viewContent = <PlaceholderView title="Committees" description="Manage committee assignments, topics, and delegate placements." />
+      viewContent = (
+        <SubscriptionGate feature="committees">
+          <PlaceholderView title="Committees" description="Manage committee assignments, topics, and delegate placements." />
+        </SubscriptionGate>
+      )
       break
     case 'chat':
-      viewContent = <ChatView />
+      viewContent = (
+        <SubscriptionGate feature="chat" trialLimited={true}>
+          <div className="relative h-full">
+            <ChatView />
+            {/* Trial users can view chat but not send messages */}
+            {isTrialLimited('chat') && <ChatRestrictionOverlay />}
+          </div>
+        </SubscriptionGate>
+      )
       break
     case 'research':
-      viewContent = <ResearchPaperEvaluation />
+      viewContent = (
+        <SubscriptionGate feature="research">
+          <ResearchPaperEvaluation />
+        </SubscriptionGate>
+      )
       break
     case 'analytics':
-      viewContent = <AnalyticsView />
+      viewContent = (
+        <SubscriptionGate feature="analytics">
+          <AnalyticsView />
+        </SubscriptionGate>
+      )
       break
     case 'settings':
       viewContent = <SettingsView />
@@ -150,7 +238,11 @@ function ViewRouter({ view }: { view: ViewName }) {
       viewContent = <SettingsView />
       break
     case 'leaderboard':
-      viewContent = <LeaderboardView />
+      viewContent = (
+        <SubscriptionGate feature="leaderboard">
+          <LeaderboardView />
+        </SubscriptionGate>
+      )
       break
     case 'notifications':
       viewContent = <PlaceholderView title="Notifications" description="Stay updated on conferences, training, and achievements." />
@@ -161,7 +253,11 @@ function ViewRouter({ view }: { view: ViewName }) {
         : <PlaceholderView title="Access Denied" description="The Command Center is only accessible to founders and super admins." />
       break
     case 'schools':
-      viewContent = <SchoolDirectory />
+      viewContent = (
+        <SubscriptionGate feature="schools">
+          <SchoolDirectory />
+        </SubscriptionGate>
+      )
       break
     case 'users':
       viewContent = <PlaceholderView title="User Management" description="Manage user accounts, roles, and permissions." />
@@ -184,6 +280,7 @@ export default function AppShell() {
   const { t } = useI18n()
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
   const [showConductModal, setShowConductModal] = React.useState(false)
+  const { isExpired, isTrialActive, subscriptionStatus } = useSubscriptionAccess()
 
   // Fetch CoC acknowledgement status on mount
   React.useEffect(() => {
@@ -214,7 +311,6 @@ export default function AppShell() {
 
   // Trial banner logic
   const isOnTrial = user?.subscriptionStatus === 'TRIAL'
-  const trialEndsAt = user?.subscriptionTier === 'FREE' ? null : undefined
   const [trialTimeLeft, setTrialTimeLeft] = React.useState<string>('')
 
   React.useEffect(() => {
@@ -415,7 +511,7 @@ export default function AppShell() {
 
         {/* Main content area */}
         <main className={`flex-1 custom-scrollbar ${currentView === 'chat' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`}>
-          {/* Trial Banner */}
+          {/* Trial Banner - Active Trial */}
           {isOnTrial && trialTimeLeft && (
             <div className="bg-[#D4A843]/10 border-b border-[#D4A843]/20 px-4 md:px-6 py-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -434,6 +530,12 @@ export default function AppShell() {
               </Button>
             </div>
           )}
+
+          {/* Expired Trial Banner - Persistent warning */}
+          {isExpired && (
+            <ExpiredTrialBanner />
+          )}
+
           <div className={currentView === 'chat' ? 'flex-1 flex flex-col p-2 md:p-3 min-h-0' : 'p-4 md:p-6 lg:p-8 max-w-7xl mx-auto'}>
             <AnimatePresence mode="wait">
               <motion.div

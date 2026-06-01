@@ -29,6 +29,30 @@ const adminRoutes = [
   "/api/admin",
 ]
 
+// API routes that are always accessible regardless of subscription
+const subscriptionExemptApiRoutes = [
+  "/api/auth",
+  "/api/subscriptions",
+  "/api/billing",
+  "/api/conduct/acknowledge",
+  "/api/user/delete",
+  "/api/user/change-password",
+  "/api/user/subscription-status",
+  "/api/courses",        // Public course listing
+  "/api/schools",        // Public school directory
+  "/api/notifications",  // Allow viewing notifications
+]
+
+// Roles that bypass subscription checks
+const subscriptionExemptRoles = [
+  "MASTER_ADMIN",
+  "FOUNDER",
+  "SUPER_ADMIN",
+  "ADMIN",
+  "SCHOOL_ADMIN",
+  "TEACHER",
+]
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -131,6 +155,47 @@ export async function middleware(request: NextRequest) {
         { success: false, error: "Insufficient permissions" },
         { status: 403 }
       )
+    }
+  }
+
+  // ============================
+  // SUBSCRIPTION-BASED ACCESS CONTROL (API routes)
+  // ============================
+  // Enforce trial/subscription restrictions on protected API routes
+  if (pathname.startsWith("/api/") && !isPublicApi && !isAdminApi) {
+    // Check if this API route is exempt from subscription checks
+    const isExempt = subscriptionExemptApiRoutes.some(
+      prefix => pathname.startsWith(prefix)
+    )
+
+    if (!isExempt) {
+      const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+
+      if (token) {
+        const role = token.role as string
+        const subscriptionStatus = token.subscriptionStatus as string
+        const subscriptionTier = token.subscriptionTier as string
+
+        // Admin/teacher roles bypass subscription checks
+        if (!subscriptionExemptRoles.includes(role)) {
+          const isExpired = subscriptionStatus === 'EXPIRED' ||
+            (subscriptionStatus === 'TRIAL' && subscriptionTier === 'FREE')
+
+          // Note: We do a basic check here using JWT data.
+          // More granular checks (e.g., trial expiry time) are done in the API routes themselves.
+          // The middleware provides a first line of defense.
+          if (isExpired) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: "Your trial has expired. Please upgrade to access this feature.",
+                code: "TRIAL_EXPIRED",
+              },
+              { status: 403 }
+            )
+          }
+        }
+      }
     }
   }
 

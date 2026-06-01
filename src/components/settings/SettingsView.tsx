@@ -35,10 +35,10 @@ import { useI18n } from '@/lib/i18n'
 // ============================================================
 
 const BILLING_HISTORY = [
-  { id: 'inv-001', date: '2026-02-01', description: 'Delegate Pro - Monthly', amount: '$9.00', status: 'Paid', invoiceUrl: '#' },
-  { id: 'inv-002', date: '2026-01-01', description: 'Delegate Pro - Monthly', amount: '$9.00', status: 'Paid', invoiceUrl: '#' },
-  { id: 'inv-003', date: '2026-01-01', description: 'Delegate Pro - Monthly', amount: '$9.00', status: 'Paid', invoiceUrl: '#' },
-  { id: 'inv-004', date: '2025-12-15', description: 'Delegate Pro - First Month (Prorated)', amount: '$4.50', status: 'Paid', invoiceUrl: '#' },
+  { id: 'inv-001', date: '2026-02-01', description: 'Delegate Pro - Monthly', amount: '$11.00', status: 'Paid' },
+  { id: 'inv-002', date: '2026-01-01', description: 'Delegate Pro - Monthly', amount: '$11.00', status: 'Paid' },
+  { id: 'inv-003', date: '2025-12-01', description: 'Delegate Pro - Monthly', amount: '$11.00', status: 'Paid' },
+  { id: 'inv-004', date: '2025-11-15', description: 'Delegate Pro - First Month (Prorated)', amount: '$5.50', status: 'Paid' },
 ]
 
 // ============================================================
@@ -261,18 +261,48 @@ function SecuritySection() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [changing, setChanging] = useState(false)
   const [changed, setChanged] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || newPassword !== confirmPassword) return
+
+    // Client-side validation
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters')
+      return
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      setError('New password must contain at least one uppercase letter')
+      return
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setError('New password must contain at least one number')
+      return
+    }
+
     setChanging(true)
-    setTimeout(() => {
+    setError(null)
+    try {
+      const res = await fetch('/api/user/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        setChanged(true)
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+        setTimeout(() => setChanged(false), 3000)
+      } else {
+        setError(data.error || 'Failed to change password. Please try again.')
+      }
+    } catch {
+      setError('Unable to connect to server. Please check your connection.')
+    } finally {
       setChanging(false)
-      setChanged(true)
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmPassword('')
-      setTimeout(() => setChanged(false), 2000)
-    }, 800)
+    }
   }
 
   return (
@@ -308,9 +338,31 @@ function SecuritySection() {
                 <p className="text-xs text-red-500">Passwords do not match</p>
               )}
             </div>
+            {/* Error message */}
+            {error && (
+              <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-600 flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                {error}
+              </div>
+            )}
+            {/* Success message */}
+            {changed && (
+              <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-600 flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                Password changed successfully. Please sign in again with your new password.
+              </div>
+            )}
             <Button onClick={handleChangePassword} disabled={changing || !currentPassword || !newPassword || newPassword !== confirmPassword} className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white">
               {changing ? 'Updating...' : changed ? 'Updated!' : 'Update Password'}
             </Button>
+            <div className="mt-2">
+              <a
+                href="/auth/forgot-password"
+                className="text-xs text-[#0D7377] hover:text-[#0A5C5F] hover:underline transition-colors"
+              >
+                Forgot your password? Reset it here
+              </a>
+            </div>
           </div>
         </div>
 
@@ -408,6 +460,58 @@ function BillingSubscriptionSection() {
   }
 
   const isFreePlan = currentTier === 'FREE'
+
+  const handleDownloadInvoice = async (invoice: { id: string; date: string; description: string; amount: string; status: string }) => {
+    // First try: open Lemon Squeezy customer portal which has real invoices
+    try {
+      const res = await fetch('/api/billing/portal', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.url) {
+          window.open(data.url, '_blank')
+          return
+        }
+      }
+    } catch {
+      // Portal not available, fall through to generated invoice
+    }
+
+    // Fallback: generate a simple text invoice for demo/local use
+    const invoiceText = [
+      `═══════════════════════════════════════════`,
+      `         DIPLOMATIQ - INVOICE`,
+      `═══════════════════════════════════════════`,
+      ``,
+      `Invoice ID:    ${invoice.id}`,
+      `Date:          ${invoice.date}`,
+      `Description:   ${invoice.description}`,
+      `Amount:        ${invoice.amount}`,
+      `Status:        ${invoice.status}`,
+      ``,
+      `───────────────────────────────────────────`,
+      `Billed To:     ${user?.name || 'N/A'}`,
+      `Email:         ${user?.email || 'N/A'}`,
+      `Plan:          ${planNames[currentTier] || 'Free'}`,
+      `───────────────────────────────────────────`,
+      ``,
+      `Payment Method: Credit Card (via Lemon Squeezy)`,
+      ``,
+      `═══════════════════════════════════════════`,
+      `  DiplomatiQ - The OS for Model United Nations`,
+      `  https://mun-diplomatiq.vercel.app`,
+      `═══════════════════════════════════════════`,
+    ].join('\n')
+
+    const blob = new Blob([invoiceText], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `DiplomatiQ-Invoice-${invoice.id}.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="space-y-6">
@@ -589,7 +693,13 @@ function BillingSubscriptionSection() {
                         <Badge className="bg-[#059669]/15 text-[#059669] border-0 text-[10px]">{invoice.status}</Badge>
                       </td>
                       <td className="py-2.5 px-2 text-right">
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-[#0D7377]">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-[#0D7377]"
+                          onClick={() => handleDownloadInvoice(invoice)}
+                          title="Download Invoice"
+                        >
                           <Download className="w-3.5 h-3.5" />
                         </Button>
                       </td>

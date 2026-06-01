@@ -78,7 +78,7 @@ export default function ConductAcknowledgementModal({
     <Dialog open={open} onOpenChange={() => { /* Prevent closing without acknowledging */ }}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-2xl bg-white border-[#E8DED0] p-0 overflow-hidden"
+        className="sm:max-w-2xl bg-white border-[#E8DED0] p-0 overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header with gradient */}
         <div className="bg-gradient-to-r from-[#1B3A4B] to-[#264B5E] px-6 py-5 relative overflow-hidden">
@@ -102,14 +102,14 @@ export default function ConductAcknowledgementModal({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4 space-y-4">
+        <div className="px-6 py-4 space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Intro text */}
           <p className="text-sm text-[#1B3A4B]/70 leading-relaxed">
             Welcome to DiplomatiQ. Before accessing the platform, all participants must acknowledge our Code of Conduct, which establishes the standards of professionalism, integrity, diplomacy, and respect expected of everyone in our community.
           </p>
 
           {/* Scrollable preview of key sections */}
-          <ScrollArea className="h-[280px] rounded-lg border border-[#E8DED0] bg-[#FFF8F0]">
+          <ScrollArea className="h-[220px] sm:h-[280px] rounded-lg border border-[#E8DED0] bg-[#FFF8F0]">
             <div className="p-4 space-y-3">
               {PREVIEW_SECTIONS.map((section, i) => {
                 const Icon = section.icon

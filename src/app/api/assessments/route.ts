@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { checkFeatureAccess } from "@/lib/subscription"
 
 // Calculate recommended MUN role based on assessment scores
 function calculateRecommendedRole(scores: {
@@ -57,6 +58,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
+      )
+    }
+
+    // Check subscription: assessments require paid subscription
+    const access = await checkFeatureAccess(session.user.id, 'assessment')
+    if (!access.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: access.reason === 'trial_expired'
+            ? "Your trial has expired. Please upgrade to access assessments."
+            : "Assessments require an active subscription. Please upgrade your plan.",
+          code: access.reason === 'trial_expired' ? 'TRIAL_EXPIRED' : 'SUBSCRIPTION_REQUIRED',
+        },
+        { status: 403 }
       )
     }
 

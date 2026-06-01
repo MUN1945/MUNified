@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import ZAI from "z-ai-web-dev-sdk"
+import { canSendChatMessages } from "@/lib/subscription"
 
 // ============================================================
 // AI ASSISTANT SYSTEM PROMPT
@@ -186,6 +187,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
+      )
+    }
+
+    // Check subscription: AI assistant requires active paid subscription
+    const canSend = await canSendChatMessages(session.user.id)
+    if (!canSend) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "AI assistant requires an active subscription. Please upgrade your plan.",
+          code: "SUBSCRIPTION_REQUIRED",
+        },
+        { status: 403 }
       )
     }
 

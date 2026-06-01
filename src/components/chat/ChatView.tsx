@@ -1027,6 +1027,22 @@ export default function ChatView() {
           isBot: Boolean(userObj?.isBot || false),
         }
         setMessages(prev => [...prev, newMsg])
+      } else if (res.status === 403) {
+        // Subscription required - show inline error
+        const data = await res.json().catch(() => ({}))
+        const errorMsg: ChatMessage = {
+          id: `system-sub-${Date.now()}`,
+          channelId: activeChannel,
+          userId: 'system',
+          userName: 'System',
+          userRole: 'ADMIN',
+          content: data.error || 'Chat messaging requires an active subscription. Please upgrade your plan.',
+          timestamp: new Date().toISOString(),
+          isSystem: true,
+          isEdited: false,
+          isBot: false,
+        }
+        setMessages(prev => [...prev, errorMsg])
       }
     } catch {
       // Failed to send message
