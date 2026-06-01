@@ -20,6 +20,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend
 } from 'recharts'
 import { useAuthStore, useAppStore, getCurrentLevel } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // MOCK DATA
@@ -602,12 +603,13 @@ function StudentAnalytics() {
 
 export default function AnalyticsView() {
   const { user } = useAuthStore()
+  const { t } = useI18n()
   const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN' || user?.role === 'SCHOOL_ADMIN'
 
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold text-[#1B3A4B]">Analytics</h2>
+        <h2 className="text-2xl font-bold text-[#1B3A4B]">{t('analytics.title')}</h2>
         <p className="text-muted-foreground mt-1">
           {isTeacher ? 'Insights into student performance and program effectiveness' : 'Track your progress and skill development'}
         </p>

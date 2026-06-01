@@ -4,11 +4,13 @@ import React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Globe, Shield, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { SECTIONS, CODE_OF_CONDUCT_VERSION, CODE_OF_CONDUCT_EFFECTIVE, TOTAL_SECTIONS, INTRODUCTION } from '@/lib/conduct/sections'
 
 export default function CodeOfConductPage() {
+  const { t } = useI18n()
   return (
     <div className="min-h-screen bg-white text-[#1B3A4B]">
       {/* Navigation Bar */}
@@ -41,10 +43,10 @@ export default function CodeOfConductPage() {
             transition={{ duration: 0.8 }}
           >
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0D7377]/10 border border-[#0D7377]/20 text-[#0D7377] text-sm font-medium mb-6">
-              <Shield className="w-4 h-4" /> Code of Conduct
+              <Shield className="w-4 h-4" /> {t('conduct.title')}
             </span>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#1B3A4B] leading-[1.1]">
-              DiplomatiQ <span className="text-[#0D7377]">Code of Conduct</span>
+              DiplomatiQ <span className="text-[#0D7377]">{t('conduct.title')}</span>
             </h1>
             <p className="mt-6 text-lg text-[#1B3A4B]/70 leading-relaxed max-w-2xl mx-auto">
               Version {CODE_OF_CONDUCT_VERSION} — Effective {CODE_OF_CONDUCT_EFFECTIVE}. {TOTAL_SECTIONS} sections establishing the standards of behavior, professionalism, integrity, and respect for all participants.

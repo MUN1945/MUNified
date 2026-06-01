@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useAuthStore } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // TYPES
@@ -118,14 +119,14 @@ function formatMessageTime(timestamp: string): string {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
-function formatDateSeparator(timestamp: string): string {
+function formatDateSeparator(timestamp: string, t: (key: string) => string): string {
   const date = new Date(timestamp)
   const today = new Date()
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
 
-  if (date.toDateString() === today.toDateString()) return 'Today'
-  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  if (date.toDateString() === today.toDateString()) return t('chat.timeLabels.today')
+  if (date.toDateString() === yesterday.toDateString()) return t('chat.timeLabels.yesterday')
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
@@ -160,6 +161,7 @@ function ChannelSidebar({
   }, [channels])
 
   const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set())
+  const { t } = useI18n()
 
   const toggleCat = (cat: string) => {
     setCollapsedCats((prev) => {
@@ -180,7 +182,7 @@ function ChannelSidebar({
           <div className="w-7 h-7 rounded-md bg-[#D4A843] flex items-center justify-center">
             <Globe className="w-4 h-4 text-[#1B3A4B]" />
           </div>
-          <span className="font-bold text-white text-sm">DiplomatiQ</span>
+          <span className="font-bold text-white text-sm">{t('chat.appName')}</span>
         </div>
         <div className="flex items-center gap-1">
           {totalUnread > 0 && (
@@ -255,7 +257,7 @@ function ChannelSidebar({
                               <div className="text-[10px] text-white/50 mt-0.5">{channel.description}</div>
                               {channel.isCommittee && (
                                 <div className="text-[10px] text-[#D4A843] mt-1 flex items-center gap-1">
-                                  <Bot className="w-3 h-3" /> DiplomatiQ Guru Active
+                                  <Bot className="w-3 h-3" /> {t('chat.guruActive')}
                                 </div>
                               )}
                             </TooltipContent>
@@ -280,7 +282,7 @@ function ChannelSidebar({
             className="w-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] gap-2 justify-start text-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            Create Channel
+            {t('chat.createChannel')}
           </Button>
         </div>
       )}
@@ -296,8 +298,8 @@ function ChannelSidebar({
           <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#1B3A4B] bg-[#059669]" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-medium text-white truncate">Chat</div>
-          <div className="text-[10px] text-white/40">Online</div>
+          <div className="text-xs font-medium text-white truncate">{t('chat.tabs.chat')}</div>
+          <div className="text-[10px] text-white/40">{t('chat.online')}</div>
         </div>
         <div className="flex items-center gap-1">
           <button className="text-white/30 hover:text-white/60 p-1"><Mic className="w-3.5 h-3.5" /></button>
@@ -313,6 +315,7 @@ function ChannelSidebar({
 // ============================================================
 
 function MessageBubble({ message, showHeader }: { message: ChatMessage; showHeader: boolean }) {
+  const { t } = useI18n()
   const isBot = message.isBot || message.userName === BOT_NAME
   const roleColor = isBot ? BOT_COLOR : (ROLE_COLORS[message.userRole] || '#0D7377')
 
@@ -364,12 +367,12 @@ function MessageBubble({ message, showHeader }: { message: ChatMessage; showHead
             {isBot && (
               <Badge className="text-[9px] h-4 px-1.5 border-0 bg-[#0D7377]/15 text-[#0D7377]">
                 <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                AI Assistant
+                {t('chat.tabs.aiAssistant')}
               </Badge>
             )}
             {message.userRole === 'TEACHER' && !isBot && (
               <Badge className="text-[9px] h-4 px-1.5 border-0" style={{ backgroundColor: `${roleColor}20`, color: roleColor }}>
-                Teacher
+                {t('chat.teachers')}
               </Badge>
             )}
             <span className="text-[11px] text-muted-foreground">
@@ -420,6 +423,7 @@ function renderMessageContent(content: string) {
 // ============================================================
 
 function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: () => void }) {
+  const { t } = useI18n()
   const bots = users.filter((u) => u.isBot)
   const teachers = users.filter((u) => u.role === 'TEACHER' && !u.isBot)
   const students = users.filter((u) => u.role === 'STUDENT' && !u.isBot)
@@ -454,7 +458,7 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
       </span>
       {user.isBot && (
         <Badge className="text-[8px] h-3.5 px-1 border-0 bg-[#0D7377]/15 text-[#0D7377] ml-auto">
-          AI
+          {t('chat.tabs.ai')}
         </Badge>
       )}
     </div>
@@ -463,10 +467,10 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
   return (
     <div className="flex flex-col h-full bg-[#FFF8F0] overflow-hidden">
       <div className="px-4 py-3 border-b border-[#E8DED0] flex items-center gap-2 shrink-0">
-        <h3 className="text-sm font-semibold text-[#1B3A4B] shrink-0">Members</h3>
+        <h3 className="text-sm font-semibold text-[#1B3A4B] shrink-0">{t('chat.members')}</h3>
         <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
           <Users className="w-3.5 h-3.5" />
-          {users.filter((u) => u.status !== 'offline' || u.isBot).length} online
+          {users.filter((u) => u.status !== 'offline' || u.isBot).length} {t('chat.online')}
         </div>
         <div className="flex-1" />
         {onClose && (
@@ -480,7 +484,7 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
         {bots.length > 0 && (
           <div className="mb-4">
             <div className="px-2 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#0D7377]">
-              AI Assistants — {bots.length}
+              {t('chat.aiAssistants')} — {bots.length}
             </div>
             {bots.map((u) => (
               <UserRow key={u.id} user={u} />
@@ -492,7 +496,7 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
         {teachers.length > 0 && (
           <div className="mb-4">
             <div className="px-2 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Teachers — {teachers.length}
+              {t('chat.teachers')} — {teachers.length}
             </div>
             {teachers.map((u) => (
               <UserRow key={u.id} user={u} />
@@ -504,7 +508,7 @@ function OnlineUsersSidebar({ users, onClose }: { users: ChatUser[]; onClose?: (
         {students.length > 0 && (
           <div>
             <div className="px-2 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Students — {students.filter((s) => s.status !== 'offline').length} online
+              {t('chat.students')} — {students.filter((s) => s.status !== 'offline').length} {t('chat.online')}
             </div>
             {students.map((u) => (
               <UserRow key={u.id} user={u} />
@@ -575,6 +579,7 @@ function MessageInput({
   isCommitteeChannel: boolean
   isAILoading: boolean
 }) {
+  const { t } = useI18n()
   const [message, setMessage] = useState('')
   const [isBold, setIsBold] = useState(false)
   const [isItalic, setIsItalic] = useState(false)
@@ -634,7 +639,7 @@ function MessageInput({
             ) : (
               <Sparkles className="w-3.5 h-3.5" />
             )}
-            {isAILoading ? 'DiplomatiQ Guru is thinking...' : hasAIMention ? 'Ask DiplomatiQ Guru' : 'Ask DiplomatiQ Guru'}
+            {isAILoading ? t('chat.guruThinking') : t('chat.askGuru')}
           </Button>
         </div>
       )}
@@ -651,7 +656,7 @@ function MessageInput({
                 <Bold className="w-3.5 h-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Bold</TooltipContent>
+            <TooltipContent>{t('chat.formatting.bold')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -664,7 +669,7 @@ function MessageInput({
                 <Italic className="w-3.5 h-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Italic</TooltipContent>
+            <TooltipContent>{t('chat.formatting.italic')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -672,7 +677,7 @@ function MessageInput({
                 <Paperclip className="w-3.5 h-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Attach file</TooltipContent>
+            <TooltipContent>{t('chat.formatting.attachFile')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -680,7 +685,7 @@ function MessageInput({
                 <AtSign className="w-3.5 h-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Mention</TooltipContent>
+            <TooltipContent>{t('chat.formatting.mention')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -690,7 +695,7 @@ function MessageInput({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Message #${channelName}${isCommitteeChannel ? ' (type @DiplomatiQ Guru to ask AI)' : ''}...`}
+          placeholder={`${t('chat.channelMessage', { channel: channelName })}${isCommitteeChannel ? ' (type @DiplomatiQ Guru to ask AI)' : ''}...`}
           rows={1}
           className="w-full resize-none rounded-lg border border-[#E8DED0] bg-[#FFF8F0] px-3 md:px-4 py-2 md:py-2.5 text-sm focus:outline-none focus:border-[#0D7377]/40 focus:ring-2 focus:ring-[#0D7377]/10 placeholder:text-muted-foreground/50 min-h-[42px] max-h-[120px]"
           style={{ overflow: 'auto' }}
@@ -701,7 +706,7 @@ function MessageInput({
           </span>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-muted-foreground/50 hidden sm:inline">
-              Ctrl+Enter to send
+              {t('chat.sendShortcut')}
             </span>
             <Button
               size="sm"
@@ -710,7 +715,7 @@ function MessageInput({
               onClick={handleSend}
             >
               <Send className="w-3 h-3" />
-              Send
+              {t('chat.send')}
             </Button>
           </div>
         </div>
@@ -724,6 +729,7 @@ function MessageInput({
 // ============================================================
 
 function AIThinkingIndicator() {
+  const { t } = useI18n()
   return (
     <motion.div
       initial={{ opacity: 0, y: 5 }}
@@ -740,12 +746,12 @@ function AIThinkingIndicator() {
           <span className="font-semibold text-sm text-[#0D7377] shrink-0">DiplomatiQ Guru</span>
           <Badge className="text-[9px] h-4 px-1.5 border-0 bg-[#0D7377]/15 text-[#0D7377]">
             <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-            AI Assistant
+            {t('chat.tabs.aiAssistant')}
           </Badge>
         </div>
         <div className="flex items-center gap-2 text-xs text-[#0D7377]/60">
           <Loader2 className="w-3 h-3 animate-spin" />
-          Thinking...
+          {t('chat.thinking')}
         </div>
       </div>
     </motion.div>
@@ -757,6 +763,7 @@ function AIThinkingIndicator() {
 // ============================================================
 
 export default function ChatView() {
+  const { t } = useI18n()
   const isMobile = useIsMobile()
   const [activeChannel, setActiveChannel] = useState('')
   const [showMembers, setShowMembers] = useState(false)
@@ -1120,7 +1127,7 @@ export default function ChatView() {
       <div className="flex items-center justify-center h-full bg-white">
         <div className="text-center py-20 px-6">
           <div className="w-12 h-12 rounded-full border-2 border-[#0D7377] border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">Loading channels...</p>
+          <p className="text-sm text-muted-foreground">{t('chat.loadingChannels')}</p>
         </div>
       </div>
     )
@@ -1134,7 +1141,7 @@ export default function ChatView() {
           <div className="w-16 h-16 rounded-2xl bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-4">
             <MessageSquare className="w-8 h-8 text-[#0D7377]" />
           </div>
-          <h2 className="text-xl font-bold text-[#1B3A4B]">No Channels Yet</h2>
+          <h2 className="text-xl font-bold text-[#1B3A4B]">{t('chat.noChannels')}</h2>
           <p className="text-muted-foreground mt-2 max-w-md">
             Chat channels will appear here once they are created. Committee channels include the DiplomatiQ Guru AI assistant.
           </p>
@@ -1158,7 +1165,7 @@ export default function ChatView() {
             }}
           >
             {setupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {setupLoading ? 'Setting up...' : 'Setup Chat Channels'}
+            {setupLoading ? 'Setting up...' : t('chat.setupChannels')}
           </Button>
         </div>
       </div>
@@ -1204,7 +1211,7 @@ export default function ChatView() {
             {currentChannel.isCommittee && (
               <Badge className="bg-[#0D7377]/10 text-[#0D7377] text-[9px] h-4 px-1.5 border-0 gap-0.5 shrink-0">
                 <Sparkles className="w-2.5 h-2.5" />
-                AI
+                {t('chat.tabs.ai')}
               </Badge>
             )}
             {currentChannel.unread > 0 && (
@@ -1230,7 +1237,7 @@ export default function ChatView() {
                       <Sparkles className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>DiplomatiQ Guru is active in this channel</TooltipContent>
+                  <TooltipContent>{t('chat.guruActive')}</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
@@ -1241,7 +1248,7 @@ export default function ChatView() {
                     <Pin className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Pinned Messages</TooltipContent>
+                <TooltipContent>{t('chat.pinnedMessages')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1249,7 +1256,7 @@ export default function ChatView() {
                     <Search className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Search</TooltipContent>
+                <TooltipContent>{t('chat.search')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1268,7 +1275,7 @@ export default function ChatView() {
                     <Users className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{showMembers ? 'Hide Members' : 'Show Members'}</TooltipContent>
+                <TooltipContent>{showMembers ? t('chat.hideMembers') : t('chat.showMembers')}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -1282,7 +1289,7 @@ export default function ChatView() {
               <div className="w-14 h-14 rounded-full bg-[#0D7377]/10 flex items-center justify-center mx-auto mb-3">
                 <ChannelIcon type={currentChannel.type} className="w-7 h-7 text-[#0D7377]" />
               </div>
-              <h3 className="text-lg font-bold text-[#1B3A4B]">Welcome to #{currentChannel.name}!</h3>
+              <h3 className="text-lg font-bold text-[#1B3A4B]">{t('chat.channelWelcome', { channel: currentChannel.name })}</h3>
               <p className="text-sm text-muted-foreground mt-1">{currentChannel.description}</p>
               {currentChannel.isCommittee && (
                 <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-[#0D7377] bg-[#0D7377]/5 px-3 py-1.5 rounded-full">
@@ -1299,7 +1306,7 @@ export default function ChatView() {
                   <div className="flex items-center gap-4 px-3 md:px-4 my-3 md:my-4">
                     <div className="flex-1 h-px bg-[#E8DED0]" />
                     <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                      {formatDateSeparator(message.timestamp)}
+                      {formatDateSeparator(message.timestamp, t)}
                     </span>
                     <div className="flex-1 h-px bg-[#E8DED0]" />
                   </div>
@@ -1340,7 +1347,7 @@ export default function ChatView() {
         <Sheet open={mobileMembersOpen} onOpenChange={setMobileMembersOpen}>
           <SheetContent side="right" className="p-0 w-72 border-0 h-full overflow-hidden">
             <SheetHeader className="sr-only">
-              <SheetTitle>Members</SheetTitle>
+              <SheetTitle>{t('chat.members')}</SheetTitle>
             </SheetHeader>
             <div className="h-full overflow-hidden">
               <OnlineUsersSidebar users={users} onClose={() => setMobileMembersOpen(false)} />

@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import Link from 'next/link'
+import { useI18n } from '@/lib/i18n'
 
 type RegisterRole = 'STUDENT' | 'TEACHER'
 
@@ -25,13 +26,14 @@ interface SchoolOption {
   emirate: string | null
 }
 
-const ROLES: { value: RegisterRole; label: string; icon: React.ElementType; desc: string }[] = [
-  { value: 'STUDENT', label: 'Student / Delegate', icon: Users, desc: 'Join conferences, train, and compete' },
-  { value: 'TEACHER', label: 'Teacher / MUN Advisor', icon: GraduationCap, desc: 'Guide students and manage programs' },
+const ROLES: { value: RegisterRole; labelKey: string; icon: React.ElementType; desc: string }[] = [
+  { value: 'STUDENT', labelKey: 'auth.register.student', icon: Users, desc: 'Join conferences, train, and compete' },
+  { value: 'TEACHER', labelKey: 'auth.register.teacher', icon: GraduationCap, desc: 'Guide students and manage programs' },
 ]
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { t } = useI18n()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -256,9 +258,9 @@ export default function RegisterPage() {
         <Card className="bg-white/[0.06] border-white/[0.08] backdrop-blur-xl overflow-hidden">
           <form onSubmit={handleSubmit}>
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-2xl text-white">Create Account</CardTitle>
+              <CardTitle className="text-2xl text-white">{t('auth.register.title')}</CardTitle>
               <CardDescription className="text-white/45">
-                Begin your diplomatic journey
+                {t('auth.register.subtitle')}
               </CardDescription>
             </CardHeader>
 
@@ -276,11 +278,11 @@ export default function RegisterPage() {
 
               {/* Name */}
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Full Name *</Label>
+                <Label className="text-white/70 text-sm">{t('auth.register.fullName')} *</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <Input
-                    placeholder="Enter your full name"
+                    placeholder={t('auth.register.fullName')}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="pl-10 bg-white/[0.06] border-white/[0.08] text-white placeholder:text-white/25 focus:border-[#D4A843]/50 focus:ring-[#D4A843]/20"
@@ -290,7 +292,7 @@ export default function RegisterPage() {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Email *</Label>
+                <Label className="text-white/70 text-sm">{t('auth.register.email')} *</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <Input
@@ -306,7 +308,7 @@ export default function RegisterPage() {
 
               {/* Password */}
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Password *</Label>
+                <Label className="text-white/70 text-sm">{t('auth.register.password')} *</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <Input
@@ -329,11 +331,11 @@ export default function RegisterPage() {
 
               {/* Confirm Password */}
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">Confirm Password *</Label>
+                <Label className="text-white/70 text-sm">{t('auth.register.confirmPassword')} *</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                   <Input
-                    placeholder="Confirm your password"
+                    placeholder={t('auth.register.confirmPassword')}
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -358,7 +360,7 @@ export default function RegisterPage() {
 
               {/* Role Selection */}
               <div className="space-y-3">
-                <Label className="text-white/70 text-sm">I am a... *</Label>
+                <Label className="text-white/70 text-sm">{t('auth.register.rolePrompt')} *</Label>
                 <div className="grid grid-cols-1 gap-2">
                   {ROLES.map((r) => (
                     <button
@@ -374,7 +376,7 @@ export default function RegisterPage() {
                       <r.icon className={`w-5 h-5 ${role === r.value ? 'text-[#D4A843]' : 'text-white/40'}`} />
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-medium ${role === r.value ? 'text-[#D4A843]' : 'text-white/70'}`}>
-                          {r.label}
+                          {t(r.labelKey)}
                         </div>
                         <div className="text-xs text-white/40">{r.desc}</div>
                       </div>
@@ -386,7 +388,7 @@ export default function RegisterPage() {
 
               {/* School Selection */}
               <div className="space-y-2">
-                <Label className="text-white/70 text-sm">School <span className="text-white/30">(optional)</span></Label>
+                <Label className="text-white/70 text-sm">{t('auth.register.school')} <span className="text-white/30">(optional)</span></Label>
 
                 <AnimatePresence mode="wait">
                   {isOtherSchool ? (
@@ -537,7 +539,7 @@ export default function RegisterPage() {
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
                 ) : (
-                  <>Start 24-Hour Free Trial <ArrowRight className="w-4 h-4 ml-2" /></>
+                  <>{t('auth.register.submit')} <ArrowRight className="w-4 h-4 ml-2" /></>
                 )}
               </Button>
             </CardContent>

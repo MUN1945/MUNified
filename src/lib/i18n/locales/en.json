@@ -1,0 +1,625 @@
+{
+  "common": {
+    "loading": "Loading",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "search": "Search",
+    "noResults": "No results found",
+    "retry": "Retry",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "of": "of",
+    "all": "All",
+    "none": "None",
+    "selected": "Selected",
+    "actions": "Actions",
+    "status": "Status",
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "date": "Date",
+    "time": "Time",
+    "description": "Description",
+    "settings": "Settings",
+    "help": "Help",
+    "language": "Language",
+    "english": "English",
+    "arabic": "Arabic",
+    "offline": "Offline",
+    "online": "Online"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "assessment": "Assessment",
+    "training": "Training",
+    "conferences": "Conferences",
+    "schools": "Schools",
+    "committees": "Committees",
+    "chat": "Chat",
+    "researchLab": "Research Lab",
+    "leaderboard": "Leaderboard",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "commandCenter": "Command Center",
+    "users": "Users",
+    "signOut": "Sign Out"
+  },
+  "sidebar": {
+    "xpToLevel": "XP to {{level}}",
+    "dayStreak": "day streak",
+    "best": "Best:",
+    "free": "Free",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "master": "Master",
+    "roles": {
+      "secretaryGeneral": "Secretary-General",
+      "directorGeneral": "Director-General",
+      "committeeChair": "Committee Chair",
+      "delegate": "Delegate",
+      "advancedDelegate": "Advanced Delegate",
+      "sdgAmbassador": "SDG Ambassador",
+      "rapporteur": "Rapporteur"
+    },
+    "abbreviated": {
+      "secretaryGeneral": "Sec-Gen",
+      "directorGeneral": "Dir-Gen",
+      "committeeChair": "Chair",
+      "delegate": "Delegate",
+      "advancedDelegate": "Adv. Delegate",
+      "sdgAmbassador": "SDG Amb.",
+      "rapporteur": "Rapporteur"
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to continue your diplomatic journey",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "continueWithGoogle": "Continue with Google",
+      "continueWithGitHub": "Continue with GitHub",
+      "noAccount": "Don't have an account? Create one",
+      "rememberMe": "Remember me",
+      "invalidCredentials": "Invalid email or password. Please try again.",
+      "connectionError": "Unable to connect to server. Please check your connection."
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Begin your diplomatic journey",
+      "fullName": "Full Name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "rolePrompt": "I am a...",
+      "student": "Student / Delegate",
+      "teacher": "Teacher / MUN Advisor",
+      "country": "Country",
+      "school": "School",
+      "submit": "Start 24-Hour Free Trial",
+      "registrationFailed": "Registration failed. Please try again.",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "requestSchoolAddition": "Request School Addition"
+    },
+    "forgotPassword": {
+      "title": "Reset Password",
+      "checkEmail": "Check Your Email",
+      "sendLink": "Send Reset Link",
+      "backToSignIn": "Back to Sign In",
+      "sentConfirmation": "We've sent a reset link to your email",
+      "instructions": "Enter your email and we'll send you a reset link"
+    },
+    "resetPassword": {
+      "title": "Set New Password",
+      "success": "Password Reset",
+      "invalidLink": "Invalid Reset Link",
+      "successMessage": "Your password has been reset successfully",
+      "newPassword": "New Password",
+      "confirmNewPassword": "Confirm New Password"
+    }
+  },
+  "appShell": {
+    "searchPlaceholder": "Search conferences, courses, delegates...",
+    "notifications": "Notifications",
+    "new": "new",
+    "noNotifications": "No notifications yet",
+    "viewProfile": "View Profile",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "freeTrial": "24-Hour Free Trial",
+    "upgradeNow": "Upgrade Now",
+    "restrictedAccess": "Restricted access: basic courses & limited assessments only",
+    "somethingWentWrong": "Something went wrong",
+    "tryAgain": "Try Again",
+    "errorDescription": "This section encountered an error. Try refreshing the page or navigating to a different section."
+  },
+  "dashboard": {
+    "student": {
+      "title": "Student Dashboard",
+      "welcomeBack": "Welcome back, {{name}}",
+      "xpProgress": "XP Progress",
+      "conferences": "Conferences",
+      "committeesServed": "Committees Served",
+      "speechesGiven": "Speeches Given",
+      "awardsWon": "Awards Won",
+      "codeOfConduct": "Code of Conduct",
+      "acknowledged": "Acknowledged",
+      "reviewRequired": "Review Required",
+      "activeBadges": "Active Badges",
+      "noBadges": "No badges earned yet",
+      "currentCourses": "Current Courses",
+      "upcomingConferences": "Upcoming Conferences",
+      "quickActions": "Quick Actions",
+      "takeAssessment": "Take Assessment",
+      "continueTraining": "Continue Training",
+      "joinChat": "Join Chat",
+      "browseTraining": "Browse Training",
+      "browseConferences": "Browse Conferences",
+      "viewLeaderboard": "View Leaderboard",
+      "reviewConduct": "Review Conduct"
+    },
+    "teacher": {
+      "title": "Teacher Dashboard",
+      "totalStudents": "Total Students",
+      "activeConferences": "Active Conferences",
+      "avgAssessmentScore": "Avg Assessment Score",
+      "trainingCompletion": "Training Completion",
+      "recentActivity": "Recent Activity",
+      "quickActions": "Quick Actions",
+      "createConference": "Create Conference",
+      "assignResearch": "Assign Research",
+      "sendNotification": "Send Notification",
+      "noRecentActivity": "No recent activity",
+      "createConferenceCta": "Create a Conference",
+      "assessmentOverview": "Assessment Overview",
+      "studentProgress": "Student Progress"
+    }
+  },
+  "assessment": {
+    "start": "Start Assessment",
+    "nextQuestion": "Next Question",
+    "previous": "Previous",
+    "submitAnswer": "Submit Answer",
+    "analyzingResults": "Analyzing Results",
+    "viewFullResults": "View Full Results",
+    "tierGate": "Tier Gate",
+    "complete": "Assessment Complete",
+    "diplomaticProfile": "Your Diplomatic Profile",
+    "recommendedRole": "Recommended Role",
+    "retake": "Retake Assessment",
+    "tiers": {
+      "basicDelegate": "Basic Delegate",
+      "advancedDelegate": "Advanced Delegate",
+      "committeeLeader": "Committee Leader",
+      "chair": "Chair",
+      "underSecretaryGeneral": "Under-Secretary-General",
+      "deputySecretaryGeneral": "Deputy Secretary-General",
+      "secretaryGeneral": "Secretary-General"
+    },
+    "dimensions": {
+      "munProcedures": "MUN Procedures",
+      "unSystems": "UN Systems",
+      "internationalRelations": "International Relations",
+      "geopoliticalAwareness": "Geopolitical Awareness",
+      "researchSkills": "Research Skills",
+      "publicSpeaking": "Public Speaking",
+      "negotiation": "Negotiation",
+      "leadership": "Leadership",
+      "crisisManagement": "Crisis Management",
+      "resolutionDrafting": "Resolution Drafting",
+      "confidence": "Confidence",
+      "diplomacy": "Diplomacy",
+      "collaboration": "Collaboration",
+      "professionalism": "Professionalism"
+    },
+    "tierGateThreshold": "You must score at least {{score}}% to advance",
+    "tierGatePassed": "Congratulations! You've passed the tier gate!",
+    "tierGateFailed": "Unfortunately, you didn't meet the threshold. Review the material and try again.",
+    "questionProgress": "Question {{current}} of {{total}}",
+    "timeRemaining": "Time Remaining",
+    "score": "Score",
+    "dimensionBreakdown": "Dimension Breakdown",
+    "overallScore": "Overall Score"
+  },
+  "training": {
+    "title": "MUN Academy",
+    "subtitle": "Structured courses to master every aspect of Model United Nations",
+    "allCourses": "All Courses",
+    "myCourses": "My Courses",
+    "byRole": "By Role",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced",
+    "expert": "Expert",
+    "backToCourses": "Back to Courses",
+    "lessons": "Lessons",
+    "progress": "Progress",
+    "markAsComplete": "Mark as Complete",
+    "lessonCompleted": "Lesson Completed",
+    "selectLesson": "Select a Lesson",
+    "xpEarned": "+{{xp}} XP Earned!",
+    "enrolled": "Enrolled",
+    "notEnrolled": "Not Enrolled",
+    "duration": "Duration",
+    "difficulty": "Difficulty",
+    "achievements": {
+      "firstCourse": "First Course",
+      "courseMaster": "Course Master",
+      "speedLearner": "Speed Learner",
+      "perfectScore": "Perfect Score",
+      "dedicatedLearner": "Dedicated Learner",
+      "munExpert": "MUN Expert",
+      "streakWarrior": "Streak Warrior",
+      "knowledgeSeeker": "Knowledge Seeker",
+      "diplomatScholar": "Diplomat Scholar",
+      "resolutionPro": "Resolution Pro"
+    },
+    "rarities": {
+      "common": "Common",
+      "uncommon": "Uncommon",
+      "rare": "Rare",
+      "epic": "Epic",
+      "legendary": "Legendary"
+    }
+  },
+  "chat": {
+    "appName": "DiplomatiQ",
+    "members": "Members",
+    "online": "online",
+    "aiAssistants": "AI Assistants",
+    "teachers": "Teachers",
+    "students": "Students",
+    "createChannel": "Create Channel",
+    "channelMessage": "Message #{{channel}}",
+    "askGuru": "Ask DiplomatiQ Guru",
+    "guruThinking": "DiplomatiQ Guru is thinking...",
+    "guruActive": "DiplomatiQ Guru is active in this channel",
+    "channelWelcome": "Welcome to #{{channel}}!",
+    "pinnedMessages": "Pinned Messages",
+    "search": "Search",
+    "showMembers": "Show Members",
+    "hideMembers": "Hide Members",
+    "noChannels": "No Channels Yet",
+    "setupChannels": "Setup Chat Channels",
+    "loadingChannels": "Loading channels...",
+    "thinking": "Thinking...",
+    "formatting": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "attachFile": "Attach file",
+      "mention": "Mention"
+    },
+    "send": "Send",
+    "sendShortcut": "Ctrl+Enter to send",
+    "tabs": {
+      "chat": "Chat",
+      "ai": "AI",
+      "aiAssistant": "AI Assistant"
+    },
+    "timeLabels": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    }
+  },
+  "research": {
+    "title": "Research Lab",
+    "evaluatePaper": "Evaluate Paper",
+    "evaluateDescription": "Submit your research paper for AI-powered evaluation",
+    "paperTitle": "Paper Title",
+    "committee": "Committee",
+    "topic": "Topic",
+    "paperContent": "Paper Content",
+    "evaluate": "Evaluate",
+    "evaluating": "Evaluating...",
+    "overallScore": "Overall Score",
+    "feedback": "Feedback",
+    "strengths": "Strengths",
+    "areasForImprovement": "Areas for Improvement",
+    "suggestions": "Suggestions"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "performanceOverview": "Performance Overview",
+    "activityTrends": "Activity Trends",
+    "skillDistribution": "Skill Distribution",
+    "assessmentHistory": "Assessment History",
+    "trainingProgress": "Training Progress",
+    "period": "Period",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last3Months": "Last 3 Months",
+    "allTime": "All Time"
+  },
+  "settings": {
+    "tabs": {
+      "profile": "Profile",
+      "notifications": "Notifications",
+      "security": "Security",
+      "billing": "Billing",
+      "language": "Language"
+    },
+    "profile": {
+      "fullName": "Full Name",
+      "emailAddress": "Email Address",
+      "country": "Country",
+      "school": "School",
+      "bio": "Bio",
+      "changePhoto": "Change Photo",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "saved": "Saved!"
+    },
+    "notifications": {
+      "assessmentResults": "Assessment Results",
+      "conferenceUpdates": "Conference Updates",
+      "trainingReminders": "Training Reminders",
+      "newsletter": "Newsletter",
+      "directMessages": "Direct Messages",
+      "mentions": "Mentions",
+      "platformUpdates": "Platform Updates",
+      "soundAlerts": "Sound Alerts",
+      "desktopNotifications": "Desktop Notifications"
+    },
+    "security": {
+      "changePassword": "Change Password",
+      "twoFactorAuth": "Two-Factor Authentication",
+      "enable2fa": "Enable 2FA",
+      "updatePassword": "Update Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmNewPassword": "Confirm New Password"
+    },
+    "billing": {
+      "currentPlan": "Current Plan",
+      "manageSubscription": "Manage Subscription",
+      "viewAllPlans": "View All Plans",
+      "upgradePlan": "Upgrade Your Plan",
+      "cancelSubscription": "Cancel Subscription",
+      "nextBillingDate": "Next Billing Date",
+      "paymentMethod": "Payment Method"
+    },
+    "language": {
+      "title": "Language",
+      "english": "English",
+      "arabic": "\u0627\u0644\u0639\u0631\u0628\u064a\u0629 (Arabic)",
+      "chooseLanguage": "Choose your preferred language"
+    },
+    "dangerZone": {
+      "deleteAccount": "Delete Account",
+      "permanentlyDelete": "Permanently Delete",
+      "warning": "This action cannot be undone. All your data will be permanently removed.",
+      "typeDelete": "Type DELETE to confirm"
+    }
+  },
+  "pricing": {
+    "title": "Choose Your Plan",
+    "delegatePro": "Delegate Pro",
+    "directorPro": "Director Pro",
+    "schoolEnterprise": "School Enterprise",
+    "mostPopular": "Most Popular",
+    "perMonth": "per month",
+    "startFreeTrial": "Start Free Trial",
+    "contactSales": "Contact Sales",
+    "delegateProFeatures": {
+      "unlimitedAssessments": "Unlimited Assessments",
+      "advancedTraining": "Advanced Training Courses",
+      "aiChatAssistant": "AI Chat Assistant",
+      "researchLab": "Research Lab Access",
+      "leaderboardAccess": "Leaderboard Access",
+      "certificateGeneration": "Certificate Generation"
+    },
+    "directorProFeatures": {
+      "everythingInDelegatePro": "Everything in Delegate Pro",
+      "conferenceManagement": "Conference Management",
+      "committeeAssignment": "Committee Assignment Tools",
+      "studentAnalytics": "Student Analytics Dashboard",
+      "bulkAssessment": "Bulk Assessment Invites",
+      "prioritySupport": "Priority Support"
+    },
+    "schoolEnterpriseFeatures": {
+      "everythingInDirectorPro": "Everything in Director Pro",
+      "unlimitedStudents": "Unlimited Students",
+      "customBranding": "Custom Branding",
+      "dedicatedAccountManager": "Dedicated Account Manager",
+      "apiAccess": "API Access",
+      "ssoIntegration": "SSO Integration",
+      "advancedReporting": "Advanced Reporting",
+      "trainingWebinars": "Training Webinars"
+    }
+  },
+  "conduct": {
+    "title": "Code of Conduct",
+    "mandatory": "Mandatory",
+    "important": "Important",
+    "recommended": "Recommended",
+    "acknowledgment": "Acknowledgment & Agreement",
+    "acknowledge": "I Acknowledge & Accept",
+    "acknowledged": "Code of Conduct Acknowledged",
+    "agreementText": "By acknowledging, you agree to abide by all rules and guidelines outlined in this Code of Conduct."
+  },
+  "conferences": {
+    "title": "Conferences",
+    "create": "Create Conference",
+    "conferenceName": "Conference Name",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "location": "Location",
+    "theme": "Theme",
+    "status": "Status",
+    "upcoming": "Upcoming",
+    "active": "Active",
+    "completed": "Completed",
+    "noConferences": "No conferences yet",
+    "createFirst": "Create your first conference"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "rank": "Rank",
+    "name": "Name",
+    "xp": "XP",
+    "level": "Level",
+    "school": "School",
+    "yourRank": "Your Rank",
+    "thisWeek": "This Week",
+    "allTime": "All Time"
+  },
+  "schools": {
+    "title": "School Directory",
+    "search": "Search Schools",
+    "country": "Country",
+    "members": "Members",
+    "munProgram": "MUN Program",
+    "joinSchool": "Join School",
+    "requestToJoin": "Request to Join"
+  },
+  "founder": {
+    "title": "Command Center",
+    "platformAnalytics": "Platform Analytics",
+    "userManagement": "User Management",
+    "revenueOverview": "Revenue Overview",
+    "systemHealth": "System Health"
+  },
+  "landing": {
+    "hero": {
+      "title": "AI-Powered Diplomatic Assessments",
+      "subtitle": "The Operating System for Model United Nations",
+      "cta": "Begin Your Journey",
+      "schoolCta": "For Schools",
+      "regionTag": "Join schools across the UAE and GCC"
+    },
+    "nav": {
+      "getStarted": "Get Started",
+      "signIn": "Sign In",
+      "features": "Features",
+      "assessment": "Assessment",
+      "training": "Training",
+      "pricing": "Pricing",
+      "schools": "Schools"
+    },
+    "features": {
+      "aiAssessment": {
+        "title": "AI-Powered Assessment",
+        "description": "Get evaluated across 14 diplomatic dimensions with our intelligent assessment engine"
+      },
+      "structuredTraining": {
+        "title": "Structured Training",
+        "description": "Master MUN procedures, public speaking, and negotiation through guided courses"
+      },
+      "realTimeChat": {
+        "title": "Real-Time Collaboration",
+        "description": "Connect with delegates worldwide through AI-moderated chat channels"
+      },
+      "researchLab": {
+        "title": "Research Lab",
+        "description": "Submit papers for AI-powered evaluation and receive detailed feedback"
+      },
+      "conferenceManagement": {
+        "title": "Conference Management",
+        "description": "Organize and manage MUN conferences with powerful tools"
+      },
+      "analytics": {
+        "title": "Performance Analytics",
+        "description": "Track your progress with detailed insights and skill breakdowns"
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Take the Assessment",
+        "description": "Begin with our AI-powered diplomatic assessment to discover your strengths"
+      },
+      "step2": {
+        "title": "Train & Improve",
+        "description": "Follow personalized training paths tailored to your assessment results"
+      },
+      "step3": {
+        "title": "Join Conferences",
+        "description": "Put your skills into practice at MUN conferences and earn recognition"
+      },
+      "step4": {
+        "title": "Rise Through the Ranks",
+        "description": "Earn XP, unlock achievements, and climb from Delegate to Secretary-General"
+      }
+    },
+    "testimonials": {
+      "title": "What Delegates Say"
+    },
+    "footer": {
+      "platform": "Platform",
+      "company": "Company",
+      "legal": "Legal",
+      "support": "Support",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "about": "About",
+      "contact": "Contact",
+      "helpCenter": "Help Center",
+      "documentation": "Documentation"
+    }
+  },
+  "legal": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "about": "About",
+    "tagline": "Building the Next Generation of Diplomats",
+    "mission": "Our Mission",
+    "values": "Values That Guide Us",
+    "builtInUae": "Proudly Built in the UAE"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "pageNotFound": "Page not found",
+    "unauthorized": "Unauthorized access",
+    "sessionExpired": "Session expired",
+    "networkError": "Network error",
+    "serverError": "Server error",
+    "pleaseTryAgain": "Please try again",
+    "contactSupport": "Contact support"
+  },
+  "roles": {
+    "student": "Student",
+    "teacher": "Teacher",
+    "admin": "Admin",
+    "schoolAdmin": "School Admin",
+    "superAdmin": "Super Admin",
+    "founder": "Founder",
+    "masterAdmin": "Master Admin",
+    "subscriptionTiers": {
+      "free": "Free",
+      "delegatePro": "Delegate Pro",
+      "directorPro": "Director Pro",
+      "schoolStarter": "School Starter",
+      "schoolProfessional": "School Professional",
+      "schoolEnterprise": "School Enterprise",
+      "conferencePackage": "Conference Package"
+    }
+  },
+  "xp": {
+    "levels": {
+      "observer": "Observer",
+      "delegate": "Delegate",
+      "ambassador": "Ambassador",
+      "diplomat": "Diplomat",
+      "envoy": "Envoy",
+      "secretaryGeneral": "Secretary-General"
+    },
+    "xpToLevel": "XP to {{level}}",
+    "xpAmount": "{{xp}} XP",
+    "dayStreak": "day streak",
+    "best": "Best:"
+  }
+}

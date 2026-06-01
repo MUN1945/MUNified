@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useAuthStore, useAppStore, useNavStore, getCurrentLevel, getNextLevel, getXPProgress, type DelegateProfile, type BadgeData, type CourseData, type ConferenceData } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // COUNT-UP ANIMATION HOOK
@@ -134,6 +135,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 export default function StudentDashboard() {
   const { user } = useAuthStore()
+  const { t } = useI18n()
   const { navigate } = useNavStore()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -347,11 +349,11 @@ export default function StudentDashboard() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-[#D4A843]/30 text-xs">
-                  <Sparkles className="w-3 h-3 mr-1" /> Student Dashboard
+                  <Sparkles className="w-3 h-3 mr-1" /> {t('dashboard.student.title')}
                 </Badge>
               </div>
               <h2 className="text-2xl font-bold text-white">
-                Welcome back, <span className="text-[#D4A843]">{user.name.split(' ')[0]}</span>
+                {t('dashboard.student.welcomeBack', { name: user.name.split(' ')[0] })}
               </h2>
               <p className="text-white/65 mt-1">
                 {getMUNRoleFull(user.munRole)} · {delegateProfile.xp.toLocaleString()} XP
@@ -375,7 +377,7 @@ export default function StudentDashboard() {
         <Card className="border-[#E8DED0]/60">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base text-[#1B3A4B]">XP Progress</CardTitle>
+              <CardTitle className="text-base text-[#1B3A4B]">{t('dashboard.student.xpProgress')}</CardTitle>
               <Badge className="bg-[#0D7377]/10 text-[#0D7377] border-0 text-xs">
                 <Flame className="w-3 h-3 mr-1" /> {currentLevel.name} Level
               </Badge>
@@ -419,7 +421,7 @@ export default function StudentDashboard() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Conferences"
+          label={t('dashboard.student.conferences')}
           value={delegateProfile.conferencesAttended}
           icon={Globe}
           color="text-[#0D7377]"
@@ -427,7 +429,7 @@ export default function StudentDashboard() {
           delay={0.15}
         />
         <StatCard
-          label="Committees Served"
+          label={t('dashboard.student.committeesServed')}
           value={delegateProfile.committeesServed}
           icon={Gavel}
           color="text-[#D4A843]"
@@ -435,7 +437,7 @@ export default function StudentDashboard() {
           delay={0.2}
         />
         <StatCard
-          label="Speeches Given"
+          label={t('dashboard.student.speechesGiven')}
           value={delegateProfile.speechesDelivered}
           icon={Mic}
           color="text-[#059669]"
@@ -443,7 +445,7 @@ export default function StudentDashboard() {
           delay={0.25}
         />
         <StatCard
-          label="Awards Won"
+          label={t('dashboard.student.awardsWon')}
           value={delegateProfile.awardsReceived}
           icon={Trophy}
           color="text-purple-500"
@@ -469,12 +471,12 @@ export default function StudentDashboard() {
                   <Shield className="w-5 h-5 text-[#0D7377]" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-[#1B3A4B]">Code of Conduct</div>
+                  <div className="text-sm font-semibold text-[#1B3A4B]">{t('dashboard.student.codeOfConduct')}</div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {conductAcknowledged === true ? (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span className="text-[10px] text-emerald-600 font-medium">Acknowledged</span>
+                        <span className="text-[10px] text-emerald-600 font-medium">{t('dashboard.student.acknowledged')}</span>
                         {conductAcknowledgedAt && (
                           <span className="text-[10px] text-muted-foreground ml-1">
                             {new Date(conductAcknowledgedAt).toLocaleDateString()}
@@ -484,10 +486,10 @@ export default function StudentDashboard() {
                     ) : conductAcknowledged === false ? (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        <span className="text-[10px] text-amber-600 font-medium">Review Required</span>
+                        <span className="text-[10px] text-amber-600 font-medium">{t('dashboard.student.reviewRequired')}</span>
                       </>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground">Loading...</span>
+                      <span className="text-[10px] text-muted-foreground">{t('common.loading')}...</span>
                     )}
                   </div>
                 </div>
@@ -510,7 +512,7 @@ export default function StudentDashboard() {
           <Card className="h-full border-[#E8DED0]/60">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base text-[#1B3A4B]">Active Badges</CardTitle>
+                <CardTitle className="text-base text-[#1B3A4B]">{t('dashboard.student.activeBadges')}</CardTitle>
                 <Badge variant="secondary" className="text-[10px]">{badges.length} total</Badge>
               </div>
             </CardHeader>
@@ -541,7 +543,7 @@ export default function StudentDashboard() {
               ) : (
                 <div className="text-center py-6 text-muted-foreground text-sm">
                   <Star className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                  <p>No badges earned yet</p>
+                  <p>{t('dashboard.student.noBadges')}</p>
                   <p className="text-xs mt-1">Complete activities to earn badges!</p>
                 </div>
               )}
@@ -558,7 +560,7 @@ export default function StudentDashboard() {
           <Card className="h-full border-[#E8DED0]/60">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base text-[#1B3A4B]">Current Courses</CardTitle>
+                <CardTitle className="text-base text-[#1B3A4B]">{t('dashboard.student.currentCourses')}</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -596,7 +598,7 @@ export default function StudentDashboard() {
                     <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" />
                     <p>No active courses yet</p>
                     <Button variant="link" size="sm" className="text-[#0D7377] mt-1" onClick={() => navigate('training')}>
-                      Browse Training
+                      {t('dashboard.student.browseTraining')}
                     </Button>
                   </div>
                 )}
@@ -614,7 +616,7 @@ export default function StudentDashboard() {
           <Card className="h-full border-[#E8DED0]/60">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base text-[#1B3A4B]">Upcoming Conferences</CardTitle>
+                <CardTitle className="text-base text-[#1B3A4B]">{t('dashboard.student.upcomingConferences')}</CardTitle>
                 <Badge variant="secondary" className="text-[10px]">{upcomingConferences.length}</Badge>
               </div>
             </CardHeader>
@@ -655,7 +657,7 @@ export default function StudentDashboard() {
                   <Globe className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   <p>No upcoming conferences</p>
                   <Button variant="link" size="sm" className="text-[#0D7377] mt-1" onClick={() => navigate('conferences')}>
-                    Browse Conferences
+                    {t('dashboard.student.browseConferences')}
                   </Button>
                 </div>
               )}
@@ -672,7 +674,7 @@ export default function StudentDashboard() {
       >
         <Card className="border-[#E8DED0]/60">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base text-[#1B3A4B]">Quick Actions</CardTitle>
+            <CardTitle className="text-base text-[#1B3A4B]">{t('dashboard.student.quickActions')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -681,7 +683,7 @@ export default function StudentDashboard() {
                 onClick={() => navigate('assessment')}
               >
                 <ClipboardList className="w-6 h-6" />
-                <span className="text-sm font-medium">Take Assessment</span>
+                <span className="text-sm font-medium">{t('dashboard.student.takeAssessment')}</span>
                 <span className="text-xs opacity-70">Identify your strengths</span>
               </Button>
               <Button
@@ -689,7 +691,7 @@ export default function StudentDashboard() {
                 onClick={() => navigate('training')}
               >
                 <GraduationCap className="w-6 h-6" />
-                <span className="text-sm font-medium">Continue Training</span>
+                <span className="text-sm font-medium">{t('dashboard.student.continueTraining')}</span>
                 <span className="text-xs opacity-70">Pick up where you left off</span>
               </Button>
               <Button
@@ -698,7 +700,7 @@ export default function StudentDashboard() {
                 onClick={() => navigate('chat')}
               >
                 <MessageSquare className="w-6 h-6" />
-                <span className="text-sm font-medium">Join Chat</span>
+                <span className="text-sm font-medium">{t('dashboard.student.joinChat')}</span>
                 <span className="text-xs opacity-70">Connect with delegates</span>
               </Button>
             </div>

@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useAuthStore } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // SCHOOL TYPES
@@ -992,6 +993,7 @@ const CURRICULUM_COLORS: Record<Curriculum, string> = {
 
 export default function SchoolDirectory() {
   const { user } = useAuthStore()
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<'directory' | 'registration' | 'admin'>('directory')
   const [searchQuery, setSearchQuery] = useState('')
   const [countryFilter, setCountryFilter] = useState<string>('all')
@@ -1157,7 +1159,7 @@ export default function SchoolDirectory() {
         <div>
           <h1 className="text-2xl font-bold text-[#1B3A4B] flex items-center gap-2">
             <Building2 className="w-7 h-7 text-[#0D7377]" />
-            School Directory
+            {t('schools.title')}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Verified UAE &amp; GCC schools — find your school, check MUN program status
@@ -1227,7 +1229,7 @@ export default function SchoolDirectory() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search schools by name, city, or country..."
+                placeholder={t('schools.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-white border-[#E8DED0] focus-visible:ring-[#0D7377]/20"

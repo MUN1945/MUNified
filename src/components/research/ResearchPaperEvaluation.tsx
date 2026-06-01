@@ -27,6 +27,7 @@ import {
   PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line
 } from 'recharts'
 import { useAuthStore } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // TYPES
@@ -388,6 +389,7 @@ function ImprovementRoadmap({ roadmap }: { roadmap: EvaluationResult['improvemen
 // ============================================================
 
 function StudentView() {
+  const { t } = useI18n()
   const [paperText, setPaperText] = useState('')
   const [paperTitle, setPaperTitle] = useState('')
   const [isEvaluating, setIsEvaluating] = useState(false)
@@ -539,7 +541,7 @@ function StudentView() {
           >
             <Card className="border-[#E8DED0]/60 h-full">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground font-medium">Overall Score</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground font-medium">{t('research.overallScore')}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center pb-6">
                 <AnimatedScoreCircle score={evaluation.overallScore} />
@@ -656,7 +658,7 @@ function StudentView() {
             <Card className="border-emerald-200 bg-emerald-50/30 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-emerald-800">
-                  <ThumbsUp className="w-5 h-5" /> Strengths
+                  <ThumbsUp className="w-5 h-5" /> {t('research.strengths')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -962,7 +964,7 @@ function StudentView() {
             <FileSearch className="w-6 h-6 text-[#0D7377]" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-[#1B3A4B]">Research Lab</h2>
+            <h2 className="text-2xl font-bold text-[#1B3A4B]">{t('research.title')}</h2>
             <p className="text-muted-foreground">Submit your MUN research paper for AI-powered evaluation</p>
             <div className="flex items-center gap-1.5 mt-1">
               <Sparkles className="w-3.5 h-3.5 text-[#0D7377]" />
@@ -978,7 +980,7 @@ function StudentView() {
           <CardContent className="p-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="paper-title" className="text-[#1B3A4B] font-medium">Paper Title</Label>
+                <Label htmlFor="paper-title" className="text-[#1B3A4B] font-medium">{t('research.paperTitle')}</Label>
                 <Input
                   id="paper-title"
                   placeholder="e.g., Nuclear Non-Proliferation in the 21st Century"
@@ -1016,7 +1018,7 @@ function StudentView() {
               {/* Text Paste Area */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="paper-text" className="text-[#1B3A4B] font-medium">Paper Content</Label>
+                  <Label htmlFor="paper-text" className="text-[#1B3A4B] font-medium">{t('research.paperContent')}</Label>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <ClipboardPaste className="w-3 h-3" />
                     Paste your paper text
@@ -1069,12 +1071,12 @@ function StudentView() {
                       transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
                     />
-                    <span className="ml-2">Analyzing Paper...</span>
+                    <span className="ml-2">{t('research.evaluating')}</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5 mr-2" />
-                    Evaluate Paper with AI
+                    {t('research.evaluatePaper')}
                   </>
                 )}
               </Button>

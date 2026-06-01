@@ -28,6 +28,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useAuthStore, useNavStore } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // BILLING HISTORY
@@ -57,6 +58,7 @@ const UPGRADE_OPTIONS = [
 
 function ProfileSection() {
   const { user } = useAuthStore()
+  const { t } = useI18n()
   const [name, setName] = useState(user?.name || '')
   const [email, setEmail] = useState(user?.email || '')
   const [bio, setBio] = useState('')
@@ -92,7 +94,7 @@ function ProfileSection() {
           </Avatar>
           <div>
             <Button variant="outline" size="sm" className="border-[#0D7377]/30 text-[#0D7377]">
-              <Camera className="w-3.5 h-3.5 mr-1.5" /> Change Photo
+              <Camera className="w-3.5 h-3.5 mr-1.5" /> {t('settings.profile.changePhoto')}
             </Button>
             <p className="text-[10px] text-muted-foreground mt-1">JPG, PNG up to 5MB</p>
           </div>
@@ -100,15 +102,15 @@ function ProfileSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="settings-name">Full Name</Label>
+            <Label htmlFor="settings-name">{t('settings.profile.fullName')}</Label>
             <Input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} className="border-[#E8DED0] focus-visible:ring-[#0D7377]/20" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="settings-email">Email Address</Label>
+            <Label htmlFor="settings-email">{t('settings.profile.emailAddress')}</Label>
             <Input id="settings-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="border-[#E8DED0] focus-visible:ring-[#0D7377]/20" />
           </div>
           <div className="space-y-2">
-            <Label>Country</Label>
+            <Label>{t('settings.profile.country')}</Label>
             <Select value={country} onValueChange={setCountry}>
               <SelectTrigger className="border-[#E8DED0]">
                 <SelectValue />
@@ -121,20 +123,20 @@ function ProfileSection() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="settings-school">School</Label>
+            <Label htmlFor="settings-school">{t('settings.profile.school')}</Label>
             <Input id="settings-school" value={school} onChange={(e) => setSchool(e.target.value)} className="border-[#E8DED0] focus-visible:ring-[#0D7377]/20" />
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="settings-bio">Bio</Label>
+          <Label htmlFor="settings-bio">{t('settings.profile.bio')}</Label>
           <Textarea id="settings-bio" value={bio} onChange={(e) => setBio(e.target.value)} className="border-[#E8DED0] focus-visible:ring-[#0D7377]/20 min-h-[80px]" placeholder="Tell us about yourself..." />
           <p className="text-[10px] text-muted-foreground">{bio.length}/300 characters</p>
         </div>
 
         <div className="flex items-center gap-3">
           <Button onClick={handleSave} disabled={saving} className="bg-[#0D7377] hover:bg-[#0A5C5F] text-white">
-            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+            {saving ? t('settings.profile.saving') : saved ? t('settings.profile.saved') : t('settings.profile.saveChanges')}
           </Button>
           {saved && <CheckCircle2 className="w-4 h-4 text-[#059669]" />}
         </div>
@@ -252,6 +254,7 @@ function NotificationSection() {
 // ============================================================
 
 function SecuritySection() {
+  const { t } = useI18n()
   const [showPassword, setShowPassword] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -283,7 +286,7 @@ function SecuritySection() {
       <CardContent className="space-y-6">
         {/* Change Password */}
         <div>
-          <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3">Change Password</h4>
+          <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3">{t('settings.security.changePassword')}</h4>
           <div className="space-y-3 max-w-md">
             <div className="space-y-2">
               <Label htmlFor="current-pw">Current Password</Label>
@@ -315,10 +318,10 @@ function SecuritySection() {
 
         {/* 2FA */}
         <div>
-          <h4 className="text-sm font-semibold text-[#1B3A4B] mb-2">Two-Factor Authentication</h4>
+          <h4 className="text-sm font-semibold text-[#1B3A4B] mb-2">{t('settings.security.twoFactorAuth')}</h4>
           <p className="text-xs text-muted-foreground mb-3">Add an extra layer of security to your account</p>
             <Button variant="outline" className="border-[#E8DED0] text-muted-foreground" disabled>
-            <Lock className="w-4 h-4 mr-2" /> Enable 2FA
+            <Lock className="w-4 h-4 mr-2" /> {t('settings.security.enable2fa')}
           </Button>
         </div>
       </CardContent>
@@ -333,6 +336,7 @@ function SecuritySection() {
 function BillingSubscriptionSection() {
   const { user } = useAuthStore()
   const { navigate } = useNavStore()
+  const { t } = useI18n()
   const currentTier = user?.subscriptionTier || 'FREE'
   const currentStatus = user?.subscriptionStatus || 'ACTIVE'
   const [portalLoading, setPortalLoading] = useState(false)
@@ -411,7 +415,7 @@ function BillingSubscriptionSection() {
       <Card className="border-[#E8DED0]/60">
         <CardHeader>
           <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
-            <CreditCard className="w-4 h-4 text-[#0D7377]" /> Current Plan
+            <CreditCard className="w-4 h-4 text-[#0D7377]" /> {t('settings.billing.currentPlan')}
           </CardTitle>
           <CardDescription>Your subscription details and billing information</CardDescription>
         </CardHeader>
@@ -457,7 +461,7 @@ function BillingSubscriptionSection() {
                     disabled={portalLoading}
                   >
                     {portalLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5 mr-1.5" />}
-                    Manage Subscription
+                    {t('settings.billing.manageSubscription')}
                   </Button>
                 )}
                 <Button
@@ -466,7 +470,7 @@ function BillingSubscriptionSection() {
                   onClick={() => navigate('pricing')}
                 >
                   <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
-                  View All Plans
+                  {t('settings.billing.viewAllPlans')}
                 </Button>
               </div>
             </div>
@@ -478,7 +482,7 @@ function BillingSubscriptionSection() {
               <Separator className="bg-[#E8DED0]" />
               <div>
                 <h4 className="text-sm font-semibold text-[#1B3A4B] mb-3 flex items-center gap-2">
-                  <ArrowUpRight className="w-4 h-4 text-[#D4A843]" /> Upgrade Your Plan
+                  <ArrowUpRight className="w-4 h-4 text-[#D4A843]" /> {t('settings.billing.upgradePlan')}
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {UPGRADE_OPTIONS.map((option) => {
@@ -603,7 +607,7 @@ function BillingSubscriptionSection() {
         <Card className="border-[#E8DED0]/60">
           <CardHeader>
             <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" /> Cancel Subscription
+              <AlertTriangle className="w-4 h-4 text-amber-500" /> {t('settings.billing.cancelSubscription')}
             </CardTitle>
             <CardDescription>Downgrade to the free Observer plan</CardDescription>
           </CardHeader>
@@ -644,28 +648,28 @@ function BillingSubscriptionSection() {
 // ============================================================
 
 function LanguageSection() {
-  const [language, setLanguage] = useState('en')
+  const { t, locale, setLocale } = useI18n()
 
   return (
     <Card className="border-[#E8DED0]/60">
       <CardHeader>
         <CardTitle className="text-base text-[#1B3A4B] flex items-center gap-2">
-          <Languages className="w-4 h-4 text-[#0D7377]" /> Language
+          <Languages className="w-4 h-4 text-[#0D7377]" /> {t('settings.language.title')}
         </CardTitle>
-        <CardDescription>Set your preferred interface language</CardDescription>
+        <CardDescription>{t('settings.language.chooseLanguage')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="max-w-sm space-y-3">
-          <Select value={language} onValueChange={setLanguage}>
+          <Select value={locale} onValueChange={(v) => setLocale(v as 'en' | 'ar')}>
             <SelectTrigger className="border-[#E8DED0]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="en">English</SelectItem>
-              <SelectItem value="ar">العربية (Arabic)</SelectItem>
+              <SelectItem value="en">{t('settings.language.english')}</SelectItem>
+              <SelectItem value="ar">{t('settings.language.arabic')}</SelectItem>
             </SelectContent>
           </Select>
-          {language === 'ar' && (
+          {locale === 'ar' && (
             <div className="p-3 rounded-lg bg-[#D4A843]/10 text-xs text-[#D4A843]">
               Arabic language support is currently in preview. Some sections may still display in English.
             </div>
@@ -682,6 +686,7 @@ function LanguageSection() {
 
 function DangerZone() {
   const { user, logout } = useAuthStore()
+  const { t } = useI18n()
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [deleting, setDeleting] = useState(false)
 
@@ -735,13 +740,13 @@ function DangerZone() {
     <Card className="border-red-200">
       <CardHeader>
         <CardTitle className="text-base text-red-600 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4" /> Danger Zone
+          <AlertTriangle className="w-4 h-4" /> {t('settings.dangerZone.deleteAccount')}
         </CardTitle>
         <CardDescription>Irreversible actions that affect your account</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="p-4 rounded-lg bg-red-50/50 border border-red-100">
-          <h4 className="text-sm font-semibold text-red-700 mb-1">Delete Account</h4>
+          <h4 className="text-sm font-semibold text-red-700 mb-1">{t('settings.dangerZone.deleteAccount')}</h4>
           <p className="text-xs text-red-600/70 mb-3">
             This will permanently delete your account, all your data, badges, XP, and history. This action cannot be undone.
           </p>
@@ -760,7 +765,7 @@ function DangerZone() {
               </AlertDialogHeader>
               <div className="py-2">
                 <Input
-                  placeholder='Type "DELETE" to confirm'
+                  placeholder={t('settings.dangerZone.typeDelete')}
                   value={deleteConfirm}
                   onChange={(e) => setDeleteConfirm(e.target.value)}
                   className="border-red-200 focus-visible:ring-red-200"
@@ -773,7 +778,7 @@ function DangerZone() {
                   disabled={deleteConfirm !== 'DELETE' || deleting}
                   onClick={handleDeleteAccount}
                 >
-                  {deleting ? 'Deleting...' : 'Permanently Delete'}
+                  {deleting ? 'Deleting...' : t('settings.dangerZone.permanentlyDelete')}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -789,6 +794,7 @@ function DangerZone() {
 // ============================================================
 
 export default function SettingsView() {
+  const { t } = useI18n()
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
@@ -800,19 +806,19 @@ export default function SettingsView() {
       <Tabs defaultValue="profile" className="space-y-6">
         <TabsList className="bg-[#F5F0EB] flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="profile" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
-            <User className="w-4 h-4 mr-1.5" /> Profile
+            <User className="w-4 h-4 mr-1.5" /> {t('settings.tabs.profile')}
           </TabsTrigger>
           <TabsTrigger value="notifications" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
-            <Bell className="w-4 h-4 mr-1.5" /> Notifications
+            <Bell className="w-4 h-4 mr-1.5" /> {t('settings.tabs.notifications')}
           </TabsTrigger>
           <TabsTrigger value="security" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
-            <Shield className="w-4 h-4 mr-1.5" /> Security
+            <Shield className="w-4 h-4 mr-1.5" /> {t('settings.tabs.security')}
           </TabsTrigger>
           <TabsTrigger value="billing" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
-            <CreditCard className="w-4 h-4 mr-1.5" /> Billing
+            <CreditCard className="w-4 h-4 mr-1.5" /> {t('settings.tabs.billing')}
           </TabsTrigger>
           <TabsTrigger value="language" className="data-[state=active]:bg-white data-[state=active]:text-[#0D7377]">
-            <Languages className="w-4 h-4 mr-1.5" /> Language
+            <Languages className="w-4 h-4 mr-1.5" /> {t('settings.tabs.language')}
           </TabsTrigger>
         </TabsList>
 

@@ -18,6 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { CODE_OF_CONDUCT_VERSION, CODE_OF_CONDUCT_EFFECTIVE, SECTIONS } from '@/lib/conduct/sections'
+import { useI18n } from '@/lib/i18n'
 
 // Key sections to preview in the modal
 const PREVIEW_SECTIONS = [
@@ -42,6 +43,7 @@ export default function ConductAcknowledgementModal({
   open,
   onAcknowledged,
 }: ConductAcknowledgementModalProps) {
+  const { t } = useI18n()
   const [checkbox1, setCheckbox1] = useState(false)
   const [checkbox2, setCheckbox2] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -89,7 +91,7 @@ export default function ConductAcknowledgementModal({
               </div>
               <div>
                 <DialogTitle className="text-xl font-bold text-white">
-                  Code of Conduct
+                  {t('conduct.title')}
                 </DialogTitle>
                 <DialogDescription className="text-white/60 text-sm mt-0.5">
                   DiplomatiQ MUN Platform — Required Acknowledgement
@@ -193,7 +195,7 @@ export default function ConductAcknowledgementModal({
             ) : (
               <>
                 <Shield className="w-4 h-4 mr-2" />
-                I Acknowledge & Accept
+                {t('conduct.acknowledge')}
               </>
             )}
           </Button>

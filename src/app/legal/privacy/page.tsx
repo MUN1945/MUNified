@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { Globe } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 
 const sections = [
   {
@@ -121,6 +122,7 @@ const sections = [
 ]
 
 export default function PrivacyPage() {
+  const { t } = useI18n()
   return (
     <div className="min-h-screen bg-white text-[#1B3A4B]">
       {/* Navigation Bar */}
@@ -144,7 +146,7 @@ export default function PrivacyPage() {
       <section className="py-16 md:py-20 bg-gradient-to-br from-[#0D7377]/[0.03] via-white to-[#D4A843]/[0.02]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl md:text-5xl font-bold text-[#1B3A4B] tracking-tight">
-            Privacy Policy
+            {t('legal.privacyPolicy')}
           </h1>
           <p className="mt-4 text-[#1B3A4B]/60 text-lg">
             Last updated: March 2026

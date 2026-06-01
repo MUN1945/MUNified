@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { useAuthStore, getCurrentLevel, getNextLevel, getXPProgress, type XPLevel } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // XP LEVEL CONFIG (matching task spec thresholds)
@@ -224,6 +225,7 @@ function CategoryLeaderboard({ category, users, currentUserId }: { category: str
 
 export default function LeaderboardView() {
   const { user } = useAuthStore()
+  const { t } = useI18n()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('global')
   const [apiUsers, setApiUsers] = useState<LeaderboardUser[]>([])
@@ -290,7 +292,7 @@ export default function LeaderboardView() {
     <div className="space-y-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h2 className="text-2xl font-bold text-[#1B3A4B]">Leaderboard</h2>
+        <h2 className="text-2xl font-bold text-[#1B3A4B]">{t('leaderboard.title')}</h2>
         <p className="text-muted-foreground mt-1">Compete with delegates worldwide and climb the ranks</p>
       </motion.div>
 

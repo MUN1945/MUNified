@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useAuthStore } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // TYPES & CONSTANTS
@@ -147,6 +148,7 @@ function HeroBackground() {
 // ============================================================
 
 function Navbar({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn: () => void }) {
+  const { t } = useI18n()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -157,11 +159,11 @@ function Navbar({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn
   }, [])
 
   const navLinks = [
-    { label: 'Features', href: '#features' },
-    { label: 'Assessment', href: '#assessment' },
-    { label: 'Training', href: '#training' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Schools', href: '#schools' },
+    { label: t('landing.nav.features'), href: '#features' },
+    { label: t('landing.nav.assessment'), href: '#assessment' },
+    { label: t('landing.nav.training'), href: '#training' },
+    { label: t('landing.nav.pricing'), href: '#pricing' },
+    { label: t('landing.nav.schools'), href: '#schools' },
   ]
 
   return (
@@ -204,13 +206,13 @@ function Navbar({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn
             className="text-white/70 hover:text-white hover:bg-white/10 font-medium"
             onClick={onSignIn}
           >
-            Sign In
+            {t('landing.nav.signIn')}
           </Button>
           <Button
             className="bg-[#D4A843] text-[#0D1B2A] hover:bg-[#E0BC6A] font-semibold shadow-md shadow-[#D4A843]/20 transition-all duration-200"
             onClick={onGetStarted}
           >
-            Get Started
+            {t('landing.nav.getStarted')}
           </Button>
         </div>
 
@@ -247,10 +249,10 @@ function Navbar({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn
               ))}
               <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
                 <Button variant="ghost" className="w-full text-white/80 hover:text-white hover:bg-white/10 justify-center" onClick={() => { onSignIn(); setMobileOpen(false) }}>
-                  Sign In
+                  {t('landing.nav.signIn')}
                 </Button>
                 <Button className="w-full bg-[#D4A843] text-[#0D1B2A] hover:bg-[#E0BC6A] font-semibold" onClick={() => { onGetStarted(); setMobileOpen(false) }}>
-                  Get Started
+                  {t('landing.nav.getStarted')}
                 </Button>
               </div>
             </div>
@@ -266,6 +268,7 @@ function Navbar({ onGetStarted, onSignIn }: { onGetStarted: () => void; onSignIn
 // ============================================================
 
 function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
+  const { t } = useI18n()
   return (
     <section className="relative min-h-screen flex flex-col justify-center overflow-hidden">
       <HeroBackground />
@@ -288,7 +291,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
         >
           <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 text-[#D4A843] text-sm font-medium mb-8">
             <span className="w-2 h-2 bg-[#D4A843] rounded-full animate-pulse" />
-            AI-Powered Diplomatic Assessments
+            {t('landing.hero.title')}
           </span>
         </motion.div>
 
@@ -300,9 +303,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] } },
           }}
         >
-          The Operating System
-          <br />
-          for <span className="text-[#D4A843]">Model United Nations</span>
+          {t('landing.hero.subtitle')}
         </motion.h1>
 
         {/* Subtitle */}
@@ -329,7 +330,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
             className="bg-[#D4A843] text-[#0D1B2A] hover:bg-[#E0BC6A] font-semibold text-base px-8 h-13 shadow-lg shadow-[#D4A843]/25 transition-all duration-300 hover:shadow-xl hover:shadow-[#D4A843]/35 hover:scale-[1.02]"
             onClick={onGetStarted}
           >
-            Begin Your Journey
+            {t('landing.hero.cta')}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
           <a href="/auth/register?role=SCHOOL_ADMIN">
@@ -338,7 +339,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
               variant="outline"
               className="border-[#D4A843]/40 text-[#D4A843] hover:bg-[#D4A843]/10 hover:border-[#D4A843]/60 text-base px-8 h-13 transition-all duration-300 bg-[#D4A843]/[0.06]"
             >
-              For Schools
+              {t('landing.hero.schoolCta')}
             </Button>
           </a>
         </motion.div>
@@ -353,7 +354,7 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
         >
           <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-[#D4A843]/[0.08] border border-[#D4A843]/15">
             <Globe className="w-5 h-5 text-[#D4A843]/70" />
-            <span className="text-sm text-white/75">Join schools across the <span className="text-[#D4A843] font-semibold">UAE and GCC</span></span>
+            <span className="text-sm text-white/75">{t('landing.hero.regionTag')}</span>
           </div>
           <p className="text-white/60 text-sm mt-4">Growing community of MUN delegates and educators.</p>
           <a href="#features" className="inline-block mt-3 text-xs text-[#0A7E8C] hover:text-[#0FBACA] transition-colors font-medium">
@@ -373,43 +374,44 @@ function HeroSection({ onGetStarted }: { onGetStarted: () => void }) {
 // ============================================================
 
 function FeaturesSection() {
+  const { t } = useI18n()
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   const features: { icon: LucideIcon; title: string; desc: string; gradient: string }[] = [
     {
       icon: Brain,
-      title: 'AI-Powered Assessments',
+      title: t('landing.features.aiAssessment.title'),
       desc: '7-tier progressive competency framework that identifies your diplomatic ceiling — from Basic Delegate to Secretary-General. Not a quiz. A pathway.',
       gradient: 'from-violet-500/20 to-purple-600/20',
     },
     {
       icon: GraduationCap,
-      title: 'DiplomatiQ Academy',
+      title: t('landing.features.structuredTraining.title'),
       desc: '8 immersive courses, 40+ lessons researched and written by MUN veterans. From parliamentary procedure to crisis committee survival. Content that passes scrutiny.',
       gradient: 'from-[#D4A843]/20 to-amber-600/20',
     },
     {
       icon: Building2,
-      title: 'Conference Command',
+      title: t('landing.features.conferenceManagement.title'),
       desc: 'Manage registrations, committees, delegates, and voting — all in one platform. Built for Secretariats who refuse to use spreadsheets.',
       gradient: 'from-[#0A7E8C]/20 to-teal-600/20',
     },
     {
       icon: FileSearch,
-      title: 'Research Lab',
+      title: t('landing.features.researchLab.title'),
       desc: 'AI-powered research paper evaluation with originality detection, citation analysis, and improvement roadmaps. Responsible AI assistance, not prohibition.',
       gradient: 'from-blue-500/20 to-cyan-600/20',
     },
     {
       icon: Trophy,
-      title: 'Gamified Progress',
+      title: t('landing.features.analytics.title'),
       desc: 'Earn XP, unlock badges, climb from Observer to Secretary-General. Every speech, resolution, and negotiation earns you recognition.',
       gradient: 'from-emerald-500/20 to-green-600/20',
     },
     {
       icon: Landmark,
-      title: 'School Directory',
+      title: t('landing.features.realTimeChat.title'),
       desc: 'Verified UAE and GCC school directory. Find your institution, connect your program, and track your school\'s diplomatic impact.',
       gradient: 'from-rose-500/20 to-orange-600/20',
     },
@@ -1037,6 +1039,7 @@ function PlatformSection({ onGetStarted }: { onGetStarted: () => void }) {
 // ============================================================
 
 function Footer({ onNavigate }: { onNavigate: () => void }) {
+  const { t } = useI18n()
   const platformLinks = [
     { label: 'Diagnostic Assessment', href: '/#assessment' },
     { label: 'Diplomatic Academy', href: '/#training' },
@@ -1083,7 +1086,7 @@ function Footer({ onNavigate }: { onNavigate: () => void }) {
 
           {/* Platform Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Platform</h4>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">{t('landing.footer.platform')}</h4>
             <ul className="space-y-2.5">
               {platformLinks.map((item) => (
                 <li key={item.label}>
@@ -1097,7 +1100,7 @@ function Footer({ onNavigate }: { onNavigate: () => void }) {
 
           {/* Resources Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Resources</h4>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">{t('landing.footer.support')}</h4>
             <ul className="space-y-2.5">
               {resourceLinks.map((item) => (
                 <li key={item.label}>
@@ -1111,7 +1114,7 @@ function Footer({ onNavigate }: { onNavigate: () => void }) {
 
           {/* Company Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Company</h4>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">{t('landing.footer.company')}</h4>
             <ul className="space-y-2.5">
               {companyLinks.map((item) => (
                 <li key={item.label}>
@@ -1129,7 +1132,7 @@ function Footer({ onNavigate }: { onNavigate: () => void }) {
 
           {/* Legal Links */}
           <div>
-            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">Legal</h4>
+            <h4 className="text-sm font-semibold text-white/75 mb-4 uppercase tracking-wider">{t('landing.footer.legal')}</h4>
             <ul className="space-y-2.5">
               {legalLinks.map((item) => (
                 <li key={item.label}>

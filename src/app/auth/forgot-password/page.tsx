@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
+import { useI18n } from '@/lib/i18n'
 
 export default function ForgotPasswordPage() {
+  const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -91,7 +93,7 @@ export default function ForgotPasswordPage() {
                 >
                   <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                 </motion.div>
-                <CardTitle className="text-2xl text-white">Check Your Email</CardTitle>
+                <CardTitle className="text-2xl text-white">{t('auth.forgotPassword.checkEmail')}</CardTitle>
                 <CardDescription className="text-white/45">
                   If an account exists with <span className="text-white/70">{email}</span>, you&apos;ll receive a password reset link shortly.
                 </CardDescription>
@@ -113,16 +115,16 @@ export default function ForgotPasswordPage() {
                   className="text-sm text-[#0A7E8C] hover:text-[#0A9EAC] transition-colors flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Sign In
+                  {t('auth.forgotPassword.backToSignIn')}
                 </Link>
               </CardFooter>
             </>
           ) : (
             <form onSubmit={handleSubmit}>
               <CardHeader className="text-center pb-2">
-                <CardTitle className="text-2xl text-white">Reset Password</CardTitle>
+                <CardTitle className="text-2xl text-white">{t('auth.forgotPassword.title')}</CardTitle>
                 <CardDescription className="text-white/45">
-                  Enter your email and we&apos;ll send you a reset link
+                  {t('auth.forgotPassword.instructions')}
                 </CardDescription>
               </CardHeader>
 
@@ -140,7 +142,7 @@ export default function ForgotPasswordPage() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label className="text-white/70 text-sm">Email Address</Label>
+                  <Label className="text-white/70 text-sm">{t('common.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                     <Input
@@ -163,7 +165,7 @@ export default function ForgotPasswordPage() {
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <>Send Reset Link <ArrowRight className="w-4 h-4 ml-2" /></>
+                    <>{t('auth.forgotPassword.sendLink')} <ArrowRight className="w-4 h-4 ml-2" /></>
                   )}
                 </Button>
               </CardContent>
@@ -174,7 +176,7 @@ export default function ForgotPasswordPage() {
                   className="text-sm text-[#0A7E8C] hover:text-[#0A9EAC] transition-colors flex items-center gap-1"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Sign In
+                  {t('auth.forgotPassword.backToSignIn')}
                 </Link>
               </CardFooter>
             </form>

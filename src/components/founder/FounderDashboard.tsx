@@ -47,6 +47,7 @@ import {
   ChartContainer, type ChartConfig
 } from '@/components/ui/chart'
 import { Textarea } from '@/components/ui/textarea'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // TYPES
@@ -316,6 +317,7 @@ function SubscriptionOverview({ breakdown }: { breakdown: { tier: string; count:
 // ============================================================
 
 function UserManagement() {
+  const { t } = useI18n()
   const [users, setUsers] = useState<UserData[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -489,7 +491,7 @@ function UserManagement() {
     <motion.div variants={sectionVariants} initial="hidden" animate="visible" className="space-y-4">
       {/* Header with Add User Button */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">User Management</h3>
+        <h3 className="text-lg font-semibold text-white">{t('founder.userManagement')}</h3>
         <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#0D7377] hover:bg-[#0A5E62] text-white">
@@ -1468,6 +1470,7 @@ function ConductTracking() {
 // ============================================================
 
 export default function FounderDashboard() {
+  const { t } = useI18n()
   const [overview, setOverview] = useState<OverviewData | null>(null)
   const [subscriptionBreakdown, setSubscriptionBreakdown] = useState<{ tier: string; count: number }[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -1498,7 +1501,7 @@ export default function FounderDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-[#1B3A4B] flex items-center gap-2">
             <Crown className="w-6 h-6 text-[#D4A843]" />
-            Command Center
+            {t('founder.title')}
           </h1>
           <p className="text-sm text-slate-500 mt-1">Master Administrator — Full platform control</p>
         </div>

@@ -15,6 +15,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from '@/components/ui/accordion'
 import { useAuthStore } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // PLAN DATA
@@ -302,6 +303,7 @@ interface PricingCardProps {
 }
 
 function PricingCard({ plan, billingPeriod, isCurrentPlan, onCtaClick, loading }: PricingCardProps) {
+  const { t } = useI18n()
   const Icon = plan.icon
 
   // Calculate display price
@@ -359,7 +361,7 @@ function PricingCard({ plan, billingPeriod, isCurrentPlan, onCtaClick, loading }
             >
               <Icon className="w-4 h-4" style={{ color: plan.accentColor }} />
             </div>
-            <CardTitle className="text-lg text-[#1B3A4B]">{plan.name}</CardTitle>
+            <CardTitle className="text-lg text-[#1B3A4B]">{plan.id === 'DELEGATE_PRO' ? t('pricing.delegatePro') : plan.id === 'DIRECTOR_PRO' ? t('pricing.directorPro') : plan.id === 'SCHOOL_ENTERPRISE' ? t('pricing.schoolEnterprise') : plan.name}</CardTitle>
           </div>
           <CardDescription className="text-sm text-muted-foreground">{plan.description}</CardDescription>
           <div className="mt-3 flex items-baseline gap-1">
@@ -421,7 +423,7 @@ function PricingCard({ plan, billingPeriod, isCurrentPlan, onCtaClick, loading }
               ) : (
                 plan.id !== 'SCHOOL_ENTERPRISE' && <ArrowRight className="w-4 h-4 mr-2" />
               )}
-              {plan.cta}
+              {plan.id === 'SCHOOL_ENTERPRISE' ? t('pricing.contactSales') : plan.id === 'DELEGATE_PRO' || plan.id === 'DIRECTOR_PRO' ? t('pricing.startFreeTrial') : plan.cta}
             </Button>
           )}
         </CardContent>
@@ -508,6 +510,7 @@ function TrustBadges() {
 
 export default function PricingPage() {
   const { user } = useAuthStore()
+  const { t } = useI18n()
   const currentPlan = user?.subscriptionTier || 'FREE'
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly')
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
@@ -561,7 +564,7 @@ export default function PricingPage() {
         <Badge className="bg-[#D4A843]/15 text-[#D4A843] border-0 mb-4">
           <Sparkles className="w-3 h-3 mr-1" /> Pricing
         </Badge>
-        <h2 className="text-3xl font-bold text-[#1B3A4B]">Invest in Diplomatic Excellence</h2>
+        <h2 className="text-3xl font-bold text-[#1B3A4B]">{t('pricing.title')}</h2>
         <p className="text-muted-foreground mt-2 max-w-lg mx-auto">
           Choose the plan that matches your MUN ambitions. Start free, upgrade as you grow. All prices in USD.
         </p>
@@ -738,7 +741,7 @@ export default function PricingPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button className="bg-[#D4A843] text-[#1B3A4B] hover:bg-[#D4BA6E] font-semibold px-6">
-                <Mail className="w-4 h-4 mr-2" /> Contact Sales
+                <Mail className="w-4 h-4 mr-2" /> {t('pricing.contactSales')}
               </Button>
             </div>
           </CardContent>

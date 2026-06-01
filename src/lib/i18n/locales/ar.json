@@ -1,0 +1,625 @@
+{
+  "common": {
+    "loading": "جارٍ التحميل",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "next": "التالي",
+    "submit": "إرسال",
+    "search": "بحث",
+    "noResults": "لم يتم العثور على نتائج",
+    "retry": "إعادة المحاولة",
+    "success": "تم بنجاح",
+    "error": "خطأ",
+    "warning": "تحذير",
+    "yes": "نعم",
+    "no": "لا",
+    "or": "أو",
+    "and": "و",
+    "of": "من",
+    "all": "الكل",
+    "none": "لا شيء",
+    "selected": "محدد",
+    "actions": "إجراءات",
+    "status": "الحالة",
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "date": "التاريخ",
+    "time": "الوقت",
+    "description": "الوصف",
+    "settings": "الإعدادات",
+    "help": "المساعدة",
+    "language": "اللغة",
+    "english": "الإنجليزية",
+    "arabic": "العربية",
+    "offline": "غير متصل",
+    "online": "متصل"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "assessment": "التقييم",
+    "training": "التدريب",
+    "conferences": "المؤتمرات",
+    "schools": "المدارس",
+    "committees": "اللجان",
+    "chat": "المحادثة",
+    "researchLab": "مختبر الأبحاث",
+    "leaderboard": "لوحة المتصدرين",
+    "analytics": "التحليلات",
+    "settings": "الإعدادات",
+    "commandCenter": "مركز القيادة",
+    "users": "المستخدمون",
+    "signOut": "تسجيل الخروج"
+  },
+  "sidebar": {
+    "xpToLevel": "نقاط الخبرة للوصول إلى {{level}}",
+    "dayStreak": "أيام متتالية",
+    "best": "الأفضل:",
+    "free": "مجاني",
+    "pro": "احترافي",
+    "enterprise": "المؤسسات",
+    "master": "رئيسي",
+    "roles": {
+      "secretaryGeneral": "الأمين العام",
+      "directorGeneral": "المدير العام",
+      "committeeChair": "رئيس اللجنة",
+      "delegate": "المندوب",
+      "advancedDelegate": "المندوب المتقدم",
+      "sdgAmbassador": "سفير أهداف التنمية المستدامة",
+      "rapporteur": "المقرر"
+    },
+    "abbreviated": {
+      "secretaryGeneral": "الأمين العام",
+      "directorGeneral": "المدير العام",
+      "committeeChair": "الرئيس",
+      "delegate": "المندوب",
+      "advancedDelegate": "مندوب متقدم",
+      "sdgAmbassador": "سفير التنمية",
+      "rapporteur": "المقرر"
+    }
+  },
+  "auth": {
+    "signIn": {
+      "title": "مرحبًا بعودتك",
+      "subtitle": "سجّل الدخول لمواصلة رحلتك الدبلوماسية",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "submit": "تسجيل الدخول",
+      "continueWithGoogle": "المتابعة مع Google",
+      "continueWithGitHub": "المتابعة مع GitHub",
+      "noAccount": "ليس لديك حساب؟ أنشئ واحدًا",
+      "rememberMe": "تذكرني",
+      "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+      "connectionError": "تعذّر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت."
+    },
+    "register": {
+      "title": "إنشاء حساب",
+      "subtitle": "ابدأ رحلتك الدبلوماسية",
+      "fullName": "الاسم الكامل",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "rolePrompt": "أنا...",
+      "student": "طالب / مندوب",
+      "teacher": "معلم / مشرف محاكاة الأمم المتحدة",
+      "country": "الدولة",
+      "school": "المدرسة",
+      "submit": "ابدأ التجربة المجانية لمدة 24 ساعة",
+      "registrationFailed": "فشل التسجيل. يرجى المحاولة مرة أخرى.",
+      "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+      "requestSchoolAddition": "طلب إضافة مدرسة"
+    },
+    "forgotPassword": {
+      "title": "إعادة تعيين كلمة المرور",
+      "checkEmail": "تحقّق من بريدك الإلكتروني",
+      "sendLink": "إرسال رابط إعادة التعيين",
+      "backToSignIn": "العودة لتسجيل الدخول",
+      "sentConfirmation": "لقد أرسلنا رابط إعادة التعيين إلى بريدك الإلكتروني",
+      "instructions": "أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين"
+    },
+    "resetPassword": {
+      "title": "تعيين كلمة مرور جديدة",
+      "success": "تم إعادة تعيين كلمة المرور",
+      "invalidLink": "رابط إعادة التعيين غير صالح",
+      "successMessage": "تم إعادة تعيين كلمة المرور بنجاح",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmNewPassword": "تأكيد كلمة المرور الجديدة"
+    }
+  },
+  "appShell": {
+    "searchPlaceholder": "ابحث عن المؤتمرات، الدورات، المندوبين...",
+    "notifications": "الإشعارات",
+    "new": "جديد",
+    "noNotifications": "لا توجد إشعارات بعد",
+    "viewProfile": "عرض الملف الشخصي",
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج",
+    "freeTrial": "تجربة مجانية لمدة 24 ساعة",
+    "upgradeNow": "ترقية الآن",
+    "restrictedAccess": "وصول مقيد: الدورات الأساسية والتقييمات المحدودة فقط",
+    "somethingWentWrong": "حدث خطأ ما",
+    "tryAgain": "حاول مرة أخرى",
+    "errorDescription": "حدث خطأ في هذا القسم. حاول تحديث الصفحة أو الانتقال إلى قسم آخر."
+  },
+  "dashboard": {
+    "student": {
+      "title": "لوحة تحكم الطالب",
+      "welcomeBack": "مرحبًا بعودتك، {{name}}",
+      "xpProgress": "تقدم نقاط الخبرة",
+      "conferences": "المؤتمرات",
+      "committeesServed": "اللجان المشارك فيها",
+      "speechesGiven": "الخطابات المُلقاة",
+      "awardsWon": "الجوائز المحققة",
+      "codeOfConduct": "مدونة السلوك",
+      "acknowledged": "تمت الموافقة",
+      "reviewRequired": "يتطلب المراجعة",
+      "activeBadges": "الشارات النشطة",
+      "noBadges": "لم تُحقق أي شارات بعد",
+      "currentCourses": "الدورات الحالية",
+      "upcomingConferences": "المؤتمرات القادمة",
+      "quickActions": "إجراءات سريعة",
+      "takeAssessment": "أجرِ التقييم",
+      "continueTraining": "واصل التدريب",
+      "joinChat": "انضم للمحادثة",
+      "browseTraining": "تصفّح التدريب",
+      "browseConferences": "تصفّح المؤتمرات",
+      "viewLeaderboard": "عرض لوحة المتصدرين",
+      "reviewConduct": "مراجعة مدونة السلوك"
+    },
+    "teacher": {
+      "title": "لوحة تحكم المعلم",
+      "totalStudents": "إجمالي الطلاب",
+      "activeConferences": "المؤتمرات النشطة",
+      "avgAssessmentScore": "متوسط درجات التقييم",
+      "trainingCompletion": "نسبة إتمام التدريب",
+      "recentActivity": "النشاط الأخير",
+      "quickActions": "إجراءات سريعة",
+      "createConference": "إنشاء مؤتمر",
+      "assignResearch": "تكليف بحث",
+      "sendNotification": "إرسال إشعار",
+      "noRecentActivity": "لا يوجد نشاط حديث",
+      "createConferenceCta": "أنشئ مؤتمرًا",
+      "assessmentOverview": "نظرة عامة على التقييم",
+      "studentProgress": "تقدم الطلاب"
+    }
+  },
+  "assessment": {
+    "start": "بدء التقييم",
+    "nextQuestion": "السؤال التالي",
+    "previous": "السابق",
+    "submitAnswer": "إرسال الإجابة",
+    "analyzingResults": "جارٍ تحليل النتائج",
+    "viewFullResults": "عرض النتائج الكاملة",
+    "tierGate": "بوابة المستوى",
+    "complete": "اكتمل التقييم",
+    "diplomaticProfile": "ملفك الدبلوماسي",
+    "recommendedRole": "الدور الموصى به",
+    "retake": "إعادة التقييم",
+    "tiers": {
+      "basicDelegate": "مندوب أساسي",
+      "advancedDelegate": "مندوب متقدم",
+      "committeeLeader": "رئيس لجنة",
+      "chair": "الرئيس",
+      "underSecretaryGeneral": "وكيل الأمين العام",
+      "deputySecretaryGeneral": "نائب الأمين العام",
+      "secretaryGeneral": "الأمين العام"
+    },
+    "dimensions": {
+      "munProcedures": "إجراءات محاكاة الأمم المتحدة",
+      "unSystems": "أنظمة الأمم المتحدة",
+      "internationalRelations": "العلاقات الدولية",
+      "geopoliticalAwareness": "الوعي الجيوسياسي",
+      "researchSkills": "مهارات البحث",
+      "publicSpeaking": "الخطابة والإلقاء",
+      "negotiation": "التفاوض",
+      "leadership": "القيادة",
+      "crisisManagement": "إدارة الأزمات",
+      "resolutionDrafting": "صياغة القرارات",
+      "confidence": "الثقة بالنفس",
+      "diplomacy": "الدبلوماسية",
+      "collaboration": "التعاون",
+      "professionalism": "الاحترافية"
+    },
+    "tierGateThreshold": "يجب أن تحقق نسبة {{score}}% على الأقل للانتقال إلى المستوى التالي",
+    "tierGatePassed": "تهانينا! لقد اجتزت بوابة المستوى بنجاح!",
+    "tierGateFailed": "للأسف، لم تصل إلى الحد المطلوب. راجع المحتوى وحاول مرة أخرى.",
+    "questionProgress": "السؤال {{current}} من {{total}}",
+    "timeRemaining": "الوقت المتبقي",
+    "score": "الدرجة",
+    "dimensionBreakdown": "تفصيل الأبعاد",
+    "overallScore": "الدرجة الإجمالية"
+  },
+  "training": {
+    "title": "أكاديمية محاكاة الأمم المتحدة",
+    "subtitle": "دورات منظمة لإتقان كل جوانب محاكاة الأمم المتحدة",
+    "allCourses": "جميع الدورات",
+    "myCourses": "دوراتي",
+    "byRole": "حسب الدور",
+    "beginner": "مبتدئ",
+    "intermediate": "متوسط",
+    "advanced": "متقدم",
+    "expert": "خبير",
+    "backToCourses": "العودة إلى الدورات",
+    "lessons": "الدروس",
+    "progress": "التقدم",
+    "markAsComplete": "وضع علامة مكتمل",
+    "lessonCompleted": "اكتمل الدرس",
+    "selectLesson": "اختر درسًا",
+    "xpEarned": "+{{xp}} نقطة خبرة!",
+    "enrolled": "مسجّل",
+    "notEnrolled": "غير مسجّل",
+    "duration": "المدة",
+    "difficulty": "مستوى الصعوبة",
+    "achievements": {
+      "firstCourse": "الدورة الأولى",
+      "courseMaster": "أستاذ الدورات",
+      "speedLearner": "متعلم سريع",
+      "perfectScore": "درجة كاملة",
+      "dedicatedLearner": "متعلم ملتزم",
+      "munExpert": "خبير محاكاة الأمم المتحدة",
+      "streakWarrior": "محارب الاستمرارية",
+      "knowledgeSeeker": "باحث عن المعرفة",
+      "diplomatScholar": "عالم دبلوماسي",
+      "resolutionPro": "محترف صياغة القرارات"
+    },
+    "rarities": {
+      "common": "شائع",
+      "uncommon": "غير شائع",
+      "rare": "نادر",
+      "epic": "ملحمي",
+      "legendary": "أسطوري"
+    }
+  },
+  "chat": {
+    "appName": "DiplomatiQ",
+    "members": "الأعضاء",
+    "online": "متصل",
+    "aiAssistants": "مساعدو الذكاء الاصطناعي",
+    "teachers": "المعلمون",
+    "students": "الطلاب",
+    "createChannel": "إنشاء قناة",
+    "channelMessage": "رسالة في #{{channel}}",
+    "askGuru": "اسأل DiplomatiQ Guru",
+    "guruThinking": "DiplomatiQ Guru يفكّر...",
+    "guruActive": "DiplomatiQ Guru نشط في هذه القناة",
+    "channelWelcome": "مرحبًا بك في #{{channel}}!",
+    "pinnedMessages": "الرسائل المثبتة",
+    "search": "بحث",
+    "showMembers": "عرض الأعضاء",
+    "hideMembers": "إخفاء الأعضاء",
+    "noChannels": "لا توجد قنوات بعد",
+    "setupChannels": "إعداد قنوات المحادثة",
+    "loadingChannels": "جارٍ تحميل القنوات...",
+    "thinking": "جارٍ التفكير...",
+    "formatting": {
+      "bold": "عريض",
+      "italic": "مائل",
+      "attachFile": "إرفاق ملف",
+      "mention": "إشارة"
+    },
+    "send": "إرسال",
+    "sendShortcut": "Ctrl+Enter للإرسال",
+    "tabs": {
+      "chat": "المحادثة",
+      "ai": "الذكاء الاصطناعي",
+      "aiAssistant": "مساعد الذكاء الاصطناعي"
+    },
+    "timeLabels": {
+      "today": "اليوم",
+      "yesterday": "أمس"
+    }
+  },
+  "research": {
+    "title": "مختبر الأبحاث",
+    "evaluatePaper": "تقييم البحث",
+    "evaluateDescription": "قدّم بحثك للتقييم المدعوم بالذكاء الاصطناعي",
+    "paperTitle": "عنوان البحث",
+    "committee": "اللجنة",
+    "topic": "الموضوع",
+    "paperContent": "محتوى البحث",
+    "evaluate": "تقييم",
+    "evaluating": "جارٍ التقييم...",
+    "overallScore": "الدرجة الإجمالية",
+    "feedback": "الملاحظات",
+    "strengths": "نقاط القوة",
+    "areasForImprovement": "مجالات التحسين",
+    "suggestions": "التوصيات"
+  },
+  "analytics": {
+    "title": "التحليلات",
+    "performanceOverview": "نظرة عامة على الأداء",
+    "activityTrends": "اتجاهات النشاط",
+    "skillDistribution": "توزيع المهارات",
+    "assessmentHistory": "سجل التقييمات",
+    "trainingProgress": "تقدم التدريب",
+    "period": "الفترة",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يومًا",
+    "last3Months": "آخر 3 أشهر",
+    "allTime": "كل الأوقات"
+  },
+  "settings": {
+    "tabs": {
+      "profile": "الملف الشخصي",
+      "notifications": "الإشعارات",
+      "security": "الأمان",
+      "billing": "الفواتير",
+      "language": "اللغة"
+    },
+    "profile": {
+      "fullName": "الاسم الكامل",
+      "emailAddress": "البريد الإلكتروني",
+      "country": "الدولة",
+      "school": "المدرسة",
+      "bio": "نبذة تعريفية",
+      "changePhoto": "تغيير الصورة",
+      "saveChanges": "حفظ التعديلات",
+      "saving": "جارٍ الحفظ...",
+      "saved": "تم الحفظ!"
+    },
+    "notifications": {
+      "assessmentResults": "نتائج التقييم",
+      "conferenceUpdates": "تحديثات المؤتمرات",
+      "trainingReminders": "تذكيرات التدريب",
+      "newsletter": "النشرة الإخبارية",
+      "directMessages": "الرسائل المباشرة",
+      "mentions": "الإشارات",
+      "platformUpdates": "تحديثات المنصة",
+      "soundAlerts": "تنبيهات صوتية",
+      "desktopNotifications": "إشعارات سطح المكتب"
+    },
+    "security": {
+      "changePassword": "تغيير كلمة المرور",
+      "twoFactorAuth": "المصادقة الثنائية",
+      "enable2fa": "تفعيل المصادقة الثنائية",
+      "updatePassword": "تحديث كلمة المرور",
+      "currentPassword": "كلمة المرور الحالية",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmNewPassword": "تأكيد كلمة المرور الجديدة"
+    },
+    "billing": {
+      "currentPlan": "الخطة الحالية",
+      "manageSubscription": "إدارة الاشتراك",
+      "viewAllPlans": "عرض جميع الخطط",
+      "upgradePlan": "ترقية خطتك",
+      "cancelSubscription": "إلغاء الاشتراك",
+      "nextBillingDate": "تاريخ الفوترة التالي",
+      "paymentMethod": "طريقة الدفع"
+    },
+    "language": {
+      "title": "اللغة",
+      "english": "الإنجليزية",
+      "arabic": "العربية",
+      "chooseLanguage": "اختر لغتك المفضلة"
+    },
+    "dangerZone": {
+      "deleteAccount": "حذف الحساب",
+      "permanentlyDelete": "الحذف نهائيًا",
+      "warning": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك بشكل نهائي.",
+      "typeDelete": "اكتب حذف للتأكيد"
+    }
+  },
+  "pricing": {
+    "title": "اختر خطتك",
+    "delegatePro": "المندوب الاحترافي",
+    "directorPro": "المدير الاحترافي",
+    "schoolEnterprise": "مؤسسة المدارس",
+    "mostPopular": "الأكثر شعبية",
+    "perMonth": "شهريًا",
+    "startFreeTrial": "ابدأ التجربة المجانية",
+    "contactSales": "تواصل مع المبيعات",
+    "delegateProFeatures": {
+      "unlimitedAssessments": "تقييمات غير محدودة",
+      "advancedTraining": "دورات تدريبية متقدمة",
+      "aiChatAssistant": "مساعد محادثة بالذكاء الاصطناعي",
+      "researchLab": "الوصول إلى مختبر الأبحاث",
+      "leaderboardAccess": "الوصول إلى لوحة المتصدرين",
+      "certificateGeneration": "إصدار الشهادات"
+    },
+    "directorProFeatures": {
+      "everythingInDelegatePro": "كل مميزات المندوب الاحترافي",
+      "conferenceManagement": "إدارة المؤتمرات",
+      "committeeAssignment": "أدوات تعيين اللجان",
+      "studentAnalytics": "لوحة تحليلات الطلاب",
+      "bulkAssessment": "دعوات تقييم جماعية",
+      "prioritySupport": "دعم ذو أولوية"
+    },
+    "schoolEnterpriseFeatures": {
+      "everythingInDirectorPro": "كل مميزات المدير الاحترافي",
+      "unlimitedStudents": "طلاب غير محدودين",
+      "customBranding": "هوية بصرية مخصصة",
+      "dedicatedAccountManager": "مدير حساب مخصص",
+      "apiAccess": "الوصول إلى واجهة البرمجة",
+      "ssoIntegration": "تكامل تسجيل الدخول الموحّد",
+      "advancedReporting": "تقارير متقدمة",
+      "trainingWebinars": "ندوات تدريبية عبر الإنترنت"
+    }
+  },
+  "conduct": {
+    "title": "مدونة السلوك",
+    "mandatory": "إلزامي",
+    "important": "مهم",
+    "recommended": "موصى به",
+    "acknowledgment": "الإقرار والموافقة",
+    "acknowledge": "أُقرّ وأوافق",
+    "acknowledged": "تمت الموافقة على مدونة السلوك",
+    "agreementText": "بإقرارك، فإنك توافق على الالتزام بجميع القواعد والإرشادات المنصوص عليها في مدونة السلوك هذه."
+  },
+  "conferences": {
+    "title": "المؤتمرات",
+    "create": "إنشاء مؤتمر",
+    "conferenceName": "اسم المؤتمر",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "location": "الموقع",
+    "theme": "الموضوع",
+    "status": "الحالة",
+    "upcoming": "قادم",
+    "active": "نشط",
+    "completed": "منتهي",
+    "noConferences": "لا توجد مؤتمرات بعد",
+    "createFirst": "أنشئ مؤتمرك الأول"
+  },
+  "leaderboard": {
+    "title": "لوحة المتصدرين",
+    "rank": "الترتيب",
+    "name": "الاسم",
+    "xp": "XP",
+    "level": "المستوى",
+    "school": "المدرسة",
+    "yourRank": "ترتيبك",
+    "thisWeek": "هذا الأسبوع",
+    "allTime": "كل الأوقات"
+  },
+  "schools": {
+    "title": "دليل المدارس",
+    "search": "البحث عن مدارس",
+    "country": "الدولة",
+    "members": "الأعضاء",
+    "munProgram": "برنامج محاكاة الأمم المتحدة",
+    "joinSchool": "الانضمام إلى المدرسة",
+    "requestToJoin": "طلب الانضمام"
+  },
+  "founder": {
+    "title": "مركز القيادة",
+    "platformAnalytics": "تحليلات المنصة",
+    "userManagement": "إدارة المستخدمين",
+    "revenueOverview": "نظرة عامة على الإيرادات",
+    "systemHealth": "صحة النظام"
+  },
+  "landing": {
+    "hero": {
+      "title": "تقييمات دبلوماسية مدعومة بالذكاء الاصطناعي",
+      "subtitle": "نظام التشغيل لمحاكاة الأمم المتحدة",
+      "cta": "ابدأ رحلتك",
+      "schoolCta": "للمدارس",
+      "regionTag": "انضم إلى المدارس في الإمارات ومجلس التعاون الخليجي"
+    },
+    "nav": {
+      "getStarted": "ابدأ الآن",
+      "signIn": "تسجيل الدخول",
+      "features": "المميزات",
+      "assessment": "التقييم",
+      "training": "التدريب",
+      "pricing": "الأسعار",
+      "schools": "المدارس"
+    },
+    "features": {
+      "aiAssessment": {
+        "title": "تقييم مدعوم بالذكاء الاصطناعي",
+        "description": "احصل على تقييم شامل عبر 14 بُعدًا دبلوماسيًا باستخدام محرك التقييم الذكي"
+      },
+      "structuredTraining": {
+        "title": "تدريب منظم",
+        "description": "أتقن إجراءات محاكاة الأمم المتحدة والخطابة والتفاوض من خلال دورات موجّهة"
+      },
+      "realTimeChat": {
+        "title": "تعاون فوري",
+        "description": "تواصل مع المندوبين حول العالم من خلال قنوات محادثة بإشراف الذكاء الاصطناعي"
+      },
+      "researchLab": {
+        "title": "مختبر الأبحاث",
+        "description": "قدّم أوراقك البحثية للتقييم المدعوم بالذكاء الاصطناعي واحصل على ملاحظات مفصّلة"
+      },
+      "conferenceManagement": {
+        "title": "إدارة المؤتمرات",
+        "description": "نظّم وأدِر مؤتمرات محاكاة الأمم المتحدة بأدوات فعّالة"
+      },
+      "analytics": {
+        "title": "تحليلات الأداء",
+        "description": "تتبّع تقدمك برؤى تفصيلية وتحليلات للمهارات"
+      }
+    },
+    "howItWorks": {
+      "title": "كيف يعمل النظام",
+      "step1": {
+        "title": "أجرِ التقييم",
+        "description": "ابدأ بتقييمك الدبلوماسي المدعوم بالذكاء الاصطناعي لاكتشاف نقاط قوتك"
+      },
+      "step2": {
+        "title": "تدرّب وتحسّن",
+        "description": "اتبع مسارات تدريب مخصصة مصمّمة وفقًا لنتائج تقييمك"
+      },
+      "step3": {
+        "title": "شارك في المؤتمرات",
+        "description": "طبّق مهاراتك في مؤتمرات محاكاة الأمم المتحدة واحصل على التقدير"
+      },
+      "step4": {
+        "title": "ارتقِ في الرتب",
+        "description": "اجمع نقاط الخبرة، حقق الإنجازات، وتقدّم من مندوب إلى أمين عام"
+      }
+    },
+    "testimonials": {
+      "title": "ماذا يقول المندوبون"
+    },
+    "footer": {
+      "platform": "المنصة",
+      "company": "الشركة",
+      "legal": "قانوني",
+      "support": "الدعم",
+      "privacyPolicy": "سياسة الخصوصية",
+      "termsOfService": "شروط الخدمة",
+      "about": "من نحن",
+      "contact": "تواصل معنا",
+      "helpCenter": "مركز المساعدة",
+      "documentation": "التوثيق"
+    }
+  },
+  "legal": {
+    "privacyPolicy": "سياسة الخصوصية",
+    "termsOfService": "شروط الخدمة",
+    "about": "من نحن",
+    "tagline": "نبني الجيل القادم من الدبلوماسيين",
+    "mission": "مهمتنا",
+    "values": "القيم التي ترشدنا",
+    "builtInUae": "فخورون بالبناء في الإمارات"
+  },
+  "errors": {
+    "somethingWentWrong": "حدث خطأ ما",
+    "pageNotFound": "الصفحة غير موجودة",
+    "unauthorized": "وصول غير مصرّح به",
+    "sessionExpired": "انتهت الجلسة",
+    "networkError": "خطأ في الشبكة",
+    "serverError": "خطأ في الخادم",
+    "pleaseTryAgain": "يرجى المحاولة مرة أخرى",
+    "contactSupport": "تواصل مع الدعم"
+  },
+  "roles": {
+    "student": "طالب",
+    "teacher": "معلم",
+    "admin": "مدير",
+    "schoolAdmin": "مدير المدرسة",
+    "superAdmin": "مدير أعلى",
+    "founder": "المؤسس",
+    "masterAdmin": "المدير الرئيسي",
+    "subscriptionTiers": {
+      "free": "مجاني",
+      "delegatePro": "المندوب الاحترافي",
+      "directorPro": "المدير الاحترافي",
+      "schoolStarter": "المدارس المبتدئة",
+      "schoolProfessional": "المدارس المحترفة",
+      "schoolEnterprise": "مؤسسة المدارس",
+      "conferencePackage": "باقة المؤتمرات"
+    }
+  },
+  "xp": {
+    "levels": {
+      "observer": "مراقب",
+      "delegate": "مندوب",
+      "ambassador": "سفير",
+      "diplomat": "دبلوماسي",
+      "envoy": "مبعوث",
+      "secretaryGeneral": "الأمين العام"
+    },
+    "xpToLevel": "نقاط الخبرة للوصول إلى {{level}}",
+    "xpAmount": "{{xp}} XP",
+    "dayStreak": "أيام متتالية",
+    "best": "الأفضل:"
+  }
+}

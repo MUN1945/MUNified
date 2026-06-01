@@ -12,11 +12,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
+import { useI18n } from '@/lib/i18n'
 
 function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
+  const { t } = useI18n()
 
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -115,7 +117,7 @@ function ResetPasswordForm() {
           <Card className="bg-white/[0.06] border-white/[0.08] backdrop-blur-xl">
             <CardContent className="pt-6 text-center">
               <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-white mb-2">Invalid Reset Link</h2>
+              <h2 className="text-xl font-semibold text-white mb-2">{t('auth.resetPassword.invalidLink')}</h2>
               <p className="text-white/45 text-sm mb-6">{error}</p>
               <Link href="/auth/forgot-password">
                 <Button className="bg-[#D4A843] text-[#0D1B2A] hover:bg-[#E0BC6A] font-semibold">
@@ -166,7 +168,7 @@ function ResetPasswordForm() {
                 >
                   <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                 </motion.div>
-                <CardTitle className="text-2xl text-white">Password Reset</CardTitle>
+                <CardTitle className="text-2xl text-white">{t('auth.resetPassword.success')}</CardTitle>
                 <CardDescription className="text-white/45">
                   Your password has been successfully reset. You can now sign in with your new password.
                 </CardDescription>
@@ -183,7 +185,7 @@ function ResetPasswordForm() {
           ) : (
             <form onSubmit={handleSubmit}>
               <CardHeader className="text-center pb-2">
-                <CardTitle className="text-2xl text-white">Set New Password</CardTitle>
+                <CardTitle className="text-2xl text-white">{t('auth.resetPassword.title')}</CardTitle>
                 <CardDescription className="text-white/45">
                   Choose a strong password for your account
                 </CardDescription>
@@ -203,7 +205,7 @@ function ResetPasswordForm() {
 
                 {/* New Password */}
                 <div className="space-y-2">
-                  <Label className="text-white/70 text-sm">New Password</Label>
+                  <Label className="text-white/70 text-sm">{t('auth.resetPassword.newPassword')}</Label>
                   <div className="relative">
                     <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                     <Input
@@ -226,7 +228,7 @@ function ResetPasswordForm() {
 
                 {/* Confirm Password */}
                 <div className="space-y-2">
-                  <Label className="text-white/70 text-sm">Confirm New Password</Label>
+                  <Label className="text-white/70 text-sm">{t('auth.resetPassword.confirmNewPassword')}</Label>
                   <div className="relative">
                     <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                     <Input

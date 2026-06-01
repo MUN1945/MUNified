@@ -295,3 +295,167 @@
   background-size: 80px 140px;
   background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
 }
+
+/* ============================================================
+   RTL (Right-to-Left) SUPPORT
+   ============================================================ */
+
+/* RTL base adjustments */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Mirror flexbox and grid directions */
+[dir="rtl"] .flex {
+  /* Tailwind flex utilities handle this automatically via logical properties */
+}
+
+/* Fix absolute positioning for RTL */
+[dir="rtl"] .absolute.left-0 {
+  left: auto;
+  right: 0;
+}
+
+[dir="rtl"] .absolute.right-0 {
+  right: auto;
+  left: 0;
+}
+
+[dir="rtl"] .absolute.-right-3 {
+  right: auto;
+  left: -0.75rem;
+}
+
+[dir="rtl"] .absolute.-left-3 {
+  left: auto;
+  right: -0.75rem;
+}
+
+/* Fix border radius mirroring */
+[dir="rtl"] .rounded-r-full {
+  border-radius: 0;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+}
+
+[dir="rtl"] .rounded-l-full {
+  border-radius: 0;
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
+}
+
+/* Fix border-l / border-r for RTL */
+[dir="rtl"] .border-l {
+  border-left: 0;
+  border-right-width: 1px;
+}
+
+[dir="rtl"] .border-r {
+  border-right: 0;
+  border-left-width: 1px;
+}
+
+/* Fix padding-left / padding-right for RTL */
+[dir="rtl"] .pl-10 {
+  padding-left: 0;
+  padding-right: 2.5rem;
+}
+
+[dir="rtl"] .pl-4 {
+  padding-left: 0;
+  padding-right: 1rem;
+}
+
+/* Fix search icon position for RTL */
+[dir="rtl"] .absolute.left-3 {
+  left: auto;
+  right: 0.75rem;
+}
+
+/* Fix margin-left / margin-right for RTL */
+[dir="rtl"] .ml-2 {
+  margin-left: 0;
+  margin-right: 0.5rem;
+}
+
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-0\.5 {
+  margin-right: 0;
+  margin-left: 0.125rem;
+}
+
+/* Fix sidebar active indicator position for RTL */
+[dir="rtl"] .absolute.left-0.top-1\/2 {
+  left: auto;
+  right: 0;
+}
+
+/* Fix tooltip positioning for RTL */
+[dir="rtl"] [data-side="right"] {
+  /* Tooltips side="right" should become side="left" in RTL */
+}
+
+/* Fix motion/animation direction for RTL */
+[dir="rtl"] .absolute.-bottom-0\.5.-right-0\.5 {
+  right: auto;
+  left: -0.125rem;
+}
+
+[dir="rtl"] .absolute.-bottom-0\.5.-left-0\.5 {
+  left: auto;
+  right: -0.125rem;
+}
+
+[dir="rtl"] .absolute.-top-0\.5.-right-0\.5 {
+  right: auto;
+  left: -0.125rem;
+}
+
+/* Fix mobile sidebar positioning for RTL */
+[dir="rtl"] .fixed.left-0 {
+  left: auto;
+  right: 0;
+}
+
+/* Fix text-right to text-left in RTL */
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Fix text-left in RTL */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+/* Fix separator vertical margin */
+[dir="rtl"] .mx-1 {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
+/* Chat sidebar positioning fixes */
+[dir="rtl"] .fixed.left-0.top-0.bottom-0 {
+  left: auto;
+  right: 0;
+}
+
+/* Ensure proper Arabic font rendering */
+[dir="rtl"] body {
+  font-feature-settings: "ss01", "ss02";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fix scroll area direction for RTL */
+[dir="rtl"] .overflow-y-auto {
+  direction: rtl;
+}
+
+/* Fix the sidebar collapse toggle position for RTL */
+[dir="rtl"] .absolute.-right-3.top-20 {
+  right: auto;
+  left: -0.75rem;
+}

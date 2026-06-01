@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useNavStore, useAuthStore, useAppStore, type ViewName, getCurrentLevel, getNextLevel, getXPProgress } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // NAV CONFIG - Role-based items
@@ -26,59 +27,59 @@ interface NavItem {
 }
 
 const STUDENT_NAV: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'assessment', label: 'Assessment', icon: ClipboardCheck },
-  { id: 'training', label: 'Training', icon: BookOpen },
-  { id: 'conferences', label: 'Conferences', icon: Building2 },
-  { id: 'schools', label: 'Schools', icon: Building2 },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'research', label: 'Research Lab', icon: FileSearch },
-  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'dashboard', label: 'nav.dashboard', icon: Home },
+  { id: 'assessment', label: 'nav.assessment', icon: ClipboardCheck },
+  { id: 'training', label: 'nav.training', icon: BookOpen },
+  { id: 'conferences', label: 'nav.conferences', icon: Building2 },
+  { id: 'schools', label: 'nav.schools', icon: Building2 },
+  { id: 'chat', label: 'nav.chat', icon: MessageSquare },
+  { id: 'research', label: 'nav.researchLab', icon: FileSearch },
+  { id: 'leaderboard', label: 'nav.leaderboard', icon: Trophy },
+  { id: 'analytics', label: 'nav.analytics', icon: BarChart3 },
 ]
 
 const TEACHER_NAV: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'assessment', label: 'Assessment', icon: ClipboardCheck },
-  { id: 'training', label: 'Training', icon: BookOpen },
-  { id: 'conferences', label: 'Conferences', icon: Building2 },
-  { id: 'schools', label: 'Schools', icon: Building2 },
-  { id: 'committees', label: 'Committees', icon: Shield },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'research', label: 'Research Lab', icon: FileSearch },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'dashboard', label: 'nav.dashboard', icon: Home },
+  { id: 'assessment', label: 'nav.assessment', icon: ClipboardCheck },
+  { id: 'training', label: 'nav.training', icon: BookOpen },
+  { id: 'conferences', label: 'nav.conferences', icon: Building2 },
+  { id: 'schools', label: 'nav.schools', icon: Building2 },
+  { id: 'committees', label: 'nav.committees', icon: Shield },
+  { id: 'chat', label: 'nav.chat', icon: MessageSquare },
+  { id: 'research', label: 'nav.researchLab', icon: FileSearch },
+  { id: 'analytics', label: 'nav.analytics', icon: BarChart3 },
+  { id: 'settings', label: 'nav.settings', icon: Settings },
 ]
 
 const ADMIN_NAV: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'conferences', label: 'Conferences', icon: Building2 },
-  { id: 'users', label: 'Users', icon: Users },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'dashboard', label: 'nav.dashboard', icon: Home },
+  { id: 'analytics', label: 'nav.analytics', icon: BarChart3 },
+  { id: 'conferences', label: 'nav.conferences', icon: Building2 },
+  { id: 'users', label: 'nav.users', icon: Users },
+  { id: 'settings', label: 'nav.settings', icon: Settings },
 ]
 
 const MASTER_ADMIN_NAV: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'founder', label: 'Command Center', icon: Crown },
-  { id: 'assessment', label: 'Assessment', icon: ClipboardCheck },
-  { id: 'training', label: 'Training', icon: BookOpen },
-  { id: 'conferences', label: 'Conferences', icon: Building2 },
-  { id: 'schools', label: 'Schools', icon: Building2 },
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'research', label: 'Research Lab', icon: FileSearch },
-  { id: 'leaderboard', label: 'Leaderboard', icon: Trophy },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'dashboard', label: 'nav.dashboard', icon: Home },
+  { id: 'founder', label: 'nav.commandCenter', icon: Crown },
+  { id: 'assessment', label: 'nav.assessment', icon: ClipboardCheck },
+  { id: 'training', label: 'nav.training', icon: BookOpen },
+  { id: 'conferences', label: 'nav.conferences', icon: Building2 },
+  { id: 'schools', label: 'nav.schools', icon: Building2 },
+  { id: 'chat', label: 'nav.chat', icon: MessageSquare },
+  { id: 'research', label: 'nav.researchLab', icon: FileSearch },
+  { id: 'leaderboard', label: 'nav.leaderboard', icon: Trophy },
+  { id: 'analytics', label: 'nav.analytics', icon: BarChart3 },
+  { id: 'settings', label: 'nav.settings', icon: Settings },
 ]
 
 const SUPER_ADMIN_NAV: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'founder', label: 'Command Center', icon: Shield },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'conferences', label: 'Conferences', icon: Building2 },
-  { id: 'schools', label: 'Schools', icon: Building2 },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'dashboard', label: 'nav.dashboard', icon: Home },
+  { id: 'founder', label: 'nav.commandCenter', icon: Shield },
+  { id: 'analytics', label: 'nav.analytics', icon: BarChart3 },
+  { id: 'conferences', label: 'nav.conferences', icon: Building2 },
+  { id: 'schools', label: 'nav.schools', icon: Building2 },
+  { id: 'settings', label: 'nav.settings', icon: Settings },
 ]
 
 function getNavItems(role: string): NavItem[] {
@@ -138,6 +139,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
   const { currentView, navigate } = useNavStore()
   const { user, logout } = useAuthStore()
   const { sidebarCollapsed, toggleSidebar, delegateProfile, badges } = useAppStore()
+  const { t } = useI18n()
 
   if (!user) return null
 
@@ -226,7 +228,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                             exit={{ opacity: 0, width: 0 }}
                             transition={{ duration: 0.2 }}
                           >
-                            {item.label}
+                            {t(item.label)}
                           </motion.span>
                         )}
                       </AnimatePresence>
@@ -234,7 +236,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                   </TooltipTrigger>
                   {sidebarCollapsed && (
                     <TooltipContent side="right" className="bg-[#264B5E] text-white border-white/10">
-                      {item.label}
+                      {t(item.label)}
                     </TooltipContent>
                   )}
                 </Tooltip>
@@ -355,7 +357,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="bg-[#264B5E] text-white border-white/10">
-                      Sign out
+                      {t('nav.signOut')}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

@@ -31,12 +31,15 @@ import SettingsView from '@/components/settings/SettingsView'
 import FounderDashboard from '@/components/founder/FounderDashboard'
 import SchoolDirectory from '@/components/schools/SchoolDirectory'
 import { useNavStore, useAuthStore, useAppStore, type ViewName } from '@/lib/store'
+import { useI18n } from '@/lib/i18n'
+import LanguageSwitcher from '@/components/ui/language-switcher'
 
 // ============================================================
 // PLACEHOLDER VIEW COMPONENTS (for views not yet implemented)
 // ============================================================
 
 function PlaceholderView({ title, description }: { title: string; description: string }) {
+  const { t } = useI18n()
   return (
     <div className="flex flex-col items-center justify-center py-20">
       <motion.div
@@ -50,7 +53,6 @@ function PlaceholderView({ title, description }: { title: string; description: s
         </div>
         <h2 className="text-2xl font-bold text-[#1B3A4B]">{title}</h2>
         <p className="text-muted-foreground mt-2 max-w-md">{description}</p>
-        <p className="text-sm text-muted-foreground mt-4">This feature is currently in development</p>
       </motion.div>
     </div>
   )
@@ -179,6 +181,7 @@ export default function AppShell() {
   const { currentView } = useNavStore()
   const { user, logout } = useAuthStore()
   const { notifications, searchQuery, setSearchQuery, sidebarCollapsed, toggleSidebar, markNotificationRead } = useAppStore()
+  const { t } = useI18n()
   const [mobileSidebarOpen, setMobileSidebarOpen] = React.useState(false)
   const [showConductModal, setShowConductModal] = React.useState(false)
 
@@ -312,7 +315,7 @@ export default function AppShell() {
             <div className="relative max-w-md w-full hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search conferences, courses, delegates..."
+                placeholder={t('appShell.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-[#F5F0EB] border-0 focus-visible:ring-[#0D7377]/20 placeholder:text-muted-foreground/60"
@@ -335,10 +338,10 @@ export default function AppShell() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex items-center justify-between">
-                  <span>Notifications</span>
+                  <span>{t('appShell.notifications')}</span>
                   {unreadCount > 0 && (
                     <Badge className="bg-[#0D7377]/10 text-[#0D7377] text-[10px] border-0">
-                      {unreadCount} new
+                      {unreadCount} {t('appShell.new')}
                     </Badge>
                   )}
                 </DropdownMenuLabel>
@@ -359,11 +362,13 @@ export default function AppShell() {
                   ))
                 ) : (
                   <div className="p-4 text-center text-sm text-muted-foreground">
-                    No notifications yet
+                    {t('appShell.noNotifications')}
                   </div>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <LanguageSwitcher variant="compact" />
 
             <Separator orientation="vertical" className="h-8 mx-1" />
 
@@ -388,10 +393,10 @@ export default function AppShell() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => useNavStore.getState().navigate('profile')}>
-                  View Profile
+                  {t('appShell.viewProfile')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => useNavStore.getState().navigate('settings')}>
-                  Settings
+                  {t('appShell.settings')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -401,7 +406,7 @@ export default function AppShell() {
                     window.location.href = '/auth/signin';
                   }}
                 >
-                  Sign Out
+                  {t('nav.signOut')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -416,8 +421,8 @@ export default function AppShell() {
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 bg-[#D4A843] rounded-full animate-pulse" />
                 <span className="text-sm text-[#1B3A4B]">
-                  <strong>24-Hour Free Trial</strong> — {trialTimeLeft}
-                  <span className="text-[#1B3A4B]/50 ml-2">Restricted access: basic courses & limited assessments only</span>
+                  <strong>{t('appShell.freeTrial')}</strong> — {trialTimeLeft}
+                  <span className="text-[#1B3A4B]/50 ml-2">{t('appShell.restrictedAccess')}</span>
                 </span>
               </div>
               <Button
@@ -425,7 +430,7 @@ export default function AppShell() {
                 className="bg-[#D4A843] text-[#0D1B2A] hover:bg-[#E0BC6A] font-semibold text-xs h-7 shadow-sm"
                 onClick={() => useNavStore.getState().navigate('pricing')}
               >
-                Upgrade Now
+                {t('appShell.upgradeNow')}
               </Button>
             </div>
           )}

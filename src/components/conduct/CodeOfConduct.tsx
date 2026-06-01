@@ -26,6 +26,7 @@ import {
   CODE_OF_CONDUCT_EFFECTIVE, TOTAL_RULES, TOTAL_SECTIONS,
   type ConductSection, type ConductRule, type Severity,
 } from '@/lib/conduct/sections'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // LOCALSTORAGE KEYS
@@ -65,21 +66,19 @@ function saveAcknowledged(val: boolean) {
 // ============================================================
 // SEVERITY STYLING
 // ============================================================
-const SEVERITY_CONFIG: Record<Severity, { label: string; color: string; bg: string; border: string }> = {
+// Severity config is built dynamically in the component to support i18n
+const SEVERITY_STYLE: Record<Severity, { color: string; bg: string; border: string }> = {
   mandatory: {
-    label: 'Mandatory',
     color: 'text-red-400',
     bg: 'bg-red-500/10',
     border: 'border-l-red-500',
   },
   important: {
-    label: 'Important',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
     border: 'border-l-amber-500',
   },
   recommended: {
-    label: 'Recommended',
     color: 'text-sky-400',
     bg: 'bg-sky-500/10',
     border: 'border-l-sky-500',
@@ -113,11 +112,18 @@ const SECTION_COLORS = [
 // MAIN COMPONENT
 // ============================================================
 export default function CodeOfConduct() {
+  const { t } = useI18n()
   const [searchQuery, setSearchQuery] = useState('')
   const [readSections, setReadSections] = useState<Set<string>>(() => loadReadSections())
   const [acknowledged, setAcknowledged] = useState(() => loadAcknowledged())
   const [openItems, setOpenItems] = useState<string[]>([])
   const [showSeverity, setShowSeverity] = useState<Severity | 'all'>('all')
+
+  const SEVERITY_CONFIG: Record<Severity, { label: string; color: string; bg: string; border: string }> = {
+    mandatory: { label: t('conduct.mandatory'), ...SEVERITY_STYLE.mandatory },
+    important: { label: t('conduct.important'), ...SEVERITY_STYLE.important },
+    recommended: { label: t('conduct.recommended'), ...SEVERITY_STYLE.recommended },
+  }
 
   // Persist read sections
   useEffect(() => {
@@ -218,7 +224,7 @@ export default function CodeOfConduct() {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#D4A843] via-[#F0D78C] to-[#D4A843] bg-clip-text text-transparent">
-            Code of Conduct
+            {t('conduct.title')}
           </h1>
           <p className="text-sm md:text-base text-white/50 max-w-2xl mx-auto leading-relaxed">
             DiplomatiQ MUN Platform — Official Standards of Conduct
@@ -298,7 +304,7 @@ export default function CodeOfConduct() {
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    Mandatory ({severityCounts.mandatory})
+                    {t('conduct.mandatory')} ({severityCounts.mandatory})
                   </button>
                   <button
                     onClick={() => setShowSeverity('important')}
@@ -309,7 +315,7 @@ export default function CodeOfConduct() {
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    Important ({severityCounts.important})
+                    {t('conduct.important')} ({severityCounts.important})
                   </button>
                   <button
                     onClick={() => setShowSeverity('recommended')}
@@ -320,7 +326,7 @@ export default function CodeOfConduct() {
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                    Recommended ({severityCounts.recommended})
+                    {t('conduct.recommended')} ({severityCounts.recommended})
                   </button>
                 </div>
 
@@ -491,13 +497,13 @@ export default function CodeOfConduct() {
                       {/* Severity legend */}
                       <div className="flex items-center gap-3 mb-4 flex-wrap">
                         <span className="flex items-center gap-1.5 text-[10px] text-red-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Mandatory
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {t('conduct.mandatory')}
                         </span>
                         <span className="flex items-center gap-1.5 text-[10px] text-amber-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Important
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> {t('conduct.important')}
                         </span>
                         <span className="flex items-center gap-1.5 text-[10px] text-sky-400">
-                          <span className="w-1.5 h-1.5 rounded-full bg-sky-500" /> Recommended
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-500" /> {t('conduct.recommended')}
                         </span>
                       </div>
 
@@ -569,7 +575,7 @@ export default function CodeOfConduct() {
                 </div>
                 <div>
                   <h3 className="text-lg md:text-xl font-bold text-white/90">
-                    Acknowledgment & Agreement
+                    {t('conduct.acknowledgment')}
                   </h3>
                   <p className="text-xs text-white/40">
                     Section 36 — Required for full platform access
@@ -642,12 +648,12 @@ export default function CodeOfConduct() {
                     {acknowledged ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 mr-2" />
-                        Code of Conduct Acknowledged
+                        {t('conduct.acknowledged')}
                       </>
                     ) : (
                       <>
                         <Shield className="w-4 h-4 mr-2" />
-                        I Acknowledge & Accept
+                        {t('conduct.acknowledge')}
                       </>
                     )}
                   </Button>

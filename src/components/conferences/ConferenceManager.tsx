@@ -23,6 +23,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useI18n } from '@/lib/i18n'
 
 // ============================================================
 // TYPES
@@ -160,6 +161,7 @@ function ConferenceListView({
   onSelect: (conf: Conference) => void
   onCreateNew: () => void
 }) {
+  const { t } = useI18n()
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<ConferenceStatus | 'ALL'>('ALL')
 
@@ -190,7 +192,7 @@ function ConferenceListView({
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-[#1B3A4B]">Conferences</h2>
+            <h2 className="text-2xl font-bold text-[#1B3A4B]">{t('conferences.title')}</h2>
             <p className="text-muted-foreground mt-1">Discover and manage MUN conferences worldwide</p>
           </div>
           <Button
@@ -198,7 +200,7 @@ function ConferenceListView({
             onClick={onCreateNew}
           >
             <Plus className="w-4 h-4" />
-            Create Conference
+            {t('conferences.create')}
           </Button>
         </div>
       </motion.div>
@@ -347,6 +349,7 @@ function ConferenceForm({
   onCancel: () => void
   initialData?: Conference | null
 }) {
+  const { t } = useI18n()
   const [name, setName] = useState(initialData?.name || '')
   const [description, setDescription] = useState(initialData?.description || '')
   const [startDate, setStartDate] = useState(initialData?.startDate || '')
@@ -402,7 +405,7 @@ function ConferenceForm({
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-[#1B3A4B]">
-              {initialData ? 'Edit Conference' : 'Create Conference'}
+              {initialData ? 'Edit Conference' : t('conferences.create')}
             </h2>
             <p className="text-muted-foreground text-sm mt-0.5">
               {initialData ? 'Update conference details and configuration' : 'Set up a new MUN conference'}
@@ -421,7 +424,7 @@ function ConferenceForm({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="conf-name">Conference Name *</Label>
+                  <Label htmlFor="conf-name">{t('conferences.conferenceName')} *</Label>
                   <Input
                     id="conf-name"
                     placeholder="e.g., Harvard WorldMUN 2026"
@@ -442,7 +445,7 @@ function ConferenceForm({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="conf-start">Start Date *</Label>
+                    <Label htmlFor="conf-start">{t('conferences.startDate')} *</Label>
                     <Input
                       id="conf-start"
                       type="date"
@@ -452,7 +455,7 @@ function ConferenceForm({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="conf-end">End Date *</Label>
+                    <Label htmlFor="conf-end">{t('conferences.endDate')} *</Label>
                     <Input
                       id="conf-end"
                       type="date"
@@ -463,7 +466,7 @@ function ConferenceForm({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="conf-location">Location *</Label>
+                  <Label htmlFor="conf-location">{t('conferences.location')} *</Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
@@ -476,7 +479,7 @@ function ConferenceForm({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="conf-theme">Conference Theme</Label>
+                  <Label htmlFor="conf-theme">{t('conferences.theme')}</Label>
                   <Input
                     id="conf-theme"
                     placeholder="e.g., Bridging Divides: Diplomacy in a Fragmented World"
@@ -985,6 +988,7 @@ function ParticipationCalculator() {
 // ============================================================
 
 export default function ConferenceManager() {
+  const { t } = useI18n()
   const [conferences, setConferences] = useState<Conference[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'list' | 'detail' | 'create' | 'edit'>('list')
